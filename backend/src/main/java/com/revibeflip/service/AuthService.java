@@ -32,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final NotificationService notificationService;
+    private final com.revibeflip.service.sms.SmsService smsService;
 
     private final Random random = new Random();
 
@@ -78,7 +79,9 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        log.info("Code OTP généré pour {}: {}", savedUser.getPhone(), otp);
+        // Déclencher l'envoi réel du SMS OTP
+        smsService.sendOtp(savedUser.getPhone(), otp);
+        log.info("Code OTP généré et transmis au service SMS pour {}: {}", savedUser.getPhone(), otp);
 
         return AuthResponse.builder()
                 .token(null) // Token provided after OTP validation
@@ -136,7 +139,8 @@ public class AuthService {
         user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
         userRepository.save(user);
 
-        log.info("Nouveau code OTP envoyé à {}: {}", cleanPhone, newOtp);
+        smsService.sendOtp(cleanPhone, newOtp);
+        log.info("Nouveau code OTP envoyé via SMS à {}: {}", cleanPhone, newOtp);
         return newOtp;
     }
 
@@ -161,6 +165,9 @@ public class AuthService {
             user.setOtpCode(otp);
             user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
             userRepository.save(user);
+
+            smsService.sendOtp(user.getPhone(), otp);
+            log.info("Code OTP de vérification renvoyé via SMS à {}: {}", user.getPhone(), otp);
 
             return AuthResponse.builder()
                     .token(null)

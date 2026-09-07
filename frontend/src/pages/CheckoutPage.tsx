@@ -13,8 +13,11 @@ import {
   ArrowRight,
   Smartphone,
   AlertCircle,
-  QrCode
+  QrCode,
+  ExternalLink,
+  Check
 } from 'lucide-react';
+import { InitiatePaymentResponse } from '../types';
 
 export const CheckoutPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -35,6 +38,8 @@ export const CheckoutPage: React.FC = () => {
   const [processingOrder, setProcessingOrder] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
+  const [paymentSession, setPaymentSession] = useState<InitiatePaymentResponse | null>(null);
+  const [pollingPayment, setPollingPayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,15 +101,48 @@ export const CheckoutPage: React.FC = () => {
 
       const order = orderRes.data.data;
       setCreatedOrderId(order.id);
+
+      // Initier la session de paiement réelle auprès de la passerelle
+      const sessionRes = await paymentApi.initiate({
+        orderId: order.id,
+        paymentMethod: selectedPaymentMethod,
+        phoneNumber: paymentPhone,
+      });
+
+      setPaymentSession(sessionRes.data.data);
       setShowPaymentModal(true);
+      startPaymentPolling(sessionRes.data.data.transactionReference, order.id);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la création de la commande.");
+      setError(err.response?.data?.message || "Erreur lors de l'initiation de la commande.");
     } finally {
       setProcessingOrder(false);
     }
   };
 
-  const handleConfirmPayment = async () => {
+  const startPaymentPolling = (txRef: string, orderId: number) => {
+    setPollingPayment(true);
+    const interval = setInterval(async () => {
+      try {
+        const res = await paymentApi.checkStatus(txRef);
+        if (res.data?.data && res.data.data.status === 'SUCCESS') {
+          clearInterval(interval);
+          setPollingPayment(false);
+          setShowPaymentModal(false);
+          navigate(`/orders/${orderId}`);
+        }
+      } catch (err) {
+        // En attente du webhook
+      }
+    }, 3000);
+
+    // Timeout de polling après 3 minutes
+    setTimeout(() => {
+      clearInterval(interval);
+      setPollingPayment(false);
+    }, 180000);
+  };
+
+  const handleManualFallbackConfirm = async () => {
     if (!createdOrderId) return;
     setProcessingOrder(true);
     try {
@@ -388,47 +426,82 @@ export const CheckoutPage: React.FC = () => {
         </div>
       </form>
 
-      {/* MOBILE PAYMENT SIMULATION MODAL */}
+      {/* MOBILE PAYMENT REAL / LIVE MODAL */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4 border border-purple-100">
             <div className="w-14 h-14 mx-auto rounded-full bg-purple-50 text-purple-700 flex items-center justify-center shadow-inner">
-              <QrCode className="w-7 h-7" />
+              {paymentSession?.qrCodeUrl ? (
+                <img src={paymentSession.qrCodeUrl} alt="QR Code Paiement" className="w-10 h-10 object-contain rounded" />
+              ) : (
+                <QrCode className="w-7 h-7" />
+              )}
             </div>
 
             <h3 className="text-lg font-bold text-gray-900">
-              Paiement via {selectedPaymentMethod}
+              Paiement {selectedPaymentMethod === 'WAVE' ? 'Wave Mobile' : 'Orange Money'}
             </h3>
 
             <p className="text-xs text-gray-500">
               Montant à régler : <strong className="text-gray-900 text-sm">{totalAmount.toLocaleString('fr-FR')} FCFA</strong>
             </p>
 
-            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-2 text-xs">
-              <p className="text-gray-600">
-                Une notification de paiement instantané a été simulée pour votre compte <strong>{paymentPhone}</strong>.
+            {/* Lien direct Wave / Paydunya */}
+            {paymentSession?.checkoutUrl && (
+              <div className="p-3 bg-purple-50 rounded-2xl border border-purple-100 space-y-2">
+                <p className="text-xs text-purple-900 font-medium">
+                  {paymentSession.instructionMessage || "Cliquez ci-dessous pour ouvrir votre application :"}
+                </p>
+                <a
+                  href={paymentSession.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow"
+                >
+                  <span>Ouvrir {selectedPaymentMethod === 'WAVE' ? 'Wave' : 'Passerelle'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+
+            {/* Statut d'écoute automatique en temps réel */}
+            <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-200 text-left space-y-2">
+              <div className="flex items-center gap-2">
+                {pollingPayment ? (
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                ) : (
+                  <div className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+                )}
+                <span className="text-[11px] font-bold text-gray-700">
+                  {pollingPayment ? "En attente de votre confirmation sur votre téléphone..." : "Prêt"}
+                </span>
+              </div>
+              <p className="text-[10px] text-gray-500">
+                Réf transaction : <code className="font-mono text-purple-700">{paymentSession?.transactionReference}</code>
               </p>
-              <p className="text-[11px] text-purple-700 font-semibold">
-                🔒 Vos fonds seront conservés en toute sécurité sous séquestre.
+              <p className="text-[10px] text-gray-500">
+                🔒 Vos fonds seront conservés en toute sécurité sous séquestre (Escrow) jusqu'à livraison.
               </p>
             </div>
 
-            <div className="pt-2 flex gap-3">
+            <div className="pt-2 flex flex-col gap-2">
+              {/* Bouton de confirmation manuelle immédiate (secours / test) */}
+              <button
+                type="button"
+                onClick={handleManualFallbackConfirm}
+                disabled={processingOrder}
+                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-md transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{processingOrder ? 'Validation...' : 'Valider immédiatement (Mode Test)'}</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50"
+                className="w-full py-2 text-gray-500 rounded-xl text-xs font-semibold hover:text-gray-700 hover:bg-gray-100"
               >
                 Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmPayment}
-                disabled={processingOrder}
-                className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{processingOrder ? 'Validation...' : 'Confirmer le paiement'}</span>
               </button>
             </div>
           </div>

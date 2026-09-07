@@ -109,6 +109,18 @@ export interface Payment {
   escrowReleasedDate?: string;
 }
 
+export interface InitiatePaymentResponse {
+  transactionReference: string;
+  paymentMethod: string;
+  amount: number;
+  status: string;
+  checkoutUrl?: string;
+  deepLinkUrl?: string;
+  qrCodeUrl?: string;
+  instructionMessage?: string;
+  isLiveGateway: boolean;
+}
+
 export interface Order {
   id: number;
   orderNumber: string;

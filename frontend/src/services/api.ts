@@ -11,7 +11,8 @@ import {
   Message,
   Review,
   Notification,
-  AdminDashboard
+  AdminDashboard,
+  InitiatePaymentResponse
 } from '../types';
 
 const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
@@ -65,6 +66,10 @@ export const orderApi = {
 };
 
 export const paymentApi = {
+  initiate: (data: { orderId: number; paymentMethod: string; phoneNumber?: string }) =>
+    api.post<{ success: boolean; data: InitiatePaymentResponse }>('/payments/initiate', data),
+  checkStatus: (reference: string) =>
+    api.get<{ success: boolean; data: Payment }>(`/payments/status/${reference}`),
   process: (data: { orderId: number; paymentMethod: string; phoneNumber: string }) =>
     api.post<{ success: boolean; data: Payment }>('/payments/process', data),
   getByOrder: (orderId: number) => api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}`),
