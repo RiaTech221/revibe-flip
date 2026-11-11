@@ -12,6 +12,18 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByTransactionReference(String transactionReference);
     java.util.List<Payment> findAllByOrderByCreatedAtDesc();
 
+    long countByStatus(com.revibeflip.entity.enums.PaymentStatus status);
+
+    long countByStatusAndCreatedAtBetween(
+            com.revibeflip.entity.enums.PaymentStatus status,
+            java.time.LocalDateTime start,
+            java.time.LocalDateTime end
+    );
+
+    java.util.List<Payment> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    java.util.List<Payment> findByEscrowStatus(com.revibeflip.entity.enums.EscrowStatus escrowStatus);
+
     @org.springframework.data.jpa.repository.Query("SELECT p FROM Payment p WHERE " +
            "(:query IS NULL OR :query = '' OR LOWER(p.transactionReference) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
            "LOWER(p.order.orderNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +

@@ -32,6 +32,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = 'ROLE_ADMIN' AND (u.isSuspended = false OR u.isSuspended IS NULL)")
     long countActiveAdmins();
 
+    long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    java.util.List<User> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     @Query("SELECT u FROM User u WHERE " +
            "(:query IS NULL OR :query = '' OR " +
            "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) " +

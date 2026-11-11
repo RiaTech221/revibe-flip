@@ -23,5 +23,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     long countByTargetUserId(Long targetUserId);
 
+    long countByTargetUserIdAndRating(Long targetUserId, Integer rating);
+
+    long countByTargetUserIdAndCreatedAtBetween(Long targetUserId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     org.springframework.data.domain.Page<Review> findByTargetUserIdOrderByCreatedAtDesc(Long targetUserId, org.springframework.data.domain.Pageable pageable);
 }

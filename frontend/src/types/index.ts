@@ -249,7 +249,127 @@ export interface Notification {
   createdAt: string;
 }
 
+export interface MetricWithChange {
+  value: number;
+  previousValue: number;
+  changePercentage: number;
+  sparkline?: number[];
+}
+
+export interface UserMetrics {
+  total: number;
+  active: number;
+  suspended: number;
+  newInPeriod: number;
+  previousNewInPeriod: number;
+  changePercentage: number;
+  sparkline?: number[];
+}
+
+export interface ProductMetrics {
+  total: number;
+  active: number;
+  sold: number;
+  inactive: number;
+  draft: number;
+  newInPeriod: number;
+  previousNewInPeriod: number;
+  changePercentage: number;
+  sparkline?: number[];
+}
+
+export interface ReportMetrics {
+  pending: number;
+  inProgress: number;
+  resolved: number;
+  totalInPeriod: number;
+  previousTotalInPeriod: number;
+  changePercentage: number;
+}
+
+export interface ActionItems {
+  pendingReportsAndDisputes: number;
+  pendingModerationProducts: number;
+  disputedOrders: number;
+  deliveredAwaitingConfirmationOrders: number;
+  unreadContactMessages: number;
+  totalToHandle: number;
+  hasItemsToHandle: boolean;
+}
+
+export interface OrderFunnelStep {
+  status: string;
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface RecentOrderSummary {
+  id: number;
+  orderNumber: string;
+  productTitle: string;
+  buyerName: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface RecentReportSummary {
+  id: number;
+  reason: string;
+  reporterName: string;
+  targetType: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface RecentAuditLogSummary {
+  id: number;
+  actionType: string;
+  adminName: string;
+  targetType: string;
+  details: string;
+  createdAt: string;
+}
+
 export interface AdminDashboard {
+  period?: string;
+  startDate?: string;
+  endDate?: string;
+  lastUpdated?: string;
+  demoMode?: boolean;
+  currency?: string;
+  commissionRate?: number;
+  validationFeeRate?: number;
+
+  actionItems?: ActionItems;
+
+  revenue?: MetricWithChange;
+  earnedCommissions?: MetricWithChange;
+  escrowLockedFunds?: MetricWithChange;
+  pendingCommissions?: MetricWithChange;
+  validationFees?: MetricWithChange;
+  orders?: MetricWithChange;
+  transactions?: MetricWithChange;
+  averageBasket?: MetricWithChange;
+  users?: UserMetrics;
+  products?: ProductMetrics;
+  reports?: ReportMetrics;
+
+  salesTrends?: { date?: string; label: string; amount: number; orderCount: number }[];
+  userRegistrationTrends?: { date: string; label: string; count: number }[];
+  topCategories?: { name: string; productCount: number; orderCount?: number; totalAmount?: number; percentage: number }[];
+  topCategoriesBySales?: { name: string; productCount: number; orderCount?: number; totalAmount?: number; percentage: number }[];
+  topCategoriesByProducts?: { name: string; productCount: number; orderCount?: number; totalAmount?: number; percentage: number }[];
+  paymentDistributions?: { paymentMethod: string; count: number; totalAmount: number; percentage: number }[];
+  orderFunnel?: OrderFunnelStep[];
+  ordersByStatus?: Record<string, number>;
+
+  recentOrders?: RecentOrderSummary[];
+  recentReports?: RecentReportSummary[];
+  recentAuditLogs?: RecentAuditLogSummary[];
+
+  // Rétrocompatibilité widgets legacy
   totalUsers: number;
   activeUsers: number;
   inactiveUsers: number;
@@ -263,9 +383,6 @@ export interface AdminDashboard {
   totalCommissions: number;
   totalValidationFees: number;
   pendingReports: number;
-  topCategories?: { name: string; productCount: number; percentage: number }[];
-  paymentDistributions?: { paymentMethod: string; count: number; totalAmount: number; percentage: number }[];
-  salesTrends?: { label: string; amount: number; orderCount: number }[];
 }
 
 export interface AdminUserDetail {

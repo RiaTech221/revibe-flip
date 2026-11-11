@@ -13,9 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -41,107 +46,448 @@ public class AdminService {
     private final AdminActionLogRepository adminActionLogRepository;
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
+    private final com.revibeflip.repository.ContactMessageRepository contactMessageRepository;
+
+    // Cache en mémoire court (30 secondes)
+    private static class DashboardCacheEntry {
+        final AdminDashboardDto data;
+        final long expiresAt;
+        DashboardCacheEntry(AdminDashboardDto data, long expiresAt) {
+            this.data = data;
+            this.expiresAt = expiresAt;
+        }
+    }
+    private final Map<String, DashboardCacheEntry> dashboardCache = new ConcurrentHashMap<>();
 
     // ==========================================
     // 2. DASHBOARD (VUE D'ENSEMBLE)
     // ==========================================
     public AdminDashboardDto getDashboardStats() {
-        // Point 1 : Calcul robuste des utilisateurs actifs / suspendus
+        return getDashboardStats("30d", null, null);
+    }
+
+    public AdminDashboardDto getDashboardStats(String period, LocalDate from, LocalDate to) {
+        String cleanPeriod = (period == null || period.isBlank()) ? "30d" : period.toLowerCase().trim();
+        String cacheKey = cleanPeriod + "_" + (from != null ? from.toString() : "") + "_" + (to != null ? to.toString() : "");
+
+        long nowMillis = System.currentTimeMillis();
+        DashboardCacheEntry cached = dashboardCache.get(cacheKey);
+        if (cached != null && cached.expiresAt > nowMillis) {
+            return cached.data;
+        }
+
+        ZoneId dakarZone = ZoneId.of("Africa/Dakar");
+        ZonedDateTime nowZoned = ZonedDateTime.now(dakarZone);
+
+        LocalDateTime currentStart;
+        LocalDateTime currentEnd = nowZoned.toLocalDate().atTime(23, 59, 59);
+        LocalDateTime previousStart;
+        LocalDateTime previousEnd;
+        long daysCount;
+
+        if ("7d".equals(cleanPeriod)) {
+            daysCount = 7;
+            currentStart = nowZoned.minusDays(6).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(7);
+        } else if ("90d".equals(cleanPeriod)) {
+            daysCount = 90;
+            currentStart = nowZoned.minusDays(89).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(90);
+        } else if ("month".equals(cleanPeriod)) {
+            LocalDate firstOfMonth = nowZoned.toLocalDate().withDayOfMonth(1);
+            currentStart = firstOfMonth.atStartOfDay();
+            daysCount = Math.max(1, ChronoUnit.DAYS.between(firstOfMonth, nowZoned.toLocalDate()) + 1);
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(daysCount);
+        } else if ("custom".equals(cleanPeriod) && from != null && to != null) {
+            if (from.isAfter(to)) {
+                LocalDate tmp = from; from = to; to = tmp;
+            }
+            currentStart = from.atStartOfDay();
+            currentEnd = to.atTime(23, 59, 59);
+            daysCount = Math.max(1, ChronoUnit.DAYS.between(from, to) + 1);
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(daysCount);
+        } else {
+            cleanPeriod = "30d";
+            daysCount = 30;
+            currentStart = nowZoned.minusDays(29).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(30);
+        }
+
+        // Taux et paramètres dynamiques (jamais en dur)
+        PlatformSetting settings = platformSettingRepository.findFirstByOrderByIdAsc()
+                .orElseGet(() -> PlatformSetting.builder().build());
+        BigDecimal commissionRate = settings.getCommissionRate() != null ? settings.getCommissionRate() : BigDecimal.valueOf(20.0);
+        BigDecimal validationFeeRate = settings.getValidationFeeRate() != null ? settings.getValidationFeeRate() : BigDecimal.valueOf(1.0);
+        boolean demoMode = Boolean.TRUE.equals(settings.getDemoMode());
+
+        // Données globales
         long totalUsers = userRepository.count();
         long activeUsers = userRepository.countActiveUsers();
         long inactiveUsers = userRepository.countSuspendedUsers();
+        long newUsersInPeriod = userRepository.countByCreatedAtBetween(currentStart, currentEnd);
+        long prevNewUsersInPeriod = userRepository.countByCreatedAtBetween(previousStart, previousEnd);
 
         long totalProducts = productRepository.count();
         long activeProducts = productRepository.countByStatus(ProductStatus.ACTIVE);
         long soldProducts = productRepository.countByStatus(ProductStatus.SOLD);
         long inactiveProducts = productRepository.countByStatus(ProductStatus.INACTIVE);
+        long draftProducts = productRepository.countByStatus(ProductStatus.DRAFT);
+        long newProductsInPeriod = productRepository.countByCreatedAtBetween(currentStart, currentEnd);
+        long prevNewProductsInPeriod = productRepository.countByCreatedAtBetween(previousStart, previousEnd);
 
         long totalOrders = orderRepository.count();
-        long totalTransactions = paymentRepository.count();
 
-        BigDecimal totalTransactionsAmount = orderRepository.sumTotalTransactions();
-        if (totalTransactionsAmount == null) totalTransactionsAmount = BigDecimal.ZERO;
+        // Commandes période courante et précédente
+        List<Order> currentOrders = orderRepository.findByCreatedAtBetween(currentStart, currentEnd);
+        List<Order> previousOrders = orderRepository.findByCreatedAtBetween(previousStart, previousEnd);
 
-        BigDecimal totalCommissions = orderRepository.sumTotalCommissions();
-        if (totalCommissions == null) totalCommissions = BigDecimal.ZERO;
+        // Chiffre d'affaires (commandes payées)
+        BigDecimal currentRevenue = currentOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalValidationFees = orderRepository.sumTotalValidationFees();
-        if (totalValidationFees == null) totalValidationFees = BigDecimal.ZERO;
+        BigDecimal previousRevenue = previousOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+        // Commissions réalisées (commandes dont les fonds sont libérés ou COMPLETED)
+        BigDecimal currentEarnedCommissions = currentOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
+                .map(o -> {
+                    if (o.getPlatformCommission() != null) return o.getPlatformCommission();
+                    BigDecimal base = o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount();
+                    return base.multiply(commissionRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal previousEarnedCommissions = previousOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
+                .map(o -> {
+                    if (o.getPlatformCommission() != null) return o.getPlatformCommission();
+                    BigDecimal base = o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount();
+                    return base.multiply(commissionRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Fonds sous séquestre (LOCKED)
+        List<Payment> lockedPayments = paymentRepository.findByEscrowStatus(EscrowStatus.LOCKED);
+        BigDecimal escrowLockedFunds = lockedPayments.stream()
+                .map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Commissions en attente (calculées sur les fonds LOCKED)
+        BigDecimal pendingCommissions = escrowLockedFunds.multiply(commissionRate)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+
+        // Frais de validation perçus
+        BigDecimal currentValidationFees = currentOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> {
+                    if (o.getValidationFee() != null) return o.getValidationFee();
+                    BigDecimal base = o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount();
+                    return base.multiply(validationFeeRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal prevValidationFees = previousOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> {
+                    if (o.getValidationFee() != null) return o.getValidationFee();
+                    BigDecimal base = o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount();
+                    return base.multiply(validationFeeRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Panier moyen
+        long currentPaidCount = currentOrders.stream().filter(o -> isPaidStatus(o.getStatus())).count();
+        long previousPaidCount = previousOrders.stream().filter(o -> isPaidStatus(o.getStatus())).count();
+
+        BigDecimal currentAvgBasket = currentPaidCount > 0
+                ? currentRevenue.divide(BigDecimal.valueOf(currentPaidCount), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal prevAvgBasket = previousPaidCount > 0
+                ? previousRevenue.divide(BigDecimal.valueOf(previousPaidCount), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // Transactions (paiements réussis)
+        long currentTransactions = paymentRepository.countByStatusAndCreatedAtBetween(PaymentStatus.SUCCESS, currentStart, currentEnd);
+        long previousTransactions = paymentRepository.countByStatusAndCreatedAtBetween(PaymentStatus.SUCCESS, previousStart, previousEnd);
+
+        // Commandes totales dans la période
+        long totalOrdersInPeriod = currentOrders.size();
+        long prevOrdersInPeriod = previousOrders.size();
+
+        // Signalements
         long pendingReports = reportRepository.countByStatus(ReportStatus.PENDING);
+        long resolvedReportsInPeriod = reportRepository.countByStatusAndCreatedAtBetween(ReportStatus.RESOLVED, currentStart, currentEnd);
+        long totalReportsInPeriod = reportRepository.countByCreatedAtBetween(currentStart, currentEnd);
+        long prevTotalReportsInPeriod = reportRepository.countByCreatedAtBetween(previousStart, previousEnd);
 
-        // Top des catégories les plus demandées
-        List<Category> allCategories = categoryRepository.findAll();
-        List<CategoryStatDto> topCategories = new ArrayList<>();
-        long grandTotalProducts = Math.max(1, totalProducts);
+        // Bandeau « À traiter »
+        long disputedOrdersCount = orderRepository.countByStatus(OrderStatus.DISPUTED);
+        long deliveredAwaitingConfirmation = orderRepository.countByDeliveryStatusAndStatus(DeliveryStatus.DELIVERED, OrderStatus.DELIVERED);
+        long pendingModeration = draftProducts;
+        long unreadContactMessages = contactMessageRepository.countByStatus(com.revibeflip.entity.enums.ContactMessageStatus.NEW);
+        long totalToHandle = pendingReports + disputedOrdersCount + deliveredAwaitingConfirmation + pendingModeration + unreadContactMessages;
 
-        for (Category cat : allCategories) {
-            long count = productRepository.countByCategoryId(cat.getId());
-            if (count > 0 || topCategories.size() < 5) {
-                int percentage = (int) Math.round(((double) count / (double) grandTotalProducts) * 100);
-                topCategories.add(CategoryStatDto.builder()
-                        .name(cat.getName())
-                        .productCount(count)
-                        .percentage(percentage)
-                        .build());
+        AdminDashboardDto.ActionItemsDto actionItems = AdminDashboardDto.ActionItemsDto.builder()
+                .pendingReportsAndDisputes(pendingReports + disputedOrdersCount)
+                .pendingModerationProducts(pendingModeration)
+                .disputedOrders(disputedOrdersCount)
+                .deliveredAwaitingConfirmationOrders(deliveredAwaitingConfirmation)
+                .unreadContactMessages(unreadContactMessages)
+                .totalToHandle(totalToHandle)
+                .hasItemsToHandle(totalToHandle > 0)
+                .build();
+
+        // Tendances journalières & Sparklines
+        // Si <= 31 jours : jour par jour (tous les jours de la période affichés y compris à 0, Africa/Dakar)
+        // Si > 31 jours : regroupement par tranches de 7 jours (semaines)
+        DateTimeFormatter dayFmt = DateTimeFormatter.ofPattern("dd/MM");
+        DateTimeFormatter isoDateFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        List<SalesTrendDto> salesTrends = new ArrayList<>();
+        List<AdminDashboardDto.UserTrendDto> userTrends = new ArrayList<>();
+        List<BigDecimal> revenueSparkline = new ArrayList<>();
+        List<BigDecimal> orderSparkline = new ArrayList<>();
+        List<Long> userSparkline = new ArrayList<>();
+        List<Long> productSparkline = new ArrayList<>();
+
+        List<User> periodUsers = userRepository.findByCreatedAtBetween(currentStart, currentEnd);
+        List<Product> periodProducts = productRepository.findByCreatedAtBetween(currentStart, currentEnd);
+
+        if (daysCount <= 31) {
+            for (long i = daysCount - 1; i >= 0; i--) {
+                LocalDateTime dayStart = currentEnd.minusDays(i).toLocalDate().atStartOfDay();
+                LocalDateTime dayEnd = currentEnd.minusDays(i).toLocalDate().atTime(23, 59, 59);
+                String label = dayStart.format(dayFmt);
+                String isoDate = dayStart.format(isoDateFmt);
+
+                List<Order> dayOrders = currentOrders.stream()
+                        .filter(o -> o.getCreatedAt() != null && !o.getCreatedAt().isBefore(dayStart) && !o.getCreatedAt().isAfter(dayEnd))
+                        .collect(Collectors.toList());
+
+                BigDecimal dayRev = dayOrders.stream()
+                        .filter(o -> isPaidStatus(o.getStatus()))
+                        .map(o -> o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount())
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                long dayUserCount = periodUsers.stream()
+                        .filter(u -> u.getCreatedAt() != null && !u.getCreatedAt().isBefore(dayStart) && !u.getCreatedAt().isAfter(dayEnd))
+                        .count();
+
+                long dayProdCount = periodProducts.stream()
+                        .filter(p -> p.getCreatedAt() != null && !p.getCreatedAt().isBefore(dayStart) && !p.getCreatedAt().isAfter(dayEnd))
+                        .count();
+
+                salesTrends.add(new SalesTrendDto(isoDate, label, dayRev, dayOrders.size()));
+                userTrends.add(new AdminDashboardDto.UserTrendDto(isoDate, label, dayUserCount));
+                revenueSparkline.add(dayRev);
+                orderSparkline.add(BigDecimal.valueOf(dayOrders.size()));
+                userSparkline.add(dayUserCount);
+                productSparkline.add(dayProdCount);
+            }
+        } else {
+            // Regroupement par semaine pour les périodes > 31 jours
+            LocalDate start = currentStart.toLocalDate();
+            LocalDate end = currentEnd.toLocalDate();
+            LocalDate wStart = start;
+            int weekIdx = 1;
+            while (!wStart.isAfter(end)) {
+                LocalDate wEnd = wStart.plusDays(6);
+                if (wEnd.isAfter(end)) wEnd = end;
+
+                LocalDateTime intervalStart = wStart.atStartOfDay();
+                LocalDateTime intervalEnd = wEnd.atTime(23, 59, 59);
+
+                String label = "S" + weekIdx + " (" + wStart.format(dayFmt) + ")";
+                String isoDate = wStart.format(isoDateFmt);
+
+                List<Order> weekOrders = currentOrders.stream()
+                        .filter(o -> o.getCreatedAt() != null && !o.getCreatedAt().isBefore(intervalStart) && !o.getCreatedAt().isAfter(intervalEnd))
+                        .collect(Collectors.toList());
+
+                BigDecimal weekRev = weekOrders.stream()
+                        .filter(o -> isPaidStatus(o.getStatus()))
+                        .map(o -> o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount())
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                long weekUserCount = periodUsers.stream()
+                        .filter(u -> u.getCreatedAt() != null && !u.getCreatedAt().isBefore(intervalStart) && !u.getCreatedAt().isAfter(intervalEnd))
+                        .count();
+
+                long weekProdCount = periodProducts.stream()
+                        .filter(p -> p.getCreatedAt() != null && !p.getCreatedAt().isBefore(intervalStart) && !p.getCreatedAt().isAfter(intervalEnd))
+                        .count();
+
+                salesTrends.add(new SalesTrendDto(isoDate, label, weekRev, weekOrders.size()));
+                userTrends.add(new AdminDashboardDto.UserTrendDto(isoDate, label, weekUserCount));
+                revenueSparkline.add(weekRev);
+                orderSparkline.add(BigDecimal.valueOf(weekOrders.size()));
+                userSparkline.add(weekUserCount);
+                productSparkline.add(weekProdCount);
+
+                wStart = wEnd.plusDays(1);
+                weekIdx++;
             }
         }
-        topCategories.sort((a, b) -> Long.compare(b.getProductCount(), a.getProductCount()));
-        if (topCategories.size() > 5) {
-            topCategories = topCategories.subList(0, 5);
+
+        // Entonnoir par statut
+        Map<OrderStatus, Long> ordersByStatusMap = currentOrders.stream()
+                .collect(Collectors.groupingBy(Order::getStatus, Collectors.counting()));
+
+        Map<String, Long> statusStringMap = new LinkedHashMap<>();
+        for (OrderStatus st : OrderStatus.values()) {
+            statusStringMap.put(st.name(), ordersByStatusMap.getOrDefault(st, 0L));
         }
 
-        // Répartition des paiements (Wave, Orange Money, Free Money)
-        List<Payment> allPayments = paymentRepository.findAll();
-        Map<PaymentMethod, List<Payment>> byMethod = allPayments.stream()
-                .collect(Collectors.groupingBy(Payment::getPaymentMethod));
+        List<AdminDashboardDto.OrderFunnelStepDto> orderFunnel = List.of(
+                new AdminDashboardDto.OrderFunnelStepDto("PENDING_PAYMENT", "En attente de paiement", ordersByStatusMap.getOrDefault(OrderStatus.PENDING_PAYMENT, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.PENDING_PAYMENT, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("PAID_ESCROW_LOCKED", "Payées sous séquestre", ordersByStatusMap.getOrDefault(OrderStatus.PAID_ESCROW_LOCKED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.PAID_ESCROW_LOCKED, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("SHIPPED", "En cours de livraison", ordersByStatusMap.getOrDefault(OrderStatus.SHIPPED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.SHIPPED, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("DELIVERED", "Livrées (en attente confirmation)", ordersByStatusMap.getOrDefault(OrderStatus.DELIVERED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.DELIVERED, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("COMPLETED", "Finalisées & libérées", ordersByStatusMap.getOrDefault(OrderStatus.COMPLETED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.COMPLETED, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("CANCELLED", "Annulées / Expirées", ordersByStatusMap.getOrDefault(OrderStatus.CANCELLED, 0L) + ordersByStatusMap.getOrDefault(OrderStatus.EXPIRED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.CANCELLED, 0L) + ordersByStatusMap.getOrDefault(OrderStatus.EXPIRED, 0L), totalOrdersInPeriod)),
+                new AdminDashboardDto.OrderFunnelStepDto("DISPUTED", "En litige", ordersByStatusMap.getOrDefault(OrderStatus.DISPUTED, 0L), calculatePercentage(ordersByStatusMap.getOrDefault(OrderStatus.DISPUTED, 0L), totalOrdersInPeriod))
+        );
+
+        // Top Rayons : 1) Par ventes réelles (CA & commandes) et 2) Par nombre d'annonces
+        List<Category> allCategories = categoryRepository.findAll();
+        List<CategoryStatDto> allCategoryStats = new ArrayList<>();
+        BigDecimal totalSalesAllCats = BigDecimal.ZERO;
+
+        for (Category cat : allCategories) {
+            long pCount = productRepository.countByCategoryId(cat.getId());
+            long oCount = currentOrders.stream().filter(o -> o.getProduct() != null && o.getProduct().getCategory() != null && o.getProduct().getCategory().getId().equals(cat.getId())).count();
+            BigDecimal catAmount = currentOrders.stream()
+                    .filter(o -> o.getProduct() != null && o.getProduct().getCategory() != null && o.getProduct().getCategory().getId().equals(cat.getId()))
+                    .map(o -> o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount())
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            totalSalesAllCats = totalSalesAllCats.add(catAmount);
+            allCategoryStats.add(new CategoryStatDto(cat.getName(), pCount, oCount, catAmount, 0));
+        }
+
+        // Classement 1 : Par ventes réelles
+        final BigDecimal finalSalesTotal = totalSalesAllCats;
+        List<CategoryStatDto> topCategoriesBySales = allCategoryStats.stream()
+                .sorted((a, b) -> {
+                    int cmp = b.getTotalSales().compareTo(a.getTotalSales());
+                    if (cmp != 0) return cmp;
+                    return Long.compare(b.getOrderCount(), a.getOrderCount());
+                })
+                .limit(5)
+                .map(stat -> {
+                    int pct = finalSalesTotal.compareTo(BigDecimal.ZERO) > 0
+                            ? stat.getTotalSales().multiply(BigDecimal.valueOf(100)).divide(finalSalesTotal, 0, RoundingMode.HALF_UP).intValue()
+                            : (totalOrdersInPeriod > 0 ? (int) Math.round(((double) stat.getOrderCount() / (double) totalOrdersInPeriod) * 100) : 0);
+                    return new CategoryStatDto(stat.getName(), stat.getProductCount(), stat.getOrderCount(), stat.getTotalSales(), pct);
+                })
+                .collect(Collectors.toList());
+
+        // Classement 2 : Par volume d'annonces
+        List<CategoryStatDto> topCategoriesByProducts = allCategoryStats.stream()
+                .sorted((a, b) -> Long.compare(b.getProductCount(), a.getProductCount()))
+                .limit(5)
+                .map(stat -> {
+                    int pct = totalProducts > 0 ? (int) Math.round(((double) stat.getProductCount() / (double) totalProducts) * 100) : 0;
+                    return new CategoryStatDto(stat.getName(), stat.getProductCount(), stat.getOrderCount(), stat.getTotalSales(), pct);
+                })
+                .collect(Collectors.toList());
+
+        List<CategoryStatDto> topCategories = topCategoriesBySales.stream().anyMatch(c -> c.getTotalSales().compareTo(BigDecimal.ZERO) > 0)
+                ? topCategoriesBySales
+                : topCategoriesByProducts;
+
+        // Répartition paiements : TOUJOURS WAVE, ORANGE_MONEY, FREE_MONEY (MÊME À 0)
+        List<Payment> periodPayments = paymentRepository.findByCreatedAtBetween(currentStart, currentEnd);
+        Map<PaymentMethod, List<Payment>> byMethod = periodPayments.stream().collect(Collectors.groupingBy(Payment::getPaymentMethod));
+        long totalPaymentsCount = Math.max(1, periodPayments.size());
 
         List<PaymentDistributionDto> paymentDistributions = new ArrayList<>();
-        long totalPaymentsCount = Math.max(1, allPayments.size());
-
-        for (PaymentMethod method : PaymentMethod.values()) {
-            List<Payment> list = byMethod.getOrDefault(method, Collections.emptyList());
-            long count = list.size();
-            BigDecimal amount = list.stream()
-                    .map(Payment::getAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            int percentage = (int) Math.round(((double) count / (double) totalPaymentsCount) * 100);
-
-            paymentDistributions.add(PaymentDistributionDto.builder()
-                    .paymentMethod(method.getDisplayName())
-                    .count(count)
-                    .totalAmount(amount)
-                    .percentage(percentage)
-                    .build());
+        for (PaymentMethod m : List.of(PaymentMethod.WAVE, PaymentMethod.ORANGE_MONEY, PaymentMethod.FREE_MONEY)) {
+            List<Payment> mList = byMethod.getOrDefault(m, Collections.emptyList());
+            long mCount = mList.size();
+            BigDecimal mAmount = mList.stream().map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            int mPct = (int) Math.round(((double) mCount / (double) totalPaymentsCount) * 100);
+            paymentDistributions.add(new PaymentDistributionDto(m.getDisplayName(), mCount, mAmount, mPct));
         }
 
-        // Point 2 : Tendances des ventes garantissant les 7 derniers jours (même à 0 FCFA)
-        List<Order> recentOrders = orderRepository.findAll();
-        List<SalesTrendDto> salesTrends = new ArrayList<>();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM");
-        LocalDateTime now = LocalDateTime.now();
+        // Listes courtes (5 derniers éléments)
+        List<AdminDashboardDto.RecentOrderSummaryDto> recentOrders = orderRepository.findTop5ByOrderByCreatedAtDesc().stream()
+                .map(o -> new AdminDashboardDto.RecentOrderSummaryDto(
+                        o.getId(),
+                        o.getOrderNumber(),
+                        o.getProduct() != null ? o.getProduct().getTitle() : "Article",
+                        o.getBuyer() != null ? o.getBuyer().getFullName() : "Acheteur",
+                        o.getTotalAmount(),
+                        o.getStatus().name(),
+                        o.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
 
-        for (int i = 6; i >= 0; i--) {
-            LocalDateTime dayStart = now.minusDays(i).withHour(0).withMinute(0).withSecond(0);
-            LocalDateTime dayEnd = now.minusDays(i).withHour(23).withMinute(59).withSecond(59);
-            String label = dayStart.format(fmt);
+        List<AdminDashboardDto.RecentReportSummaryDto> recentReports = reportRepository.findTop5ByOrderByCreatedAtDesc().stream()
+                .map(r -> new AdminDashboardDto.RecentReportSummaryDto(
+                        r.getId(),
+                        r.getReason() != null ? r.getReason().getLabel() : "Signalement",
+                        r.getReporter() != null ? r.getReporter().getFullName() : "Utilisateur",
+                        r.getReportedProduct() != null ? "PRODUCT" : (r.getReportedUser() != null ? "USER" : "ORDER"),
+                        r.getStatus().name(),
+                        r.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
 
-            List<Order> dayOrders = recentOrders.stream()
-                    .filter(o -> o.getCreatedAt() != null && !o.getCreatedAt().isBefore(dayStart) && !o.getCreatedAt().isAfter(dayEnd))
-                    .collect(Collectors.toList());
+        List<AdminActionLog> logs = adminActionLogRepository.findTop20ByOrderByCreatedAtDesc();
+        List<AdminDashboardDto.RecentAuditLogSummaryDto> recentAuditLogs = logs.subList(0, Math.min(5, logs.size())).stream()
+                .map(l -> new AdminDashboardDto.RecentAuditLogSummaryDto(
+                        l.getId(),
+                        l.getActionType(),
+                        l.getAdmin() != null ? l.getAdmin().getFullName() : "Admin",
+                        l.getTargetType(),
+                        l.getDetails(),
+                        l.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
 
-            BigDecimal dayAmount = dayOrders.stream()
-                    .map(Order::getTotalAmount)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            salesTrends.add(SalesTrendDto.builder()
-                    .label(label)
-                    .amount(dayAmount)
-                    .orderCount(dayOrders.size())
-                    .build());
-        }
-
-        return AdminDashboardDto.builder()
+        AdminDashboardDto dto = AdminDashboardDto.builder()
+                .period(cleanPeriod)
+                .startDate(currentStart.toLocalDate().toString())
+                .endDate(currentEnd.toLocalDate().toString())
+                .lastUpdated(nowZoned.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
+                .demoMode(demoMode)
+                .currency(settings.getCurrency() != null ? settings.getCurrency() : "FCFA")
+                .commissionRate(commissionRate)
+                .validationFeeRate(validationFeeRate)
+                .actionItems(actionItems)
+                .revenue(new AdminDashboardDto.MetricWithChangeDto(currentRevenue, previousRevenue, calculatePercentageChange(currentRevenue, previousRevenue), revenueSparkline))
+                .earnedCommissions(new AdminDashboardDto.MetricWithChangeDto(currentEarnedCommissions, previousEarnedCommissions, calculatePercentageChange(currentEarnedCommissions, previousEarnedCommissions), Collections.emptyList()))
+                .escrowLockedFunds(new AdminDashboardDto.MetricWithChangeDto(escrowLockedFunds, escrowLockedFunds, 0.0, Collections.emptyList()))
+                .pendingCommissions(new AdminDashboardDto.MetricWithChangeDto(pendingCommissions, pendingCommissions, 0.0, Collections.emptyList()))
+                .validationFees(new AdminDashboardDto.MetricWithChangeDto(currentValidationFees, prevValidationFees, calculatePercentageChange(currentValidationFees, prevValidationFees), Collections.emptyList()))
+                .orders(new AdminDashboardDto.MetricWithChangeDto(BigDecimal.valueOf(totalOrdersInPeriod), BigDecimal.valueOf(prevOrdersInPeriod), calculatePercentageChange(totalOrdersInPeriod, prevOrdersInPeriod), orderSparkline))
+                .transactions(new AdminDashboardDto.MetricWithChangeDto(BigDecimal.valueOf(currentTransactions), BigDecimal.valueOf(previousTransactions), calculatePercentageChange(currentTransactions, previousTransactions), Collections.emptyList()))
+                .averageBasket(new AdminDashboardDto.MetricWithChangeDto(currentAvgBasket, prevAvgBasket, calculatePercentageChange(currentAvgBasket, prevAvgBasket), Collections.emptyList()))
+                .users(new AdminDashboardDto.UserMetricsDto(totalUsers, activeUsers, inactiveUsers, newUsersInPeriod, prevNewUsersInPeriod, calculatePercentageChange(newUsersInPeriod, prevNewUsersInPeriod), userSparkline))
+                .products(new AdminDashboardDto.ProductMetricsDto(totalProducts, activeProducts, soldProducts, inactiveProducts, draftProducts, newProductsInPeriod, prevNewProductsInPeriod, calculatePercentageChange(newProductsInPeriod, prevNewProductsInPeriod), productSparkline))
+                .reports(new AdminDashboardDto.ReportMetricsDto(pendingReports, 0L, resolvedReportsInPeriod, totalReportsInPeriod, prevTotalReportsInPeriod, calculatePercentageChange(totalReportsInPeriod, prevTotalReportsInPeriod)))
+                .salesTrends(salesTrends)
+                .userRegistrationTrends(userTrends)
+                .topCategories(topCategories)
+                .topCategoriesBySales(topCategoriesBySales)
+                .topCategoriesByProducts(topCategoriesByProducts)
+                .paymentDistributions(paymentDistributions)
+                .orderFunnel(orderFunnel)
+                .ordersByStatus(statusStringMap)
+                .recentOrders(recentOrders)
+                .recentReports(recentReports)
+                .recentAuditLogs(recentAuditLogs)
+                // Rétrocompatibilité widgets legacy
                 .totalUsers(totalUsers)
                 .activeUsers(activeUsers)
                 .inactiveUsers(inactiveUsers)
@@ -150,15 +496,47 @@ public class AdminService {
                 .soldProducts(soldProducts)
                 .inactiveProducts(inactiveProducts)
                 .totalOrders(totalOrders)
-                .totalTransactions(totalTransactions)
-                .totalTransactionsAmount(totalTransactionsAmount)
-                .totalCommissions(totalCommissions)
-                .totalValidationFees(totalValidationFees)
+                .totalTransactions(currentTransactions)
+                .totalTransactionsAmount(currentRevenue)
+                .totalCommissions(currentEarnedCommissions)
+                .totalValidationFees(currentValidationFees)
                 .pendingReports(pendingReports)
-                .topCategories(topCategories)
-                .paymentDistributions(paymentDistributions)
-                .salesTrends(salesTrends)
                 .build();
+
+        // Mise en cache 30 secondes
+        dashboardCache.put(cacheKey, new DashboardCacheEntry(dto, nowMillis + 30_000L));
+        return dto;
+    }
+
+    private boolean isPaidStatus(OrderStatus status) {
+        return status == OrderStatus.PAID_ESCROW_LOCKED
+                || status == OrderStatus.SHIPPED
+                || status == OrderStatus.DELIVERED
+                || status == OrderStatus.COMPLETED;
+    }
+
+    private int calculatePercentage(long count, long total) {
+        if (total <= 0) return 0;
+        return (int) Math.round(((double) count / (double) total) * 100);
+    }
+
+    private Double calculatePercentageChange(BigDecimal current, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
+            if (current != null && current.compareTo(BigDecimal.ZERO) > 0) return 100.0;
+            if (current != null && current.compareTo(BigDecimal.ZERO) < 0) return -100.0;
+            return 0.0;
+        }
+        BigDecimal diff = current.subtract(previous);
+        BigDecimal pct = diff.divide(previous, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+        return pct.setScale(1, RoundingMode.HALF_UP).doubleValue();
+    }
+
+    private Double calculatePercentageChange(long current, long previous) {
+        if (previous == 0) {
+            return current > 0 ? 100.0 : 0.0;
+        }
+        double pct = ((double) (current - previous) / (double) previous) * 100.0;
+        return Math.round(pct * 10.0) / 10.0;
     }
 
     // ==========================================
@@ -499,6 +877,7 @@ public class AdminService {
                     if (report.getReportedProduct() != null) {
                         Product p = report.getReportedProduct();
                         p.setStatus(ProductStatus.INACTIVE);
+                        p.setDeactivationReason(adminNotes != null && !adminNotes.isBlank() ? adminNotes : "Désactivée par la modération suite à un signalement (" + report.getReason().getLabel() + ")");
                         productRepository.save(p);
                         actionSummary.append(" | Action exécutée: Annonce #").append(p.getId()).append(" désactivée.");
                     }

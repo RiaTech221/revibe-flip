@@ -1,0 +1,7 @@
+/**
+ * Point d'entrée CSS principal ReVibe FliP.
+ * Structure modulaire organisée en sous-packages de styles.
+ */
+@import './tailwind.css';
+@import './animations.css';
+@import './scrollbar.css';

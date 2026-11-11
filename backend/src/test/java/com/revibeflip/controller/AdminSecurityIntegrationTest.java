@@ -33,7 +33,27 @@ class AdminSecurityIntegrationTest {
     @DisplayName("Sécurité: Accès accepté (200) pour un administrateur avec ROLE_ADMIN sur /api/admin/dashboard")
     @WithMockUser(username = "+221770000000", roles = {"ADMIN"})
     void testAdminEndpoint_AllowedForRoleAdmin() throws Exception {
-        mockMvc.perform(get("/api/admin/dashboard"))
+        mockMvc.perform(get("/api/admin/dashboard?period=30d"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/admin/dashboard?period=7d"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/admin/dashboard?period=90d"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/admin/dashboard?period=month"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/admin/dashboard?period=custom&from=2026-01-01&to=2026-01-31"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Dev: Réinitialisation et re-seed dev accessible à ROLE_ADMIN")
+    @WithMockUser(username = "+221770000000", roles = {"ADMIN"})
+    void testDevReseed_AllowedForRoleAdmin() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/dev/reseed?forceReset=false"))
                 .andExpect(status().isOk());
     }
 

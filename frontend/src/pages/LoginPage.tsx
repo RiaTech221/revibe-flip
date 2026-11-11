@@ -1,27 +1,28 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { authApi } from '../services/api';
-import { Lock, ArrowLeft } from 'lucide-react';
-import { Logo } from '../components/Logo';
+import { authApi } from '../services/authService';
+import { ArrowLeft } from 'lucide-react';
+import { AuthSplitHero, AuthLoginForm } from '../components/auth';
 
+/**
+ * Page de connexion sécurisée ReVibe FliP.
+ * Architecture modulaire encapsulée dans `components/auth/`.
+ */
 export const LoginPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLoginSubmit = async (identifier: string, password: string) => {
     setError(null);
     setLoading(true);
 
     try {
-      const res = await authApi.login({ identifier: identifier.trim(), password });
+      const res = await authApi.login({ identifier, password });
       const data = res.data.data;
 
       if (data.token) {
@@ -53,146 +54,52 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row relative">
-      {/* GAUCHE : SPLIT SCREEN SOMBRE ÉPURÉ */}
-      <div className="w-full md:w-5/12 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-8 sm:p-12 lg:p-16 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute -top-24 -left-24 w-80 h-80 bg-purple-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-pink-500/20 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Top Branding */}
-        <div className="relative z-10 flex items-center">
-          <Logo variant="dark" size="md" />
-        </div>
-
-        {/* Center Copy Épuré */}
-        <div className="relative z-10 space-y-4 my-12">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight">
+      {/* 1. PANNEAU LATÉRAL GAUCHE */}
+      <AuthSplitHero
+        heading={
+          <>
             Accès à <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-orange-400 to-amber-300">
               REVIBE FLIP
             </span>
-          </h1>
+          </>
+        }
+        subtitle="Achetez et vendez des vêtements et accessoires de seconde main en toute sécurité."
+      />
 
-          <p className="text-sm text-slate-300 font-normal leading-relaxed max-w-sm">
-            La marketplace sénégalaise de seconde main.
-          </p>
-        </div>
-
-        {/* Bottom Tagline */}
-        <div className="relative z-10 text-[11px] text-slate-400">
-          © {new Date().getFullYear()} ReVibe FliP. Tous droits réservés.
-        </div>
-      </div>
-
-      {/* DROITE : FORMULAIRE DE CONNEXION ÉPURÉ */}
-      <div className="flex-1 bg-white flex flex-col justify-between p-6 sm:p-12 lg:p-16 relative">
-        {/* Top Right Action: Retour au site */}
-        <div className="flex justify-end">
+      {/* 2. FORMULAIRE DE CONNEXION DROITE */}
+      <div className="w-full md:w-7/12 flex flex-col justify-between p-6 sm:p-12 lg:p-20 relative">
+        <div className="flex items-center justify-between">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold transition-all border border-gray-200 shadow-xs"
+            className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-purple-700 transition-colors"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Retour au site</span>
+            <ArrowLeft className="w-4 h-4" />
+            <span>Retour à l'accueil</span>
           </Link>
         </div>
 
-        {/* Center Form Container */}
-        <div className="max-w-md w-full mx-auto my-auto space-y-6">
-          <div className="text-center space-y-2">
-            <div className="inline-flex justify-center mb-2">
-              <Logo variant="light" size="lg" layout="stacked" />
-            </div>
-            <h2 className="text-2xl font-black text-gray-900">Connexion</h2>
+        <div className="max-w-md w-full mx-auto my-8">
+          <div className="mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Bon retour parmi nous
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+              Entrez vos identifiants pour vous connecter à votre compte.
+            </p>
           </div>
 
-          {error && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold text-center">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-            <div>
-              <label className="block font-bold text-gray-700 mb-1">Téléphone ou Email</label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-3 text-gray-400 font-bold">@</span>
-                <input
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="+221 77 000 00 00 ou email"
-                  required
-                  className="w-full pl-9 pr-4 py-3 rounded-2xl bg-gray-50/80 border border-gray-200 text-gray-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white transition-all shadow-inner"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="font-bold text-gray-700">Mot de passe</label>
-                <span className="text-[11px] text-purple-700 hover:underline cursor-pointer">
-                  Mot de passe oublié ?
-                </span>
-              </div>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-gray-400 absolute left-3.5 top-3" />
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  required
-                  className="w-full pl-9 pr-4 py-3 rounded-2xl bg-gray-50/80 border border-gray-200 text-gray-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white transition-all shadow-inner"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-black text-sm shadow-md transition-all active:scale-98 disabled:opacity-50 mt-2"
-            >
-              {loading ? 'Connexion...' : 'Connexion'}
-            </button>
-          </form>
-
-          <div className="pt-2 text-center">
-            <span className="text-xs text-gray-500">
-              Pas encore de compte ?{' '}
-              <Link to="/register" className="text-purple-700 font-bold hover:underline">
-                S'inscrire
-              </Link>
-            </span>
-          </div>
-
-          {/* Remplissage test rapide compact */}
-          <div className="flex items-center justify-center gap-2 pt-2">
-            <span className="text-[10px] text-gray-400">Test :</span>
-            <button
-              type="button"
-              onClick={() => { setIdentifier('+221770000000'); setPassword('Admin1234!'); }}
-              className="px-2.5 py-1 bg-gray-100 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-[10px] transition-colors"
-            >
-              Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => { setIdentifier('+221771112233'); setPassword('Passer123!'); }}
-              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-[10px] transition-colors"
-            >
-              Vendeur
-            </button>
-            <button
-              type="button"
-              onClick={() => { setIdentifier('+221778889900'); setPassword('Passer123!'); }}
-              className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg text-[10px] transition-colors"
-            >
-              Acheteur
-            </button>
-          </div>
+          <AuthLoginForm
+            loading={loading}
+            error={error}
+            onSubmit={handleLoginSubmit}
+            onSwitchToRegister={() => navigate('/register')}
+          />
         </div>
 
-        <div />
+        <div className="text-center text-[11px] text-slate-400">
+          En vous connectant, vous acceptez les Conditions Générales d'Utilisation de ReVibe FliP.
+        </div>
       </div>
     </div>
   );

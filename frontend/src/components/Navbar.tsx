@@ -178,6 +178,15 @@ export const Navbar: React.FC = () => {
 
                       <div className="py-1.5 px-2 space-y-0.5">
                         <Link
+                          to="/seller?tab=overview"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-purple-700 bg-purple-50 hover:bg-purple-100 font-bold"
+                        >
+                          <Store className="w-4 h-4 text-purple-700" />
+                          <span>Espace Vendeur (Tableau de bord)</span>
+                        </Link>
+
+                        <Link
                           to="/profile"
                           onClick={() => setIsUserMenuOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-purple-700 font-medium"

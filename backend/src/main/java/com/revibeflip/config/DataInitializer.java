@@ -1,9 +1,7 @@
 package com.revibeflip.config;
 
 import com.revibeflip.entity.*;
-import com.revibeflip.entity.enums.ProductCondition;
-import com.revibeflip.entity.enums.ProductStatus;
-import com.revibeflip.entity.enums.Role;
+import com.revibeflip.entity.enums.*;
 import com.revibeflip.repository.CategoryRepository;
 import com.revibeflip.repository.CountryRepository;
 import com.revibeflip.repository.ProductRepository;
@@ -15,6 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,13 +27,20 @@ public class DataInitializer implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final com.revibeflip.repository.OrderRepository orderRepository;
+    private final com.revibeflip.repository.PaymentRepository paymentRepository;
+    private final com.revibeflip.repository.ReportRepository reportRepository;
+    private final com.revibeflip.repository.AdminActionLogRepository adminActionLogRepository;
+    private final com.revibeflip.repository.PlatformSettingRepository platformSettingRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
+        seedPlatformSettings();
         seedCountries();
         seedCategories();
         seedUsersAndProducts();
+        seedOrdersAndAudit();
     }
 
     private void seedCountries() {
@@ -98,8 +105,8 @@ public class DataInitializer implements CommandLineRunner {
         User moussa = userRepository.findByPhone("+221774445566").orElse(null);
         User fatou = userRepository.findByPhone("+221778889900").orElse(null);
 
-        if (userRepository.count() == 0) {
-            // 1. Admin
+        // 1. Admin
+        if (userRepository.findByPhone("+221770000000").isEmpty()) {
             User admin = User.builder()
                     .firstName("Super")
                     .lastName("Admin")
@@ -116,8 +123,10 @@ public class DataInitializer implements CommandLineRunner {
                     .reviewCount(0)
                     .build();
             userRepository.save(admin);
+        }
 
-            // 2. Seller Aminata
+        // 2. Seller Aminata
+        if (aminata == null) {
             aminata = User.builder()
                     .firstName("Aminata")
                     .lastName("Diallo")
@@ -135,8 +144,15 @@ public class DataInitializer implements CommandLineRunner {
                     .profilePicture("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80")
                     .build();
             aminata = userRepository.save(aminata);
+        } else {
+            aminata.setPassword(passwordEncoder.encode("Passer123!"));
+            aminata.setIsVerified(true);
+            aminata.setIsSuspended(false);
+            aminata = userRepository.save(aminata);
+        }
 
-            // 3. Seller Moussa
+        // 3. Seller Moussa
+        if (moussa == null) {
             moussa = User.builder()
                     .firstName("Moussa")
                     .lastName("Ndiaye")
@@ -154,8 +170,15 @@ public class DataInitializer implements CommandLineRunner {
                     .profilePicture("https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80")
                     .build();
             moussa = userRepository.save(moussa);
+        } else {
+            moussa.setPassword(passwordEncoder.encode("Passer123!"));
+            moussa.setIsVerified(true);
+            moussa.setIsSuspended(false);
+            moussa = userRepository.save(moussa);
+        }
 
-            // 4. Buyer Fatou
+        // 4. Buyer Fatou
+        if (fatou == null) {
             fatou = User.builder()
                     .firstName("Fatou")
                     .lastName("Sow")
@@ -165,6 +188,7 @@ public class DataInitializer implements CommandLineRunner {
                     .role(Role.ROLE_USER)
                     .country(senegal)
                     .isVerified(true)
+                    .isSuspended(false)
                     .city("Dakar Almadies")
                     .trustScore(100.0)
                     .rating(5.0)
@@ -172,9 +196,14 @@ public class DataInitializer implements CommandLineRunner {
                     .profilePicture("https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80")
                     .build();
             fatou = userRepository.save(fatou);
-
-            log.info("Utilisateurs initiaux créés (Admin + Vendeurs + Acheteur).");
+        } else {
+            fatou.setPassword(passwordEncoder.encode("Passer123!"));
+            fatou.setIsVerified(true);
+            fatou.setIsSuspended(false);
+            fatou = userRepository.save(fatou);
         }
+
+        log.info("Comptes de test (Admin + Aminata + Moussa + Fatou) vérifiés et prêts.");
 
         if (productRepository.count() > 0 || aminata == null || moussa == null) return;
 
@@ -626,5 +655,184 @@ public class DataInitializer implements CommandLineRunner {
 
         productRepository.saveAll(products);
         log.info("Annonces initiales sénégalaises insérées avec succès ({} articles).", products.size());
+    }
+
+    private void seedPlatformSettings() {
+        if (platformSettingRepository.count() == 0) {
+            PlatformSetting settings = PlatformSetting.builder()
+                    .commissionRate(BigDecimal.valueOf(20.0))
+                    .validationFeeRate(BigDecimal.valueOf(1.0))
+                    .platformName("ReVibe FliP")
+                    .supportEmail("contact@revibeflip.com")
+                    .supportPhone("+221770000000")
+                    .currency("FCFA")
+                    .offerValidityHours(24)
+                    .reservationDurationHours(24)
+                    .demoMode(true)
+                    .build();
+            platformSettingRepository.save(settings);
+            log.info("Paramètres de plateforme initialisés (Commission: 20%, Frais validation: 1%, Mode Démo: true).");
+        }
+    }
+
+    private void seedOrdersAndAudit() {
+        if (orderRepository.count() > 0) return;
+
+        User admin = userRepository.findByPhone("+221770000000").orElse(null);
+        User aminata = userRepository.findByPhone("+221771112233").orElse(null);
+        User moussa = userRepository.findByPhone("+221774445566").orElse(null);
+        User fatou = userRepository.findByPhone("+221778889900").orElse(null);
+
+        List<Product> products = productRepository.findAll();
+        if (products.isEmpty() || fatou == null || aminata == null || moussa == null) return;
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 17 commandes réalistes réparties sur 30 jours (tous statuts & 3 moyens de paiement)
+        List<OrderSeedSpec> specs = List.of(
+                new OrderSeedSpec(0, fatou, aminata, products.get(0), BigDecimal.valueOf(35000), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.WAVE, EscrowStatus.RELEASED_TO_SELLER, 28),
+                new OrderSeedSpec(1, fatou, moussa, products.get(2), BigDecimal.valueOf(28000), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.ORANGE_MONEY, EscrowStatus.RELEASED_TO_SELLER, 25),
+                new OrderSeedSpec(2, fatou, aminata, products.get(1), BigDecimal.valueOf(18500), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.WAVE, EscrowStatus.RELEASED_TO_SELLER, 22),
+                new OrderSeedSpec(3, fatou, moussa, products.get(4), BigDecimal.valueOf(25000), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.FREE_MONEY, EscrowStatus.RELEASED_TO_SELLER, 19),
+                new OrderSeedSpec(4, fatou, aminata, products.get(6), BigDecimal.valueOf(42000), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.WAVE, EscrowStatus.RELEASED_TO_SELLER, 16),
+                new OrderSeedSpec(5, fatou, moussa, products.get(8), BigDecimal.valueOf(12000), OrderStatus.COMPLETED, DeliveryStatus.DELIVERED, PaymentMethod.ORANGE_MONEY, EscrowStatus.RELEASED_TO_SELLER, 14),
+                new OrderSeedSpec(6, fatou, aminata, products.get(3), BigDecimal.valueOf(15000), OrderStatus.CANCELLED, DeliveryStatus.CANCELLED, PaymentMethod.WAVE, EscrowStatus.REFUNDED_TO_BUYER, 12),
+                new OrderSeedSpec(7, fatou, moussa, products.get(7), BigDecimal.valueOf(22000), OrderStatus.PAID_ESCROW_LOCKED, DeliveryStatus.DISPATCHED, PaymentMethod.WAVE, EscrowStatus.LOCKED, 10),
+                new OrderSeedSpec(8, fatou, aminata, products.get(5), BigDecimal.valueOf(16000), OrderStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, PaymentMethod.ORANGE_MONEY, EscrowStatus.LOCKED, 8),
+                new OrderSeedSpec(9, fatou, moussa, products.get(10), BigDecimal.valueOf(19500), OrderStatus.DELIVERED, DeliveryStatus.DELIVERED, PaymentMethod.WAVE, EscrowStatus.LOCKED, 6),
+                new OrderSeedSpec(10, fatou, aminata, products.get(12), BigDecimal.valueOf(31000), OrderStatus.DELIVERED, DeliveryStatus.DELIVERED, PaymentMethod.FREE_MONEY, EscrowStatus.LOCKED, 4),
+                new OrderSeedSpec(11, fatou, moussa, products.get(9), BigDecimal.valueOf(14000), OrderStatus.DISPUTED, DeliveryStatus.PENDING, PaymentMethod.ORANGE_MONEY, EscrowStatus.LOCKED, 3),
+                new OrderSeedSpec(12, fatou, aminata, products.get(11), BigDecimal.valueOf(27000), OrderStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, PaymentMethod.WAVE, EscrowStatus.LOCKED, 2),
+                new OrderSeedSpec(13, fatou, moussa, products.get(13), BigDecimal.valueOf(11500), OrderStatus.PAID_ESCROW_LOCKED, DeliveryStatus.DISPATCHED, PaymentMethod.ORANGE_MONEY, EscrowStatus.LOCKED, 1),
+                new OrderSeedSpec(14, fatou, aminata, products.get(14), BigDecimal.valueOf(45000), OrderStatus.PAID_ESCROW_LOCKED, DeliveryStatus.DISPATCHED, PaymentMethod.WAVE, EscrowStatus.LOCKED, 0),
+                new OrderSeedSpec(15, fatou, moussa, products.get(15), BigDecimal.valueOf(9500), OrderStatus.PENDING_PAYMENT, DeliveryStatus.PENDING, null, null, 0),
+                new OrderSeedSpec(16, fatou, aminata, products.get(16), BigDecimal.valueOf(17000), OrderStatus.PENDING_PAYMENT, DeliveryStatus.PENDING, null, null, 0)
+        );
+
+        int counter = 101;
+        for (OrderSeedSpec s : specs) {
+            LocalDateTime orderDate = now.minusDays(s.daysAgo).minusHours((s.index * 2) % 12);
+            BigDecimal itemPrice = s.price;
+            BigDecimal validationFee = itemPrice.multiply(BigDecimal.valueOf(0.01)).setScale(0, java.math.RoundingMode.HALF_UP);
+            BigDecimal deliveryFee = BigDecimal.valueOf(1500);
+            BigDecimal totalAmount = itemPrice.add(validationFee).add(deliveryFee);
+            BigDecimal commission = itemPrice.multiply(BigDecimal.valueOf(0.20)).setScale(0, java.math.RoundingMode.HALF_UP);
+            BigDecimal sellerPayout = itemPrice.subtract(commission);
+
+            Order order = Order.builder()
+                    .orderNumber(String.format("RF-2026-%05d", counter++))
+                    .buyer(s.buyer)
+                    .seller(s.seller)
+                    .product(s.product)
+                    .itemPrice(itemPrice)
+                    .originalPrice(itemPrice)
+                    .agreedPrice(itemPrice)
+                    .validationFee(validationFee)
+                    .deliveryFee(deliveryFee)
+                    .totalAmount(totalAmount)
+                    .platformCommission(commission)
+                    .sellerPayout(sellerPayout)
+                    .deliveryMode(DeliveryMode.HOME_DELIVERY)
+                    .deliveryAddress("Almadies Zone 4, Dakar")
+                    .deliveryCity("Dakar")
+                    .deliveryPhone("+221778889900")
+                    .status(s.status)
+                    .deliveryStatus(s.deliveryStatus)
+                    .createdAt(orderDate)
+                    .updatedAt(orderDate)
+                    .build();
+
+            order = orderRepository.save(order);
+
+            if (s.paymentMethod != null && s.escrowStatus != null) {
+                Payment payment = Payment.builder()
+                        .order(order)
+                        .paymentMethod(s.paymentMethod)
+                        .transactionReference("TXN-" + System.currentTimeMillis() + "-" + s.index)
+                        .amount(totalAmount)
+                        .validationFee(validationFee)
+                        .status(s.status == OrderStatus.CANCELLED ? PaymentStatus.REFUNDED : PaymentStatus.SUCCESS)
+                        .escrowStatus(s.escrowStatus)
+                        .payerPhoneNumber("+221778889900")
+                        .createdAt(orderDate)
+                        .paymentDate(orderDate)
+                        .build();
+                paymentRepository.save(payment);
+            }
+        }
+
+        // Signalements de démonstration
+        if (reportRepository.count() == 0) {
+            Report r1 = Report.builder()
+                    .reporter(fatou)
+                    .reportedProduct(products.get(9))
+                    .reason(ReportReason.COUNTERFEIT)
+                    .details("L'étiquette sur la photo ne correspond pas à la marque déclarée.")
+                    .status(ReportStatus.PENDING)
+                    .createdAt(now.minusDays(2))
+                    .build();
+
+            Report r2 = Report.builder()
+                    .reporter(fatou)
+                    .reportedProduct(products.get(12))
+                    .reason(ReportReason.MISLEADING_LISTING)
+                    .details("La taille reçue est du 38 alors que l'annonce mentionnait du 42.")
+                    .status(ReportStatus.PENDING)
+                    .createdAt(now.minusDays(3))
+                    .build();
+
+            Report r3 = Report.builder()
+                    .reporter(moussa)
+                    .reportedUser(fatou)
+                    .reason(ReportReason.OTHER)
+                    .details("L'acheteur a demandé un paiement direct sans séquestre.")
+                    .status(ReportStatus.RESOLVED)
+                    .adminNotes("Rappel à l'ordre envoyé à l'utilisateur.")
+                    .createdAt(now.minusDays(15))
+                    .resolvedAt(now.minusDays(14))
+                    .build();
+
+            reportRepository.saveAll(List.of(r1, r2, r3));
+        }
+
+        // Actions d'audit log
+        if (adminActionLogRepository.count() == 0 && admin != null) {
+            List<AdminActionLog> logs = List.of(
+                    AdminActionLog.builder().admin(admin).actionType("SETTINGS_UPDATE").targetType("PLATFORM_SETTING").targetId("1").details("Mise à jour du taux de commission à 20%").createdAt(now.minusDays(20)).build(),
+                    AdminActionLog.builder().admin(admin).actionType("PRODUCT_STATUS_UPDATE").targetType("PRODUCT").targetId(products.get(0).getId().toString()).details("Validation manuelle annonce Bazin Riche").createdAt(now.minusDays(18)).build(),
+                    AdminActionLog.builder().admin(admin).actionType("REPORT_RESOLVED").targetType("REPORT").targetId("3").details("Résolution signalement négociation hors plateforme").createdAt(now.minusDays(15)).build(),
+                    AdminActionLog.builder().admin(admin).actionType("USER_REACTIVATE").targetType("USER").targetId(moussa.getId().toString()).details("Validation profil vendeur Moussa Ndiaye").createdAt(now.minusDays(10)).build(),
+                    AdminActionLog.builder().admin(admin).actionType("ROLE_CHANGE").targetType("USER").targetId(admin.getId().toString()).details("Confirmation privilèges ROLE_ADMIN").createdAt(now.minusDays(5)).build()
+            );
+            adminActionLogRepository.saveAll(logs);
+        }
+
+        log.info("Données dev initialisées : 17 commandes réparties sur 30j (tous statuts & 3 moyens paiement), signalements et journal d'audit.");
+    }
+
+    private static class OrderSeedSpec {
+        final int index;
+        final User buyer;
+        final User seller;
+        final Product product;
+        final BigDecimal price;
+        final OrderStatus status;
+        final DeliveryStatus deliveryStatus;
+        final PaymentMethod paymentMethod;
+        final EscrowStatus escrowStatus;
+        final int daysAgo;
+
+        OrderSeedSpec(int index, User buyer, User seller, Product product, BigDecimal price, OrderStatus status, DeliveryStatus deliveryStatus, PaymentMethod paymentMethod, EscrowStatus escrowStatus, int daysAgo) {
+            this.index = index;
+            this.buyer = buyer;
+            this.seller = seller;
+            this.product = product;
+            this.price = price;
+            this.status = status;
+            this.deliveryStatus = deliveryStatus;
+            this.paymentMethod = paymentMethod;
+            this.escrowStatus = escrowStatus;
+            this.daysAgo = daysAgo;
+        }
     }
 }

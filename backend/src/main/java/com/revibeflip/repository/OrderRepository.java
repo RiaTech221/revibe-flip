@@ -16,6 +16,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     Optional<Order> findByOrderNumber(String orderNumber);
 
+    boolean existsByOrderNumber(String orderNumber);
+
+    long countByOrderNumberStartingWith(String prefix);
+
+    void deleteByOrderNumberStartingWith(String prefix);
+
     List<Order> findByBuyerIdOrderByCreatedAtDesc(Long buyerId);
 
     List<Order> findBySellerIdOrderByCreatedAtDesc(Long sellerId);
@@ -34,6 +40,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     BigDecimal sumTotalTransactions();
 
     long countByStatus(OrderStatus status);
+
+    long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    List<Order> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    List<Order> findTop5ByOrderByCreatedAtDesc();
+
+    long countByDeliveryStatusAndStatus(com.revibeflip.entity.enums.DeliveryStatus deliveryStatus, OrderStatus status);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.status = :status AND o.createdAt BETWEEN :start AND :end")
+    long countByStatusAndCreatedAtBetween(@Param("status") OrderStatus status, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
     @Query("SELECT o FROM Order o WHERE LOWER(o.orderNumber) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Order> searchOrders(@Param("query") String query);
@@ -88,6 +105,34 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT SUM(o.sellerPayout) FROM Order o WHERE o.seller.id = :sellerId AND o.status IN ('PAID_ESCROW_LOCKED', 'SHIPPED', 'DELIVERED')")
     BigDecimal sumSellerPendingEscrow(@Param("sellerId") Long sellerId);
+
+    long countBySellerIdAndCreatedAtBetween(Long sellerId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    long countBySellerIdAndStatusAndCreatedAtBetween(Long sellerId, OrderStatus status, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    List<Order> findBySellerIdAndCreatedAtBetween(Long sellerId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    List<Order> findBySellerIdAndStatusOrderByCreatedAtDesc(Long sellerId, OrderStatus status, org.springframework.data.domain.Pageable pageable);
+
+    List<Order> findBySellerIdAndStatusOrderByCreatedAtDesc(Long sellerId, OrderStatus status);
+
+    @Query("SELECT COALESCE(SUM(o.agreedPrice), 0) FROM Order o WHERE o.seller.id = :sellerId AND o.status IN ('PAID_ESCROW_LOCKED', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'DISPUTED') AND o.createdAt BETWEEN :start AND :end")
+    BigDecimal sumSellerPaidTurnoverBetween(@Param("sellerId") Long sellerId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.sellerPayout), 0) FROM Order o WHERE o.seller.id = :sellerId AND o.status IN ('PAID_ESCROW_LOCKED', 'SHIPPED', 'DELIVERED', 'DISPUTED')")
+    BigDecimal sumSellerPendingEscrowTotal(@Param("sellerId") Long sellerId);
+
+    @Query("SELECT COALESCE(SUM(o.sellerPayout), 0) FROM Order o WHERE o.seller.id = :sellerId AND o.status IN ('PAID_ESCROW_LOCKED', 'SHIPPED', 'DELIVERED', 'DISPUTED') AND o.createdAt BETWEEN :start AND :end")
+    BigDecimal sumSellerPendingEscrowBetween(@Param("sellerId") Long sellerId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.sellerPayout), 0) FROM Order o WHERE o.seller.id = :sellerId AND o.status = 'COMPLETED' AND o.updatedAt BETWEEN :start AND :end")
+    BigDecimal sumSellerReleasedPayoutBetween(@Param("sellerId") Long sellerId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT COALESCE(SUM(o.platformCommission), 0) FROM Order o WHERE o.seller.id = :sellerId AND o.status = 'COMPLETED' AND o.updatedAt BETWEEN :start AND :end")
+    BigDecimal sumSellerCommissionPaidBetween(@Param("sellerId") Long sellerId, @Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query("SELECT o.product.id, o.product.title, COUNT(o), SUM(o.agreedPrice) FROM Order o WHERE o.seller.id = :sellerId AND o.status IN ('PAID_ESCROW_LOCKED', 'SHIPPED', 'DELIVERED', 'COMPLETED') GROUP BY o.product.id, o.product.title ORDER BY SUM(o.agreedPrice) DESC")
+    List<Object[]> findSellerTopProducts(@Param("sellerId") Long sellerId, org.springframework.data.domain.Pageable pageable);
 
     List<Order> findByStatusAndReservationExpiresAtBefore(OrderStatus status, java.time.LocalDateTime now);
 }

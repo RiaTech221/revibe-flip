@@ -46,6 +46,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     long countByStatus(ProductStatus status);
 
+    long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    java.util.List<Product> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
+
     long countByCategoryId(Long categoryId);
 
     @Query("SELECT p FROM Product p WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%'))")
@@ -77,4 +81,20 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("status") ProductStatus status,
             Pageable pageable
     );
+
+    long countBySellerIdAndCreatedAtBetween(Long sellerId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    long countBySellerIdAndDeactivationReasonIsNotNull(Long sellerId);
+
+    List<Product> findBySellerIdAndDeactivationReasonIsNotNullOrderByUpdatedAtDesc(Long sellerId);
+
+    List<Product> findBySellerIdAndStatusOrderByViewCountAscCreatedAtAsc(Long sellerId, ProductStatus status, Pageable pageable);
+
+    List<Product> findBySellerIdAndStatusOrderByCreatedAtAsc(Long sellerId, ProductStatus status, Pageable pageable);
+
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = 'ACTIVE' AND SIZE(p.images) <= 1")
+    List<Product> findSingleImageProducts(@Param("sellerId") Long sellerId);
+
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND p.status = 'ACTIVE' AND p.createdAt <= :cutoff")
+    List<Product> findOlderActiveProducts(@Param("sellerId") Long sellerId, @Param("cutoff") java.time.LocalDateTime cutoff);
 }

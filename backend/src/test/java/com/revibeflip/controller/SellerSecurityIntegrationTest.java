@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -82,5 +83,37 @@ class SellerSecurityIntegrationTest {
             mockMvc.perform(put("/api/seller/orders/" + existingOrder.getId() + "/accept"))
                     .andExpect(status().isForbidden());
         }
+    }
+
+    @Test
+    @DisplayName("Isolation Dashboard Vendeur: Vendeur A et Vendeur B ont des tableaux de bord distincts et isolés")
+    @WithMockUser(username = "+221771112233", roles = {"USER"})
+    void testSellerDashboard_Isolation_SellerA() throws Exception {
+        mockMvc.perform(get("/api/seller/dashboard?period=30d"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sellerPhone").value("+221771112233"))
+                .andExpect(jsonPath("$.data.sellerName").value("Aminata Diallo"))
+                .andExpect(jsonPath("$.data.actionItems").exists())
+                .andExpect(jsonPath("$.data.turnover").exists());
+    }
+
+    @Test
+    @DisplayName("Isolation Dashboard Vendeur: Vendeur B voit exclusivement son propre compte")
+    @WithMockUser(username = "+221774445566", roles = {"USER"})
+    void testSellerDashboard_Isolation_SellerB() throws Exception {
+        mockMvc.perform(get("/api/seller/dashboard?period=30d"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.sellerPhone").value("+221774445566"))
+                .andExpect(jsonPath("$.data.sellerName").value("Moussa Ndiaye"));
+    }
+
+    @Test
+    @DisplayName("Dashboard Vendeur: Périodes 7d, 30d, 90d, month et custom acceptées")
+    @WithMockUser(username = "+221771112233", roles = {"USER"})
+    void testSellerDashboard_AllPeriodsSupported() throws Exception {
+        mockMvc.perform(get("/api/seller/dashboard?period=7d")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/seller/dashboard?period=90d")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/seller/dashboard?period=month")).andExpect(status().isOk());
+        mockMvc.perform(get("/api/seller/dashboard?period=custom&from=2026-11-01&to=2026-11-11")).andExpect(status().isOk());
     }
 }

@@ -97,16 +97,23 @@ public class SellerController {
     // 2. DASHBOARD VENDEUR
     // ==========================================
     @GetMapping("/dashboard")
-    @Operation(summary = "Tableau de bord vendeur (KPIs complets)", description = "Annonces par statut, commandes à traiter, chiffre d'affaires, commission 20% et net vendeur 80% lus depuis les paramètres.")
+    @Operation(summary = "Tableau de bord vendeur complet", description = "Données strictement isolées au vendeur connecté, calculées selon le fuseau Africa/Dakar avec variations vs période précédente. Périodes : 7d, 30d, 90d, month, custom.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Statistiques dashboard récupérées"),
+            @ApiResponse(responseCode = "400", description = "Requête invalide"),
             @ApiResponse(responseCode = "401", description = "Non authentifié")
     })
     public ResponseEntity<com.revibeflip.dto.ApiResponse<SellerDashboardDto>> getDashboard(
-            Authentication authentication
+            Authentication authentication,
+            @Parameter(description = "Période temporelle (7d, 30d, 90d, month, custom)")
+            @RequestParam(required = false, defaultValue = "30d") String period,
+            @Parameter(description = "Date début personnalisée (YYYY-MM-DD)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @Parameter(description = "Date fin personnalisée (YYYY-MM-DD)")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to
     ) {
         User seller = resolveSeller(authentication);
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerDashboard(seller)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerDashboard(seller, period, from, to)));
     }
 
     // ==========================================

@@ -39,6 +39,7 @@ class SellerServiceTest {
     @Mock private ReportRepository reportRepository;
     @Mock private PlatformSettingRepository platformSettingRepository;
     @Mock private CountryRepository countryRepository;
+    @Mock private ChatOfferRepository chatOfferRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
 
     @InjectMocks
@@ -103,16 +104,47 @@ class SellerServiceTest {
         when(productRepository.countBySellerIdAndStatus(1L, ProductStatus.SOLD)).thenReturn(1L);
         when(productRepository.countBySellerIdAndStatus(1L, ProductStatus.INACTIVE)).thenReturn(0L);
         when(productRepository.countBySellerIdAndStatus(1L, ProductStatus.DRAFT)).thenReturn(1L);
+        when(productRepository.countBySellerIdAndDeactivationReasonIsNotNull(1L)).thenReturn(1L);
 
         when(orderRepository.countBySellerIdAndStatus(1L, OrderStatus.PAID_ESCROW_LOCKED)).thenReturn(2L);
-        when(orderRepository.sumSellerCompletedTurnover(1L)).thenReturn(BigDecimal.valueOf(100000));
-        when(orderRepository.sumSellerCommissionPaid(1L)).thenReturn(BigDecimal.valueOf(20000));
-        when(orderRepository.sumSellerCompletedPayout(1L)).thenReturn(BigDecimal.valueOf(80000));
-        when(orderRepository.sumSellerPendingEscrow(1L)).thenReturn(BigDecimal.valueOf(40000));
+        when(orderRepository.countBySellerIdAndStatus(1L, OrderStatus.DISPUTED)).thenReturn(0L);
 
-        when(orderRepository.searchSellerOrdersPage(eq(1L), any(), any(), any())).thenReturn(org.springframework.data.domain.Page.empty());
+        Order paidOrder = Order.builder()
+                .id(1L)
+                .orderNumber("RF-TEST-001")
+                .agreedPrice(BigDecimal.valueOf(50000))
+                .sellerPayout(BigDecimal.valueOf(40000))
+                .platformCommission(BigDecimal.valueOf(10000))
+                .status(OrderStatus.PAID_ESCROW_LOCKED)
+                .createdAt(LocalDateTime.now().minusDays(2))
+                .build();
 
-        SellerDashboardDto dashboard = sellerService.getSellerDashboard(sellerA);
+        Order completedOrder = Order.builder()
+                .id(2L)
+                .orderNumber("RF-TEST-002")
+                .agreedPrice(BigDecimal.valueOf(30000))
+                .sellerPayout(BigDecimal.valueOf(24000))
+                .platformCommission(BigDecimal.valueOf(6000))
+                .status(OrderStatus.COMPLETED)
+                .createdAt(LocalDateTime.now().minusDays(10))
+                .build();
+
+        when(orderRepository.findBySellerIdAndCreatedAtBetween(eq(1L), any(), any()))
+                .thenReturn(List.of(paidOrder, completedOrder));
+
+        when(reviewRepository.countByTargetUserId(1L)).thenReturn(2L);
+        when(reviewRepository.calculateAverageRating(1L)).thenReturn(4.5);
+        when(reviewRepository.countByTargetUserIdAndRating(eq(1L), anyInt())).thenReturn(1L);
+
+        when(messageRepository.countConversationsWithUnreadForUser(1L)).thenReturn(1L);
+        when(messageRepository.countTotalUnreadForUser(1L)).thenReturn(3L);
+
+        when(reviewRepository.findByTargetUserIdOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        SellerDashboardDto dashboard = sellerService.getSellerDashboard(sellerA, "30d", null, null);
 
         assertNotNull(dashboard);
         assertEquals("Aminata Diallo", dashboard.getSellerName());
@@ -120,11 +152,79 @@ class SellerServiceTest {
         assertEquals(3, dashboard.getActiveProducts());
         assertEquals(1, dashboard.getDraftProducts());
         assertEquals(2, dashboard.getOrdersToProcess());
-        assertEquals(BigDecimal.valueOf(100000), dashboard.getTurnover());
-        assertEquals(BigDecimal.valueOf(20000), dashboard.getPlatformCommission());
-        assertEquals(BigDecimal.valueOf(80000), dashboard.getNetEarnings());
+
+        // Chiffre d'affaires payé = 50000 + 30000 = 80000
+        assertEquals(BigDecimal.valueOf(80000), dashboard.getTurnover().getValue());
+        // Gains en attente (LOCKED) = 40000
+        assertEquals(BigDecimal.valueOf(40000), dashboard.getPendingEscrow().getValue());
+        // Gains libérés (COMPLETED) = 24000
+        assertEquals(BigDecimal.valueOf(24000), dashboard.getReleasedEarnings().getValue());
+        // Commissions prélevées = 10000 + 6000 = 16000
+        assertEquals(BigDecimal.valueOf(16000), dashboard.getPlatformCommission().getValue());
+
+        // Note vendeur
+        assertTrue(dashboard.getRating().isHasReviews());
+        assertEquals(4.5, dashboard.getRating().getAverageRating());
+        assertEquals("4.5", dashboard.getRating().getDisplayRating());
+
+        // Action items (À faire)
+        assertNotNull(dashboard.getActionItems());
+        assertTrue(dashboard.getActionItems().isHasItemsToHandle());
+        assertEquals(2, dashboard.getActionItems().getOrdersToPrepare());
+        assertEquals(1, dashboard.getActionItems().getUnreadConversations());
+
+        // Taux dynamiques
         assertEquals(BigDecimal.valueOf(20.0), dashboard.getCommissionRate());
         assertEquals(BigDecimal.valueOf(1.0), dashboard.getValidationFeeRate());
+    }
+
+    @Test
+    @DisplayName("Dashboard Vendeur: Zéro avis affiche 'Pas encore d'avis' et note null")
+    void testSellerDashboard_ZeroReviews_DisplaysPasEncoreDAvis() {
+        PlatformSetting settings = PlatformSetting.builder()
+                .commissionRate(BigDecimal.valueOf(20.0))
+                .validationFeeRate(BigDecimal.valueOf(1.0))
+                .build();
+        when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings));
+
+        when(reviewRepository.countByTargetUserId(1L)).thenReturn(0L);
+        when(reviewRepository.calculateAverageRating(1L)).thenReturn(null);
+
+        when(reviewRepository.findByTargetUserIdOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc(eq(1L), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        SellerDashboardDto dashboard = sellerService.getSellerDashboard(sellerA, "30d", null, null);
+
+        assertNotNull(dashboard);
+        assertNotNull(dashboard.getRating());
+        assertFalse(dashboard.getRating().isHasReviews());
+        assertNull(dashboard.getRating().getAverageRating());
+        assertEquals("Pas encore d'avis", dashboard.getRating().getDisplayRating());
+    }
+
+    @Test
+    @DisplayName("Dashboard Vendeur: Isolation stricte des données entre vendeurs")
+    void testSellerDashboard_StrictIsolationBetweenSellers() {
+        PlatformSetting settings = PlatformSetting.builder()
+                .commissionRate(BigDecimal.valueOf(20.0))
+                .validationFeeRate(BigDecimal.valueOf(1.0))
+                .build();
+        when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(settings));
+
+        when(reviewRepository.findByTargetUserIdOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+        when(notificationRepository.findByUserIdOrderByCreatedAtDesc(any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        sellerService.getSellerDashboard(sellerA, "7d", null, null);
+        verify(productRepository).countBySellerId(1L);
+        verify(orderRepository).findBySellerIdAndCreatedAtBetween(eq(1L), any(), any());
+
+        sellerService.getSellerDashboard(sellerB, "7d", null, null);
+        verify(productRepository).countBySellerId(2L);
+        verify(orderRepository).findBySellerIdAndCreatedAtBetween(eq(2L), any(), any());
     }
 
     @Test

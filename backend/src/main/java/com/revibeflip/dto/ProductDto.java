@@ -31,6 +31,7 @@ public class ProductDto {
     private String condition;
     private String conditionLabel;
     private String status;
+    private String deactivationReason;
     private Long categoryId;
     private String categoryName;
     private String categorySlug;
@@ -65,6 +66,7 @@ public class ProductDto {
                 .condition(product.getCondition().name())
                 .conditionLabel(product.getCondition().getLabel())
                 .status(product.getStatus().name())
+                .deactivationReason(product.getDeactivationReason())
                 .categoryId(product.getCategory() != null ? product.getCategory().getId() : null)
                 .categoryName(product.getCategory() != null ? product.getCategory().getName() : null)
                 .categorySlug(product.getCategory() != null ? product.getCategory().getSlug() : null)

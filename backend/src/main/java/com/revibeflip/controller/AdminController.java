@@ -42,19 +42,45 @@ public class AdminController {
 
     private final AdminService adminService;
     private final ReportService reportService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.revibeflip.config.DevDataSeeder devDataSeeder;
 
     // ==========================================
     // 2. DASHBOARD (VUE D'ENSEMBLE)
     // ==========================================
     @GetMapping("/dashboard")
-    @Operation(summary = "Statistiques et indicateurs clés", description = "Retourne le nombre d'utilisateurs actifs/suspendus, annonces, commandes, volume de transactions, commissions (20%), frais validation (1%), tendances 7 jours et répartition des paiements.")
+    @Operation(
+            summary = "Tableau de bord administrateur (Vue d'ensemble)",
+            description = "Agrège l'ensemble des métriques de la plateforme (revenus, commissions réelles, séquestre, commandes, transactions, panier moyen, entonnoir, répartition mobile money, nouveaux inscrits) avec variations calculées sur la période précédente de même durée. Fuseau horaire de référence : Africa/Dakar (UTC+0). Mise en cache courte de 30 secondes."
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Statistiques récupérées avec succès"),
+            @ApiResponse(responseCode = "200", description = "Données du tableau de bord récupérées avec succès"),
+            @ApiResponse(responseCode = "400", description = "Paramètres de période ou dates incohérentes"),
             @ApiResponse(responseCode = "401", description = "Non authentifié (Jeton JWT manquant ou expiré)"),
             @ApiResponse(responseCode = "403", description = "Accès refusé (ROLE_ADMIN obligatoire)")
     })
-    public ResponseEntity<com.revibeflip.dto.ApiResponse<AdminDashboardDto>> getDashboardStats() {
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getDashboardStats()));
+    public ResponseEntity<com.revibeflip.dto.ApiResponse<AdminDashboardDto>> getDashboardStats(
+            @Parameter(description = "Période d'agrégation : '7d' (7 jours), '30d' (30 jours), '90d' (90 jours), 'month' (mois en cours), ou 'custom' (personnalisé)", example = "30d")
+            @RequestParam(defaultValue = "30d") String period,
+            @Parameter(description = "Date de début personnalisée au format YYYY-MM-DD (requis si period=custom)", example = "2026-10-01")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @Parameter(description = "Date de fin personnalisée au format YYYY-MM-DD (requis si period=custom)", example = "2026-10-31")
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to
+    ) {
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getDashboardStats(period, from, to)));
+    }
+
+    @PostMapping("/dev/reseed")
+    @Operation(summary = "Réinitialiser et re-seeder les données de test (dev)", description = "Supprime les commandes dev et réinsère 15 commandes à tous statuts, 3 paiements, 3 signalements, logs d'audit.")
+    public ResponseEntity<com.revibeflip.dto.ApiResponse<String>> reseedDevData(
+            @Parameter(description = "Si true, supprime et réinsère les commandes de test dev")
+            @RequestParam(defaultValue = "false") boolean forceReset
+    ) {
+        if (devDataSeeder != null) {
+            devDataSeeder.seedAll(forceReset);
+            return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok("Seed dev réexécuté avec succès (15 commandes, tous statuts, Wave, OM, Free Money)."));
+        }
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok("DevDataSeeder non actif sur ce profil."));
     }
 
     // ==========================================

@@ -21,6 +21,11 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            "AND m.sender.id <> :userId AND m.isRead = false")
     long countTotalUnreadForUser(@Param("userId") Long userId);
 
+    @Query("SELECT COUNT(DISTINCT m.conversation.id) FROM Message m WHERE m.conversation.id IN " +
+           "(SELECT c.id FROM Conversation c WHERE c.buyer.id = :userId OR c.seller.id = :userId) " +
+           "AND m.sender.id <> :userId AND m.isRead = false")
+    long countConversationsWithUnreadForUser(@Param("userId") Long userId);
+
     @Modifying
     @Query("UPDATE Message m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.sender.id <> :userId")
     void markAsReadForUser(@Param("conversationId") Long conversationId, @Param("userId") Long userId);

@@ -48,7 +48,20 @@ public class SellerService {
     private final ReportRepository reportRepository;
     private final PlatformSettingRepository platformSettingRepository;
     private final CountryRepository countryRepository;
+    private final ChatOfferRepository chatOfferRepository;
     private final SimpMessagingTemplate messagingTemplate;
+
+    private static class SellerDashboardCacheEntry {
+        final SellerDashboardDto data;
+        final long expiresAt;
+
+        SellerDashboardCacheEntry(SellerDashboardDto data, long expiresAt) {
+            this.data = data;
+            this.expiresAt = expiresAt;
+        }
+    }
+
+    private final Map<String, SellerDashboardCacheEntry> sellerDashboardCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     // ==========================================
     // 1. COMPTE ET PROFIL VENDEUR
@@ -121,75 +134,586 @@ public class SellerService {
     // 2. TABLEAU DE BORD VENDEUR (DASHBOARD)
     // ==========================================
     public SellerDashboardDto getSellerDashboard(User seller) {
+        return getSellerDashboard(seller, "30d", null, null);
+    }
+
+    public SellerDashboardDto getSellerDashboard(User seller, String period, java.time.LocalDate from, java.time.LocalDate to) {
         Long sellerId = seller.getId();
+        String cleanPeriod = (period == null || period.isBlank()) ? "30d" : period.toLowerCase().trim();
+        String cacheKey = sellerId + "_" + cleanPeriod + "_" + (from != null ? from.toString() : "") + "_" + (to != null ? to.toString() : "");
 
-        // Récupération dynamique des taux de la plateforme (Point 2 & 4)
+        long nowMillis = System.currentTimeMillis();
+        SellerDashboardCacheEntry cached = sellerDashboardCache.get(cacheKey);
+        if (cached != null && cached.expiresAt > nowMillis) {
+            return cached.data;
+        }
+
+        java.time.ZoneId dakarZone = java.time.ZoneId.of("Africa/Dakar");
+        java.time.ZonedDateTime nowZoned = java.time.ZonedDateTime.now(dakarZone);
+
+        LocalDateTime currentStart;
+        LocalDateTime currentEnd = nowZoned.toLocalDate().atTime(23, 59, 59);
+        LocalDateTime previousStart;
+        LocalDateTime previousEnd;
+        long daysCount;
+
+        if ("7d".equals(cleanPeriod)) {
+            daysCount = 7;
+            currentStart = nowZoned.minusDays(6).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(7);
+        } else if ("90d".equals(cleanPeriod)) {
+            daysCount = 90;
+            currentStart = nowZoned.minusDays(89).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(90);
+        } else if ("month".equals(cleanPeriod)) {
+            java.time.LocalDate firstOfMonth = nowZoned.toLocalDate().withDayOfMonth(1);
+            currentStart = firstOfMonth.atStartOfDay();
+            daysCount = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(firstOfMonth, nowZoned.toLocalDate()) + 1);
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(daysCount);
+        } else if ("custom".equals(cleanPeriod) && from != null && to != null) {
+            if (from.isAfter(to)) {
+                java.time.LocalDate tmp = from; from = to; to = tmp;
+            }
+            currentStart = from.atStartOfDay();
+            currentEnd = to.atTime(23, 59, 59);
+            daysCount = Math.max(1, java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1);
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(daysCount);
+        } else {
+            cleanPeriod = "30d";
+            daysCount = 30;
+            currentStart = nowZoned.minusDays(29).toLocalDate().atStartOfDay();
+            previousEnd = currentStart.minusSeconds(1);
+            previousStart = currentStart.minusDays(30);
+        }
+
+        // Taux plateforme (PlatformSetting)
         PlatformSetting settings = platformSettingRepository.findFirstByOrderByIdAsc().orElse(null);
-        BigDecimal commissionRate = settings != null ? settings.getCommissionRate() : BigDecimal.valueOf(20.0);
-        BigDecimal validationFeeRate = settings != null ? settings.getValidationFeeRate() : BigDecimal.valueOf(1.0);
+        BigDecimal commissionRate = settings != null && settings.getCommissionRate() != null ? settings.getCommissionRate() : BigDecimal.valueOf(20.0);
+        BigDecimal validationFeeRate = settings != null && settings.getValidationFeeRate() != null ? settings.getValidationFeeRate() : BigDecimal.valueOf(1.0);
+        boolean demoMode = settings != null && Boolean.TRUE.equals(settings.getDemoMode());
 
+        // Format label "Vendeur depuis [mois année]"
+        String sellerSinceLabel = "Vendeur récemment";
+        if (seller.getCreatedAt() != null) {
+            java.time.format.DateTimeFormatter monthYearFmt = java.time.format.DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH);
+            sellerSinceLabel = "Vendeur depuis " + seller.getCreatedAt().format(monthYearFmt);
+        }
+
+        // 1. Annonces
         long totalProducts = productRepository.countBySellerId(sellerId);
         long activeProducts = productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.ACTIVE);
         long soldProducts = productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.SOLD);
         long inactiveProducts = productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.INACTIVE);
         long draftProducts = productRepository.countBySellerIdAndStatus(sellerId, ProductStatus.DRAFT);
+        long disabledProducts = productRepository.countBySellerIdAndDeactivationReasonIsNotNull(sellerId);
 
-        // Commandes à traiter (PAID_ESCROW_LOCKED) et en cours de livraison (SHIPPED / DELIVERED)
-        long ordersToProcess = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.PAID_ESCROW_LOCKED);
-        long shippedOrders = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.SHIPPED);
-        long deliveredOrders = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.DELIVERED);
-        long completedOrders = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.COMPLETED);
+        long currentNewProducts = productRepository.countBySellerIdAndCreatedAtBetween(sellerId, currentStart, currentEnd);
+        long prevNewProducts = productRepository.countBySellerIdAndCreatedAtBetween(sellerId, previousStart, previousEnd);
+        Double listingsChange = calculatePercentageChange(currentNewProducts, prevNewProducts);
 
-        // Calculs financiers
-        BigDecimal turnover = orderRepository.sumSellerCompletedTurnover(sellerId);
-        if (turnover == null) turnover = BigDecimal.ZERO;
+        SellerDashboardDto.MetricWithChangeDto listingsMetric = SellerDashboardDto.MetricWithChangeDto.builder()
+                .value(BigDecimal.valueOf(totalProducts))
+                .previousValue(BigDecimal.valueOf(Math.max(0, totalProducts - currentNewProducts + prevNewProducts)))
+                .changePercentage(listingsChange)
+                .count(totalProducts)
+                .activeCount(activeProducts)
+                .soldCount(soldProducts)
+                .inactiveCount(inactiveProducts)
+                .draftCount(draftProducts)
+                .disabledCount(disabledProducts)
+                .build();
 
-        BigDecimal commission = orderRepository.sumSellerCommissionPaid(sellerId);
-        if (commission == null) commission = BigDecimal.ZERO;
+        // 2. Commandes de la période et précédente
+        List<Order> currentOrders = orderRepository.findBySellerIdAndCreatedAtBetween(sellerId, currentStart, currentEnd);
+        List<Order> previousOrders = orderRepository.findBySellerIdAndCreatedAtBetween(sellerId, previousStart, previousEnd);
 
-        BigDecimal netEarnings = orderRepository.sumSellerCompletedPayout(sellerId);
-        if (netEarnings == null) netEarnings = BigDecimal.ZERO;
+        // Map commandes par statut
+        Map<String, Long> ordersByStatus = new LinkedHashMap<>();
+        for (OrderStatus st : OrderStatus.values()) {
+            ordersByStatus.put(st.name(), 0L);
+        }
+        for (Order o : currentOrders) {
+            ordersByStatus.put(o.getStatus().name(), ordersByStatus.getOrDefault(o.getStatus().name(), 0L) + 1);
+        }
 
-        BigDecimal pendingEscrow = orderRepository.sumSellerPendingEscrow(sellerId);
-        if (pendingEscrow == null) pendingEscrow = BigDecimal.ZERO;
+        long ordersPendingPayment = ordersByStatus.getOrDefault(OrderStatus.PENDING_PAYMENT.name(), 0L);
+        long ordersPaidToPrepare = ordersByStatus.getOrDefault(OrderStatus.PAID_ESCROW_LOCKED.name(), 0L);
+        long ordersShipped = ordersByStatus.getOrDefault(OrderStatus.SHIPPED.name(), 0L);
+        long ordersDelivered = ordersByStatus.getOrDefault(OrderStatus.DELIVERED.name(), 0L);
+        long ordersCompleted = ordersByStatus.getOrDefault(OrderStatus.COMPLETED.name(), 0L);
+        long ordersCancelled = ordersByStatus.getOrDefault(OrderStatus.CANCELLED.name(), 0L);
+        long ordersExpired = ordersByStatus.getOrDefault(OrderStatus.EXPIRED.name(), 0L);
+        long ordersDisputed = ordersByStatus.getOrDefault(OrderStatus.DISPUTED.name(), 0L);
 
-        Double averageRating = reviewRepository.calculateAverageRating(sellerId);
-        if (averageRating == null) averageRating = 5.0;
-        long reviewCount = reviewRepository.countByTargetUserId(sellerId);
+        long totalOrdersInPeriod = currentOrders.size();
+        long prevOrdersInPeriod = previousOrders.size();
+        Double ordersChange = calculatePercentageChange(totalOrdersInPeriod, prevOrdersInPeriod);
 
-        long unreadMessagesCount = messageRepository.countTotalUnreadForUser(sellerId);
+        SellerDashboardDto.MetricWithChangeDto ordersMetric = SellerDashboardDto.MetricWithChangeDto.builder()
+                .value(BigDecimal.valueOf(totalOrdersInPeriod))
+                .previousValue(BigDecimal.valueOf(prevOrdersInPeriod))
+                .changePercentage(ordersChange)
+                .count(totalOrdersInPeriod)
+                .build();
 
-        // Dernières commandes
-        Pageable top5 = PageRequest.of(0, 5, Sort.by("createdAt").descending());
-        Page<Order> recentOrdersPage = orderRepository.searchSellerOrdersPage(sellerId, null, null, top5);
-        List<OrderDto> recentOrders = recentOrdersPage.getContent().stream()
+        // 3. Chiffre d'affaires (somme des prix convenus des commandes payées)
+        BigDecimal currentTurnover = currentOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getAgreedPrice() != null ? o.getAgreedPrice() : (o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal previousTurnover = previousOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getAgreedPrice() != null ? o.getAgreedPrice() : (o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Double turnoverChange = calculatePercentageChange(currentTurnover, previousTurnover);
+
+        // 4. Gains en attente (net vendeur sur fonds LOCKED: PAID_ESCROW_LOCKED, SHIPPED, DELIVERED, DISPUTED)
+        BigDecimal currentPendingEscrow = currentOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.PAID_ESCROW_LOCKED || o.getStatus() == OrderStatus.SHIPPED || o.getStatus() == OrderStatus.DELIVERED || o.getStatus() == OrderStatus.DISPUTED)
+                .map(o -> o.getSellerPayout() != null ? o.getSellerPayout() : (o.getAgreedPrice() != null ? o.getAgreedPrice().multiply(BigDecimal.valueOf(100).subtract(commissionRate)).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal previousPendingEscrow = previousOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.PAID_ESCROW_LOCKED || o.getStatus() == OrderStatus.SHIPPED || o.getStatus() == OrderStatus.DELIVERED || o.getStatus() == OrderStatus.DISPUTED)
+                .map(o -> o.getSellerPayout() != null ? o.getSellerPayout() : (o.getAgreedPrice() != null ? o.getAgreedPrice().multiply(BigDecimal.valueOf(100).subtract(commissionRate)).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Double pendingEscrowChange = calculatePercentageChange(currentPendingEscrow, previousPendingEscrow);
+
+        // 5. Gains libérés (net vendeur sur commandes COMPLETED)
+        BigDecimal currentReleasedEarnings = currentOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
+                .map(o -> o.getSellerPayout() != null ? o.getSellerPayout() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal previousReleasedEarnings = previousOrders.stream()
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
+                .map(o -> o.getSellerPayout() != null ? o.getSellerPayout() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Double releasedEarningsChange = calculatePercentageChange(currentReleasedEarnings, previousReleasedEarnings);
+
+        // 6. Commission plateforme prélevée
+        BigDecimal currentPlatformCommission = currentOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getPlatformCommission() != null ? o.getPlatformCommission() : (o.getAgreedPrice() != null ? o.getAgreedPrice().multiply(commissionRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal previousPlatformCommission = previousOrders.stream()
+                .filter(o -> isPaidStatus(o.getStatus()))
+                .map(o -> o.getPlatformCommission() != null ? o.getPlatformCommission() : (o.getAgreedPrice() != null ? o.getAgreedPrice().multiply(commissionRate).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Double platformCommissionChange = calculatePercentageChange(currentPlatformCommission, previousPlatformCommission);
+
+        // 7. Panier moyen
+        long currentPaidOrdersCount = currentOrders.stream().filter(o -> isPaidStatus(o.getStatus())).count();
+        long previousPaidOrdersCount = previousOrders.stream().filter(o -> isPaidStatus(o.getStatus())).count();
+
+        BigDecimal currentAvgBasket = currentPaidOrdersCount > 0
+                ? currentTurnover.divide(BigDecimal.valueOf(currentPaidOrdersCount), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+        BigDecimal previousAvgBasket = previousPaidOrdersCount > 0
+                ? previousTurnover.divide(BigDecimal.valueOf(previousPaidOrdersCount), 0, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        Double avgBasketChange = calculatePercentageChange(currentAvgBasket, previousAvgBasket);
+
+        // 8. Offres et taux d'acceptation
+        long currentOffersTotal = chatOfferRepository.countBySellerIdAndCreatedAtBetween(sellerId, currentStart, currentEnd);
+        long prevOffersTotal = chatOfferRepository.countBySellerIdAndCreatedAtBetween(sellerId, previousStart, previousEnd);
+
+        long currentAcceptedOffers = chatOfferRepository.countBySellerIdAndStatusAndCreatedAtBetween(sellerId, OfferStatus.OFFER_ACCEPTED, currentStart, currentEnd);
+        long prevAcceptedOffers = chatOfferRepository.countBySellerIdAndStatusAndCreatedAtBetween(sellerId, OfferStatus.OFFER_ACCEPTED, previousStart, previousEnd);
+
+        double currentAcceptanceRate = currentOffersTotal > 0 ? (currentAcceptedOffers * 100.0 / currentOffersTotal) : 0.0;
+        double prevAcceptanceRate = prevOffersTotal > 0 ? (prevAcceptedOffers * 100.0 / prevOffersTotal) : 0.0;
+        Double acceptanceRateChange = calculatePercentageChange(BigDecimal.valueOf(currentAcceptanceRate), BigDecimal.valueOf(prevAcceptanceRate));
+
+        // 9. Avis & note vendeur (si 0 avis -> afficher "Pas encore d'avis" et avgRating null)
+        long totalReviews = reviewRepository.countByTargetUserId(sellerId);
+        Double avgRatingRaw = reviewRepository.calculateAverageRating(sellerId);
+        Double avgRating = (totalReviews > 0 && avgRatingRaw != null) ? Math.round(avgRatingRaw * 10.0) / 10.0 : null;
+        String displayRating = (totalReviews > 0 && avgRating != null) ? String.format(Locale.US, "%.1f", avgRating) : "Pas encore d'avis";
+
+        Map<Integer, Long> ratingDistribution = new LinkedHashMap<>();
+        for (int stars = 5; stars >= 1; stars--) {
+            ratingDistribution.put(stars, reviewRepository.countByTargetUserIdAndRating(sellerId, stars));
+        }
+
+        SellerDashboardDto.SellerRatingDto ratingDto = SellerDashboardDto.SellerRatingDto.builder()
+                .averageRating(avgRating)
+                .totalReviews(totalReviews)
+                .hasReviews(totalReviews > 0)
+                .displayRating(displayRating)
+                .distribution(ratingDistribution)
+                .build();
+
+        // 10. Messages non lus
+        long unreadConversations = messageRepository.countConversationsWithUnreadForUser(sellerId);
+        long unreadMessages = messageRepository.countTotalUnreadForUser(sellerId);
+
+        // 11. Bandeau « À faire »
+        long ordersToPrepareCount = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.PAID_ESCROW_LOCKED);
+        long pendingOffersCount = chatOfferRepository.countBySellerIdAndStatus(sellerId, OfferStatus.OFFER_SENT);
+        long disputedOrdersCount = orderRepository.countBySellerIdAndStatus(sellerId, OrderStatus.DISPUTED);
+        long disabledListingsCount = disabledProducts;
+
+        long totalToHandle = ordersToPrepareCount + pendingOffersCount + unreadConversations + disputedOrdersCount + disabledListingsCount;
+
+        // Détails des annonces désactivées par l'admin avec motif
+        List<SellerDashboardDto.DisabledListingSummaryDto> disabledListingsDetails = productRepository
+                .findBySellerIdAndDeactivationReasonIsNotNullOrderByUpdatedAtDesc(sellerId).stream()
+                .limit(5)
+                .map(p -> SellerDashboardDto.DisabledListingSummaryDto.builder()
+                        .id(p.getId())
+                        .title(p.getTitle())
+                        .deactivationReason(p.getDeactivationReason())
+                        .price(p.getPrice())
+                        .primaryImage(p.getPrimaryImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        // Détails des offres en attente avec temps restant
+        LocalDateTime nowUtc = LocalDateTime.now();
+        List<SellerDashboardDto.PendingOfferSummaryDto> pendingOffersDetails = chatOfferRepository
+                .findPendingOffersExpiringSoonest(sellerId, nowUtc, PageRequest.of(0, 5)).stream()
+                .map(o -> {
+                    long hoursLeft = java.time.Duration.between(nowUtc, o.getExpiresAt()).toHours();
+                    long minsLeft = java.time.Duration.between(nowUtc, o.getExpiresAt()).toMinutes() % 60;
+                    String remaining = hoursLeft > 0 ? "Expire dans " + hoursLeft + " h" : "Expire dans " + Math.max(1, minsLeft) + " min";
+                    return SellerDashboardDto.PendingOfferSummaryDto.builder()
+                            .id(o.getId())
+                            .productId(o.getProduct().getId())
+                            .productTitle(o.getProduct().getTitle())
+                            .buyerName(o.getBuyer().getFullName())
+                            .agreedPrice(o.getAgreedPrice())
+                            .expiresAt(o.getExpiresAt())
+                            .remainingTimeLabel(remaining)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        SellerDashboardDto.SellerActionItemsDto actionItems = SellerDashboardDto.SellerActionItemsDto.builder()
+                .ordersToPrepare(ordersToPrepareCount)
+                .pendingOffers(pendingOffersCount)
+                .unreadConversations(unreadConversations)
+                .disputedOrders(disputedOrdersCount)
+                .disabledListings(disabledListingsCount)
+                .totalToHandle(totalToHandle)
+                .hasItemsToHandle(totalToHandle > 0)
+                .disabledListingsDetails(disabledListingsDetails)
+                .pendingOffersDetails(pendingOffersDetails)
+                .build();
+
+        // 12. Tendance des ventes par jour / semaine
+        List<SalesTrendDto> salesTrends = new ArrayList<>();
+        List<BigDecimal> revenueSparkline = new ArrayList<>();
+        List<BigDecimal> ordersSparkline = new ArrayList<>();
+
+        if (daysCount <= 31) {
+            java.time.LocalDate cursor = currentStart.toLocalDate();
+            java.time.LocalDate endDay = currentEnd.toLocalDate();
+            java.time.format.DateTimeFormatter dakarDayFmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+
+            while (!cursor.isAfter(endDay)) {
+                final java.time.LocalDate targetDay = cursor;
+                List<Order> dayOrders = currentOrders.stream()
+                        .filter(o -> o.getCreatedAt() != null && o.getCreatedAt().toLocalDate().isEqual(targetDay) && isPaidStatus(o.getStatus()))
+                        .toList();
+
+                BigDecimal dayAmount = dayOrders.stream()
+                        .map(o -> o.getAgreedPrice() != null ? o.getAgreedPrice() : (o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                int dayOrderCount = dayOrders.size();
+                salesTrends.add(new SalesTrendDto(targetDay.format(dakarDayFmt), dayAmount, dayOrderCount));
+                revenueSparkline.add(dayAmount);
+                ordersSparkline.add(BigDecimal.valueOf(dayOrderCount));
+
+                cursor = cursor.plusDays(1);
+            }
+        } else {
+            java.time.LocalDate cursor = currentStart.toLocalDate();
+            java.time.LocalDate endDay = currentEnd.toLocalDate();
+            java.time.format.DateTimeFormatter dakarDayFmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+            int weekIndex = 1;
+
+            while (!cursor.isAfter(endDay)) {
+                java.time.LocalDate weekEnd = cursor.plusDays(6).isAfter(endDay) ? endDay : cursor.plusDays(6);
+                final java.time.LocalDate wStart = cursor;
+                final java.time.LocalDate wEnd = weekEnd;
+
+                List<Order> weekOrders = currentOrders.stream()
+                        .filter(o -> o.getCreatedAt() != null)
+                        .filter(o -> {
+                            java.time.LocalDate d = o.getCreatedAt().toLocalDate();
+                            return !d.isBefore(wStart) && !d.isAfter(wEnd) && isPaidStatus(o.getStatus());
+                        })
+                        .toList();
+
+                BigDecimal weekAmount = weekOrders.stream()
+                        .map(o -> o.getAgreedPrice() != null ? o.getAgreedPrice() : (o.getItemPrice() != null ? o.getItemPrice() : o.getTotalAmount()))
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                int weekOrderCount = weekOrders.size();
+                String label = "S" + weekIndex + " (" + cursor.format(dakarDayFmt) + ")";
+                salesTrends.add(new SalesTrendDto(label, weekAmount, weekOrderCount));
+                revenueSparkline.add(weekAmount);
+                ordersSparkline.add(BigDecimal.valueOf(weekOrderCount));
+
+                cursor = weekEnd.plusDays(1);
+                weekIndex++;
+            }
+        }
+
+        // 13. Entonnoir des commandes
+        List<OrderFunnelStepDto> orderFunnel = new ArrayList<>();
+        orderFunnel.add(new OrderFunnelStepDto("PENDING_PAYMENT", "En attente paiement", ordersPendingPayment, 0));
+        orderFunnel.add(new OrderFunnelStepDto("PAID_ESCROW_LOCKED", "Payées à préparer", ordersPaidToPrepare, 0));
+        orderFunnel.add(new OrderFunnelStepDto("SHIPPED", "Expédiées", ordersShipped, 0));
+        orderFunnel.add(new OrderFunnelStepDto("DELIVERED", "Livrées", ordersDelivered, 0));
+        orderFunnel.add(new OrderFunnelStepDto("COMPLETED", "Clôturées", ordersCompleted, 0));
+        orderFunnel.add(new OrderFunnelStepDto("DISPUTED", "En litige", ordersDisputed, 0));
+        orderFunnel.add(new OrderFunnelStepDto("CANCELLED", "Annulées / Expirées", ordersCancelled + ordersExpired, 0));
+
+        // 14. Meilleures annonces (Top 5 par ventes)
+        List<SellerDashboardDto.SellerTopProductDto> topProducts = new ArrayList<>();
+        List<Object[]> topProductRows = orderRepository.findSellerTopProducts(sellerId, PageRequest.of(0, 5));
+        if (topProductRows != null && !topProductRows.isEmpty()) {
+            for (Object[] row : topProductRows) {
+                Long pId = ((Number) row[0]).longValue();
+                String pTitle = (String) row[1];
+                long pSalesCount = ((Number) row[2]).longValue();
+                BigDecimal pRevenue = (BigDecimal) row[3];
+                Product p = productRepository.findById(pId).orElse(null);
+                topProducts.add(SellerDashboardDto.SellerTopProductDto.builder()
+                        .id(pId)
+                        .title(pTitle)
+                        .primaryImage(p != null ? p.getPrimaryImageUrl() : null)
+                        .price(p != null ? p.getPrice() : pRevenue)
+                        .salesCount(pSalesCount)
+                        .totalRevenue(pRevenue)
+                        .build());
+            }
+        } else {
+            // Fallback: 5 annonces actives les plus vues
+            topProducts = productRepository.findBySellerIdOrderByCreatedAtDesc(sellerId).stream()
+                    .filter(p -> p.getStatus() == ProductStatus.ACTIVE)
+                    .sorted((a, b) -> Integer.compare(b.getViewCount(), a.getViewCount()))
+                    .limit(5)
+                    .map(p -> SellerDashboardDto.SellerTopProductDto.builder()
+                            .id(p.getId())
+                            .title(p.getTitle())
+                            .primaryImage(p.getPrimaryImageUrl())
+                            .price(p.getPrice())
+                            .salesCount(0)
+                            .totalRevenue(BigDecimal.ZERO)
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        // 15. Annonces stagnantes (les moins consultées ou les plus anciennes sans vente)
+        List<SellerDashboardDto.SellerStagnantProductDto> stagnantProducts = productRepository
+                .findBySellerIdAndStatusOrderByViewCountAscCreatedAtAsc(sellerId, ProductStatus.ACTIVE, PageRequest.of(0, 5)).stream()
+                .map(p -> {
+                    long daysSinceCreation = p.getCreatedAt() != null ? java.time.temporal.ChronoUnit.DAYS.between(p.getCreatedAt(), LocalDateTime.now()) : 0;
+                    String suggestion = daysSinceCreation >= 30
+                            ? "Créée il y a " + daysSinceCreation + " j sans vente : pensez à baisser le prix de 5 à 10%."
+                            : (p.getViewCount() < 5 ? "Peu de vues : ajoutez des photos de détail ou améliorez la description." : "Partagez l'annonce pour booster la visibilité.");
+                    return SellerDashboardDto.SellerStagnantProductDto.builder()
+                            .id(p.getId())
+                            .title(p.getTitle())
+                            .primaryImage(p.getPrimaryImageUrl())
+                            .price(p.getPrice())
+                            .viewCount(p.getViewCount() != null ? p.getViewCount() : 0)
+                            .createdAt(p.getCreatedAt())
+                            .daysSinceCreation(daysSinceCreation)
+                            .suggestion(suggestion)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 16. Listes courtes (5 max)
+        List<OrderDto> ordersToPrepareList = orderRepository
+                .findBySellerIdAndStatusOrderByCreatedAtDesc(sellerId, OrderStatus.PAID_ESCROW_LOCKED, PageRequest.of(0, 5)).stream()
                 .map(OrderDto::fromEntity)
                 .collect(Collectors.toList());
 
-        return SellerDashboardDto.builder()
+        List<ChatOfferDto> activeOffersList = chatOfferRepository
+                .findBySellerIdAndStatusOrderByCreatedAtDesc(sellerId, OfferStatus.OFFER_SENT, PageRequest.of(0, 5)).stream()
+                .map(ChatOfferDto::fromEntity)
+                .collect(Collectors.toList());
+
+        List<ReviewDto> recentReviewsList = reviewRepository
+                .findByTargetUserIdOrderByCreatedAtDesc(sellerId, PageRequest.of(0, 5)).getContent().stream()
+                .map(ReviewDto::fromEntity)
+                .collect(Collectors.toList());
+
+        List<NotificationDto> recentNotificationsList = notificationRepository
+                .findByUserIdOrderByCreatedAtDesc(sellerId, PageRequest.of(0, 5)).getContent().stream()
+                .map(NotificationDto::fromEntity)
+                .collect(Collectors.toList());
+
+        // 17. Conseils contextuels (règles simples, sans IA)
+        List<SellerDashboardDto.SellerTipDto> contextualTips = new ArrayList<>();
+        List<Product> singleImgProds = productRepository.findSingleImageProducts(sellerId);
+        if (!singleImgProds.isEmpty()) {
+            contextualTips.add(SellerDashboardDto.SellerTipDto.builder()
+                    .id("tip-photos")
+                    .type("SUGGESTION")
+                    .title("Photos à enrichir")
+                    .message("Vous avez " + singleImgProds.size() + " annonce(s) avec une seule photo. Les annonces avec au moins 2 photos se vendent 3x plus vite !")
+                    .actionTab("listings")
+                    .actionFilter("ACTIVE")
+                    .build());
+        }
+
+        List<ChatOffer> expiringOffers = chatOfferRepository.findPendingOffersExpiringSoonest(sellerId, nowUtc, PageRequest.of(0, 1));
+        if (!expiringOffers.isEmpty()) {
+            ChatOffer exp = expiringOffers.get(0);
+            long hours = java.time.Duration.between(nowUtc, exp.getExpiresAt()).toHours();
+            if (hours <= 2) {
+                contextualTips.add(SellerDashboardDto.SellerTipDto.builder()
+                        .id("tip-offer-expiry")
+                        .type("WARNING")
+                        .title("Offre expirant bientôt")
+                        .message("Une offre de " + exp.getAgreedPrice() + " FCFA sur '" + exp.getProduct().getTitle() + "' expire dans moins de 2 h !")
+                        .actionTab("orders")
+                        .actionFilter("offers")
+                        .build());
+            }
+        }
+
+        List<Product> olderActive = productRepository.findOlderActiveProducts(sellerId, LocalDateTime.now().minusDays(30));
+        if (!olderActive.isEmpty()) {
+            contextualTips.add(SellerDashboardDto.SellerTipDto.builder()
+                    .id("tip-price-drop")
+                    .type("INFO")
+                    .title("Annonces anciennes")
+                    .message(olderActive.size() + " annonce(s) sans vente depuis plus de 30 jours : pensez à baisser le prix de 5 à 10% pour attirer des acheteurs.")
+                    .actionTab("listings")
+                    .actionFilter("ACTIVE")
+                    .build());
+        }
+
+        // Assemblage final du DTO
+        SellerDashboardDto dto = SellerDashboardDto.builder()
+                .sellerId(sellerId)
                 .sellerName(seller.getFullName())
+                .sellerFirstName(seller.getFirstName())
                 .sellerPhone(seller.getPhone())
                 .sellerCity(seller.getCity())
                 .isSuspended(Boolean.TRUE.equals(seller.getIsSuspended()))
+                .memberSince(seller.getCreatedAt())
+                .sellerSinceLabel(sellerSinceLabel)
+                .period(cleanPeriod)
+                .startDate(currentStart.toLocalDate().toString())
+                .endDate(currentEnd.toLocalDate().toString())
+                .lastUpdated(java.time.ZonedDateTime.now(dakarZone).format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+                .demoMode(demoMode)
+                .currency("FCFA")
+                .commissionRate(commissionRate)
+                .validationFeeRate(validationFeeRate)
+                .actionItems(actionItems)
+                .listings(listingsMetric)
+                .orders(ordersMetric)
+                .turnover(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(currentTurnover)
+                        .previousValue(previousTurnover)
+                        .changePercentage(turnoverChange)
+                        .sparkline(revenueSparkline)
+                        .build())
+                .pendingEscrow(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(currentPendingEscrow)
+                        .previousValue(previousPendingEscrow)
+                        .changePercentage(pendingEscrowChange)
+                        .build())
+                .releasedEarnings(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(currentReleasedEarnings)
+                        .previousValue(previousReleasedEarnings)
+                        .changePercentage(releasedEarningsChange)
+                        .build())
+                .platformCommission(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(currentPlatformCommission)
+                        .previousValue(previousPlatformCommission)
+                        .changePercentage(platformCommissionChange)
+                        .build())
+                .offerAcceptanceRate(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(BigDecimal.valueOf(currentAcceptanceRate).setScale(1, RoundingMode.HALF_UP))
+                        .previousValue(BigDecimal.valueOf(prevAcceptanceRate).setScale(1, RoundingMode.HALF_UP))
+                        .changePercentage(acceptanceRateChange)
+                        .build())
+                .averageBasket(SellerDashboardDto.MetricWithChangeDto.builder()
+                        .value(currentAvgBasket)
+                        .previousValue(previousAvgBasket)
+                        .changePercentage(avgBasketChange)
+                        .build())
+                .rating(ratingDto)
+                .unreadConversationsCount(unreadConversations)
+                .salesTrends(salesTrends)
+                .orderFunnel(orderFunnel)
+                .topProducts(topProducts)
+                .stagnantProducts(stagnantProducts)
+                .ratingDistribution(ratingDistribution)
+                .ordersByStatus(ordersByStatus)
+                .ordersToPrepare(ordersToPrepareList)
+                .activeOffers(activeOffersList)
+                .recentReviews(recentReviewsList)
+                .recentNotifications(recentNotificationsList)
+                .contextualTips(contextualTips)
+                // Rétrocompatibilité legacy
                 .totalProducts(totalProducts)
                 .activeProducts(activeProducts)
                 .soldProducts(soldProducts)
                 .inactiveProducts(inactiveProducts)
                 .draftProducts(draftProducts)
-                .ordersToProcess(ordersToProcess)
-                .ordersInDelivery(shippedOrders + deliveredOrders)
-                .completedOrders(completedOrders)
-                .turnover(turnover)
-                .platformCommission(commission)
-                .netEarnings(netEarnings)
-                .pendingEscrow(pendingEscrow)
-                .commissionRate(commissionRate)
-                .validationFeeRate(validationFeeRate)
-                .averageRating(Math.round(averageRating * 10.0) / 10.0)
-                .reviewCount(reviewCount)
-                .unreadMessagesCount(unreadMessagesCount)
-                .recentOrders(recentOrders)
+                .ordersToProcess(ordersToPrepareCount)
+                .ordersInDelivery(ordersShipped + ordersDelivered)
+                .completedOrders(ordersCompleted)
+                .netEarnings(currentReleasedEarnings)
+                .averageRating(avgRating != null ? avgRating : 5.0)
+                .reviewCount(totalReviews)
+                .unreadMessagesCount(unreadMessages)
+                .recentOrders(ordersToPrepareList)
                 .build();
+
+        // Cache court 45s
+        sellerDashboardCache.put(cacheKey, new SellerDashboardCacheEntry(dto, nowMillis + 45_000L));
+        return dto;
+    }
+
+    private boolean isPaidStatus(OrderStatus status) {
+        return status == OrderStatus.PAID_ESCROW_LOCKED ||
+                status == OrderStatus.SHIPPED ||
+                status == OrderStatus.DELIVERED ||
+                status == OrderStatus.COMPLETED ||
+                status == OrderStatus.DISPUTED;
+    }
+
+    private Double calculatePercentageChange(BigDecimal current, BigDecimal previous) {
+        if (previous == null || previous.compareTo(BigDecimal.ZERO) == 0) {
+            if (current == null || current.compareTo(BigDecimal.ZERO) == 0) return 0.0;
+            return 100.0;
+        }
+        if (current == null) current = BigDecimal.ZERO;
+        return current.subtract(previous)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(previous, 1, RoundingMode.HALF_UP)
+                .doubleValue();
+    }
+
+    private Double calculatePercentageChange(long current, long previous) {
+        if (previous == 0) {
+            return current == 0 ? 0.0 : 100.0;
+        }
+        return Math.round(((double) (current - previous) / (double) previous) * 1000.0) / 10.0;
     }
 
     // ==========================================

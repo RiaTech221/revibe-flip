@@ -30,4 +30,15 @@ public interface ChatOfferRepository extends JpaRepository<ChatOffer, Long> {
 
     @Query("SELECT o FROM ChatOffer o WHERE o.status = 'OFFER_SENT' AND o.expiresAt BETWEEN :now AND :soon")
     List<ChatOffer> findOffersExpiringSoon(@Param("now") LocalDateTime now, @Param("soon") LocalDateTime soon);
+
+    long countBySellerIdAndCreatedAtBetween(Long sellerId, LocalDateTime start, LocalDateTime end);
+
+    long countBySellerIdAndStatusAndCreatedAtBetween(Long sellerId, OfferStatus status, LocalDateTime start, LocalDateTime end);
+
+    long countBySellerIdAndStatus(Long sellerId, OfferStatus status);
+
+    List<ChatOffer> findBySellerIdAndStatusOrderByCreatedAtDesc(Long sellerId, OfferStatus status, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT o FROM ChatOffer o WHERE o.seller.id = :sellerId AND o.status = 'OFFER_SENT' AND o.expiresAt > :now ORDER BY o.expiresAt ASC")
+    List<ChatOffer> findPendingOffersExpiringSoonest(@Param("sellerId") Long sellerId, @Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
 }

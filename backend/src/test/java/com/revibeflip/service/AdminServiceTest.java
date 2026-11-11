@@ -46,6 +46,8 @@ class AdminServiceTest {
     private PlatformSettingRepository platformSettingRepository;
     @Mock
     private AdminActionLogRepository adminActionLogRepository;
+    @Mock
+    private com.revibeflip.repository.ContactMessageRepository contactMessageRepository;
 
     @InjectMocks
     private AdminService adminService;
@@ -131,6 +133,79 @@ class AdminServiceTest {
         // Point 2 : Vérifie que les 7 derniers jours sont toujours retournés même à 0
         assertNotNull(stats.getSalesTrends());
         assertEquals(7, stats.getSalesTrends().size(), "Les 7 derniers jours doivent toujours être présents");
+    }
+
+    @Test
+    @DisplayName("Dashboard: Calcul période 7j, fuseau Africa/Dakar et gestion division par zéro")
+    void testGetDashboardStats_PeriodAndZeroDivision() {
+        when(userRepository.countActiveUsers()).thenReturn(10L);
+        when(userRepository.countSuspendedUsers()).thenReturn(1L);
+        when(userRepository.countByCreatedAtBetween(any(), any())).thenReturn(2L, 0L); // current=2, previous=0 (division par zéro gérée)
+
+        when(productRepository.countByStatus(ProductStatus.ACTIVE)).thenReturn(15L);
+        when(productRepository.countByStatus(ProductStatus.SOLD)).thenReturn(5L);
+        when(productRepository.countByStatus(ProductStatus.INACTIVE)).thenReturn(2L);
+        when(productRepository.countByStatus(ProductStatus.DRAFT)).thenReturn(1L);
+        when(productRepository.countByCreatedAtBetween(any(), any())).thenReturn(4L, 2L);
+
+        when(orderRepository.countByCreatedAtBetween(any(), any())).thenReturn(8L, 4L);
+        when(paymentRepository.countByStatusAndCreatedAtBetween(eq(PaymentStatus.SUCCESS), any(), any())).thenReturn(6L, 3L);
+
+        when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
+                PlatformSetting.builder()
+                        .commissionRate(BigDecimal.valueOf(20.0))
+                        .validationFeeRate(BigDecimal.valueOf(1.0))
+                        .currency("FCFA")
+                        .build()
+        ));
+
+        // Commandes pour le calcul CA et commissions
+        Order orderPaid = Order.builder()
+                .id(201L)
+                .orderNumber("RF-TEST-01")
+                .itemPrice(BigDecimal.valueOf(50000))
+                .status(OrderStatus.COMPLETED)
+                .seller(adminUser)
+                .buyer(regularUser)
+                .build();
+
+        Payment paymentLocked = Payment.builder()
+                .id(301L)
+                .amount(BigDecimal.valueOf(30000))
+                .status(PaymentStatus.SUCCESS)
+                .escrowStatus(EscrowStatus.LOCKED)
+                .paymentMethod(PaymentMethod.WAVE)
+                .build();
+
+        when(orderRepository.findByCreatedAtBetween(any(), any())).thenReturn(List.of(orderPaid), Collections.emptyList());
+        when(paymentRepository.findByCreatedAtBetween(any(), any())).thenReturn(List.of(paymentLocked));
+        when(paymentRepository.findByEscrowStatus(EscrowStatus.LOCKED)).thenReturn(List.of(paymentLocked));
+
+        when(reportRepository.countByCreatedAtBetween(any(), any())).thenReturn(3L, 1L);
+        when(reportRepository.countByStatusAndCreatedAtBetween(eq(ReportStatus.PENDING), any(), any())).thenReturn(1L);
+        when(reportRepository.countByStatusAndCreatedAtBetween(eq(ReportStatus.RESOLVED), any(), any())).thenReturn(2L);
+
+        when(categoryRepository.findAll()).thenReturn(List.of(testCategory));
+
+        AdminDashboardDto stats = adminService.getDashboardStats("7d", null, null);
+
+        assertNotNull(stats);
+        assertEquals("7d", stats.getPeriod());
+        assertNotNull(stats.getRevenue());
+        assertEquals(BigDecimal.valueOf(50000), stats.getRevenue().getValue());
+        // Commissions réalisées: 20% de 50000 = 10000
+        assertEquals(BigDecimal.valueOf(10000.0), stats.getEarnedCommissions().getValue());
+        // Fonds séquestre: 30000
+        assertEquals(BigDecimal.valueOf(30000), stats.getEscrowLockedFunds().getValue());
+        // Commissions en attente: 20% de 30000 = 6000
+        assertEquals(BigDecimal.valueOf(6000.0), stats.getPendingCommissions().getValue());
+        // Panier moyen: 50000 / 1 commande = 50000
+        assertEquals(BigDecimal.valueOf(50000.0), stats.getAverageBasket().getValue());
+        // Division par zéro sur nouveaux utilisateurs (prev=0) -> changePct = 0.0
+        assertEquals(0.0, stats.getUsers().getChangePercentage());
+        // Transactions
+        assertEquals(BigDecimal.valueOf(6), stats.getTransactions().getValue());
+        assertEquals(100.0, stats.getTransactions().getChangePercentage()); // (6-3)/3 * 100 = 100%
     }
 
     @Test
@@ -249,5 +324,117 @@ class AdminServiceTest {
 
         assertTrue(ex.getMessage().contains("Protection activée"));
         verify(categoryRepository, never()).delete(any(Category.class));
+    }
+
+    @Test
+    @DisplayName("Point 6 - Bandeau À Traiter: Compteurs non nuls et exacts")
+    void testActionItemsCounts_AllNonZero() {
+        when(reportRepository.countByStatus(ReportStatus.PENDING)).thenReturn(2L);
+        when(orderRepository.countByStatus(OrderStatus.DISPUTED)).thenReturn(1L);
+        when(orderRepository.countByDeliveryStatusAndStatus(DeliveryStatus.DELIVERED, OrderStatus.DELIVERED)).thenReturn(2L);
+        when(productRepository.countByStatus(ProductStatus.DRAFT)).thenReturn(3L);
+        when(contactMessageRepository.countByStatus(com.revibeflip.entity.enums.ContactMessageStatus.NEW)).thenReturn(1L);
+
+        when(userRepository.count()).thenReturn(10L);
+        when(userRepository.countActiveUsers()).thenReturn(9L);
+        when(userRepository.countSuspendedUsers()).thenReturn(1L);
+        when(productRepository.count()).thenReturn(20L);
+        when(productRepository.countByStatus(ProductStatus.ACTIVE)).thenReturn(15L);
+        when(productRepository.countByStatus(ProductStatus.SOLD)).thenReturn(2L);
+        when(productRepository.countByStatus(ProductStatus.INACTIVE)).thenReturn(0L);
+
+        when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
+                PlatformSetting.builder()
+                        .commissionRate(BigDecimal.valueOf(20.0))
+                        .validationFeeRate(BigDecimal.valueOf(1.0))
+                        .currency("FCFA")
+                        .build()
+        ));
+
+        AdminDashboardDto stats = adminService.getDashboardStats("30d", null, null);
+
+        assertNotNull(stats);
+        assertNotNull(stats.getActionItems());
+        assertTrue(stats.getActionItems().isHasItemsToHandle(), "hasItemsToHandle doit être vrai");
+        assertEquals(3L, stats.getActionItems().getPendingReportsAndDisputes(), "2 signalements + 1 litige = 3");
+        assertEquals(3L, stats.getActionItems().getPendingModerationProducts(), "3 annonces à modérer");
+        assertEquals(1L, stats.getActionItems().getDisputedOrders(), "1 commande bloquée par litige");
+        assertEquals(2L, stats.getActionItems().getDeliveredAwaitingConfirmationOrders(), "2 commandes livrées en attente confirmation");
+        assertEquals(1L, stats.getActionItems().getUnreadContactMessages(), "1 message de contact non traité");
+        assertEquals(9L, stats.getActionItems().getTotalToHandle(), "Total éléments à traiter = 9");
+    }
+
+    @Test
+    @DisplayName("Point 7 - Cohérence des chiffres entre le Dashboard et les autres onglets")
+    void testDashboardConsistencyWithOtherTabs() {
+        // Jeu de données partagé
+        when(userRepository.count()).thenReturn(10L);
+        when(userRepository.countActiveUsers()).thenReturn(8L);
+        when(userRepository.countSuspendedUsers()).thenReturn(2L);
+
+        when(productRepository.count()).thenReturn(25L);
+        when(productRepository.countByStatus(ProductStatus.ACTIVE)).thenReturn(18L);
+        when(productRepository.countByStatus(ProductStatus.SOLD)).thenReturn(5L);
+        when(productRepository.countByStatus(ProductStatus.INACTIVE)).thenReturn(1L);
+        when(productRepository.countByStatus(ProductStatus.DRAFT)).thenReturn(1L);
+
+        Order order1 = Order.builder()
+                .id(1L)
+                .orderNumber("RF-DEV-00001")
+                .itemPrice(BigDecimal.valueOf(30000))
+                .status(OrderStatus.COMPLETED)
+                .seller(adminUser)
+                .buyer(regularUser)
+                .build();
+
+        Order order2 = Order.builder()
+                .id(2L)
+                .orderNumber("RF-DEV-00002")
+                .itemPrice(BigDecimal.valueOf(20000))
+                .status(OrderStatus.PAID_ESCROW_LOCKED)
+                .seller(adminUser)
+                .buyer(regularUser)
+                .build();
+
+        when(orderRepository.findByCreatedAtBetween(any(), any())).thenReturn(List.of(order1, order2));
+
+        Payment paymentLocked = Payment.builder()
+                .id(501L)
+                .amount(BigDecimal.valueOf(20000))
+                .status(PaymentStatus.SUCCESS)
+                .escrowStatus(EscrowStatus.LOCKED)
+                .paymentMethod(PaymentMethod.WAVE)
+                .build();
+
+        when(paymentRepository.findByEscrowStatus(EscrowStatus.LOCKED)).thenReturn(List.of(paymentLocked));
+        when(paymentRepository.findByCreatedAtBetween(any(), any())).thenReturn(List.of(paymentLocked));
+
+        when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
+                PlatformSetting.builder()
+                        .commissionRate(BigDecimal.valueOf(20.0))
+                        .validationFeeRate(BigDecimal.valueOf(1.0))
+                        .currency("FCFA")
+                        .build()
+        ));
+
+        AdminDashboardDto stats = adminService.getDashboardStats("30d", null, null);
+
+        // Cohérence Utilisateurs
+        assertEquals(userRepository.count(), stats.getTotalUsers());
+        assertEquals(userRepository.countActiveUsers(), stats.getUsers().getActive());
+        assertEquals(userRepository.countSuspendedUsers(), stats.getUsers().getSuspended());
+
+        // Cohérence Annonces
+        assertEquals(productRepository.count(), stats.getTotalProducts());
+        assertEquals(productRepository.countByStatus(ProductStatus.ACTIVE), stats.getProducts().getActive());
+        assertEquals(productRepository.countByStatus(ProductStatus.SOLD), stats.getProducts().getSold());
+
+        // Cohérence Commandes & CA
+        assertEquals(2L, stats.getOrders().getValue());
+        assertEquals(BigDecimal.valueOf(50000), stats.getRevenue().getValue(), "CA = 30000 (order1) + 20000 (order2)");
+
+        // Cohérence Séquestre & Commissions
+        assertEquals(BigDecimal.valueOf(20000), stats.getEscrowLockedFunds().getValue(), "Fonds sous séquestre = 20000");
+        assertEquals(BigDecimal.valueOf(4000.0), stats.getPendingCommissions().getValue(), "Commissions en attente = 20% de 20000 = 4000");
     }
 }
