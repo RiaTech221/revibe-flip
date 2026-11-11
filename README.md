@@ -27,6 +27,8 @@
 
 - 📖 **Documentation Technique Exhaustive (Fichier par fichier)** : [`DOCUMENTATION_COMPLETE_REVIBE_FLIP.md`](DOCUMENTATION_COMPLETE_REVIBE_FLIP.md)
 - 🧪 **Plan de Tests & Cahier de Recette E2E (13 Classes JUnit 5 & Scénarios UAT)** : [`PLAN_DE_TESTS_ET_RECETTE.md`](PLAN_DE_TESTS_ET_RECETTE.md)
+- 🌳 **Guide de Contribution & Git Workflow Professionnel** : [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- ⚙️ **Pipelines CI/CD (GitHub Actions)** : [`.github/workflows/ci.yml`](.github/workflows/ci.yml) & [`.github/workflows/cd.yml`](.github/workflows/cd.yml)
 
 ---
 
@@ -91,15 +93,20 @@ npm start
 
 ---
 
-### 4. (Optionnel) Démarrer MySQL 8 avec Docker Compose
-Pour exécuter la base de données MySQL 8 et l'interface Adminer :
+### 4. Démarrage de Toute la Stack en 1 Clic (Docker Compose)
+Pour lancer instantanément l'intégralité de la plateforme (MySQL 8 + Backend Spring Boot + Frontend Nginx + Adminer) :
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-Puis lancer le backend avec le profil MySQL :
-```powershell
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=mysql
+
+- **Frontend Web** : `http://localhost` (ou `http://localhost:5173`)
+- **Backend API REST** : `http://localhost:8080/api`
+- **Console BDD Adminer** : `http://localhost:8081` (Système: MySQL, Serveur: `mysql`, Utilisateur: `root`, Mot de passe: `rootpassword`, BDD: `revibeflip`)
+
+Pour tout arrêter :
+```bash
+docker compose down
 ```
 
 ---
