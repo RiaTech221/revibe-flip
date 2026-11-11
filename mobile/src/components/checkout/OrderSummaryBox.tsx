@@ -1,3 +1,9 @@
+/**
+ * Récapitulatif Financier de Commande ReVibe FliP Mobile
+ * 
+ * Composant détaillant les lignes tarifaires : montant de l'article, frais de séquestre (1%), coût de livraison et total à payer.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Product } from '../../types';

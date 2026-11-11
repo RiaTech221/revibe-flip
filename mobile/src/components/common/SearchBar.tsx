@@ -1,3 +1,9 @@
+/**
+ * Composant Barre de Recherche Tactile ReVibe FliP Mobile
+ * 
+ * Champ de saisie stylisé pour la recherche rapide avec icône de loupe et bouton de réinitialisation.
+ */
+
 import React from 'react';
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Search, X } from 'lucide-react-native';

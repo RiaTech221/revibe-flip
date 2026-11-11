@@ -1,3 +1,12 @@
+/**
+ * Écran d'Inscription (RegisterScreen) ReVibe FliP Mobile
+ * 
+ * Formulaire de création de compte membre sur l'application mobile :
+ *  * - Choix du pays de résidence et saisie des informations d'identité
+ *  * - Création du mot de passe avec règles de complexité
+ *  * - Envoi du code de vérification OTP
+ */
+
 import React, { useState } from 'react';
 import {
   View,

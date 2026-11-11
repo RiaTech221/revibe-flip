@@ -1,3 +1,12 @@
+/**
+ * Contexte d'Authentification Mobile ReVibe FliP
+ * 
+ * Gère l'état global de session utilisateur sur smartphone :
+ *  * - Stockage et propagation de l'utilisateur connecté (User) et du token JWT
+ *  * - Fonctions de login, logout et refreshProfile
+ *  * - Synchronisation immédiate du token avec le client HTTP Axios (setAuthToken)
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api, { setAuthToken } from '../api';
 import { User } from '../types';

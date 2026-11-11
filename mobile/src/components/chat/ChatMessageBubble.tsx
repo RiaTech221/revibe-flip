@@ -1,3 +1,9 @@
+/**
+ * Bulle de Message du Chat ReVibe FliP Mobile
+ * 
+ * Composant d'affichage d'un message individuel avec alignement différencié (expéditeur / destinataire) et horodatage.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Message } from '../../types';

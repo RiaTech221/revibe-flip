@@ -1,3 +1,11 @@
+/**
+ * Types de Navigation React Navigation ReVibe FliP Mobile
+ * 
+ * Typage strict des routes et paramètres de navigation :
+ *  * - RootStackParamList : écrans modaux et principaux (ProductDetail, Chat, Checkout, OrderDetail, Auth)
+ *  * - MainTabParamList : 5 onglets de la barre inférieure (Home, Catalog, Sell, Messages, Profile)
+ */
+
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { Product, Order, Conversation } from './index';
 

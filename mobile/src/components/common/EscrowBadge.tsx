@@ -1,3 +1,9 @@
+/**
+ * Badge Visuel Séquestre Garanti ReVibe Shield Mobile
+ * 
+ * Badge de confiance attestant que la transaction bénéficie de la protection séquestre ReVibe Shield.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShieldCheck } from 'lucide-react-native';

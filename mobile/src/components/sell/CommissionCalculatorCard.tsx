@@ -1,3 +1,9 @@
+/**
+ * Calculatrice de Commission Vendeur en Direct ReVibe FliP Mobile
+ * 
+ * Composant interactif calculant en temps réel la commission de service et le montant net exact que touchera le vendeur via Mobile Money.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Info, ShieldCheck } from 'lucide-react-native';

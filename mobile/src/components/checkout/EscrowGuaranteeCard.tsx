@@ -1,3 +1,9 @@
+/**
+ * Carte d'Information Séquestre ReVibe Shield Mobile
+ * 
+ * Encadré explicatif rappelant à l'acheteur que son argent est séquestré en sécurité et ne sera remis au vendeur qu'après validation.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShieldCheck, Lock, RotateCcw } from 'lucide-react-native';

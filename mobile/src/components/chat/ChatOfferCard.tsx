@@ -1,3 +1,9 @@
+/**
+ * Carte d'Offre Directe Négociée ReVibe FliP Mobile
+ * 
+ * Composant interactif inséré dans le fil de discussion présentant une offre de prix avec validité 24h et boutons d'action (Accepter, Refuser, Payer sous séquestre).
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Tag, Check, X, ShieldCheck } from 'lucide-react-native';

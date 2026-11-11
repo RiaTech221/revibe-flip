@@ -1,3 +1,13 @@
+/**
+ * Point d'Entrée Principal ReVibe FliP Mobile (React Native / Expo)
+ * 
+ * Composant racine de l'application mobile ReVibe FliP :
+ *  * - Configure le conteneur SafeAreaProvider pour les encoches et barres système
+ *  * - Enveloppe l'arbre dans le contexte d'authentification AuthProvider
+ *  * - Initialise le conteneur de navigation principal NavigationContainer
+ *  * - Affiche la StatusBar avec le style adapté à la charte graphique
+ */
+
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';

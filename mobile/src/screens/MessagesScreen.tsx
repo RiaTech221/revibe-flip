@@ -1,3 +1,12 @@
+/**
+ * Écran Liste des Discussions (MessagesScreen) ReVibe FliP Mobile
+ * 
+ * Boîte de réception des messages de l'utilisateur :
+ *  * - Liste des conversations actives avec aperçu du dernier message et horodatage
+ *  * - Miniatures de l'article négocié et de l'interlocuteur
+ *  * - Pastilles numériques indiquant le nombre de messages non lus
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

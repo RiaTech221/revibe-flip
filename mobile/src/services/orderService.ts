@@ -1,3 +1,14 @@
+/**
+ * Service de Gestion des Commandes Mobile ReVibe FliP
+ * 
+ * Gère le cycle des commandes et le suivi de livraison :
+ *  * - createOrder : création d'une commande avec séquestre bancaire
+ *  * - getOrders : historique des commandes achetées et reçues
+ *  * - getOrderById : détails complets d'une commande (statut séquestre, expédition)
+ *  * - confirmDelivery : validation de conformité par l'acheteur entraînant le déblocage des fonds au vendeur
+ *  * - openDispute : ouverture d'un litige en cas de non-conformité
+ */
+
 import api from '../api';
 import { Order, PaymentMethod } from '../types';
 

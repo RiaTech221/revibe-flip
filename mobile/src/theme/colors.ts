@@ -1,3 +1,11 @@
+/**
+ * Charte Graphique et Utilitaires Stylistiques Mobile ReVibe FliP
+ * 
+ * Définit les constantes visuelles et helpers de formatage de l'application mobile :
+ *  * - Palette ReVibe FliP : violet primaire, dégradés, vert séquestre, rouge litige, gris neutres
+ *  * - Fonction formatPrice : formate les montants monétaires en FCFA avec séparateur de milliers
+ */
+
 export const colors = {
   primary: '#7e22ce', // Mauve ReVibe principal
   primaryDark: '#581c87',

@@ -1,3 +1,9 @@
+/**
+ * Tableau Financier Séquestre de Commande ReVibe FliP Mobile
+ * 
+ * Affiche la décomposition des sommes consignées sous séquestre et le mode de règlement utilisé.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ShieldCheck } from 'lucide-react-native';

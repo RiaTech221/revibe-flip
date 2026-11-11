@@ -1,3 +1,9 @@
+/**
+ * En-Tête de Profil Utilisateur ReVibe FliP Mobile
+ * 
+ * Affiche la photo de profil, nom complet, indice de confiance Trust Score, note moyenne et drapeau du pays de résidence.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { User } from '../../types';

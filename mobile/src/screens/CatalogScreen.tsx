@@ -1,3 +1,12 @@
+/**
+ * Écran Catalogue et Recherche (CatalogScreen) ReVibe FliP Mobile
+ * 
+ * Permet d'explorer et rechercher l'ensemble des annonces disponibles :
+ *  * - Barre de recherche plein texte avec debounce
+ *  * - Filtres horizontaux rapides par catégorie et état du produit
+ *  * - Grille responsive à deux colonnes avec infinite scroll et état de chargement
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

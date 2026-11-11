@@ -1,3 +1,13 @@
+/**
+ * Écran Détail Produit (ProductDetailScreen) ReVibe FliP Mobile
+ * 
+ * Fiche descriptive complète d'une annonce d'article :
+ *  * - Galerie d'images haute définition avec carrousel horizontal
+ *  * - Informations produit : titre, prix FCFA, marque, taille, état certifié, localisation
+ *  * - Badge Bouclier Séquestre ReVibe Shield rappelant la protection des fonds acheteur
+ *  * - Barre d'actions inférieure : bouton "Acheter maintenant" et "Négocier / Faire une offre"
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

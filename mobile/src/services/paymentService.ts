@@ -1,3 +1,12 @@
+/**
+ * Service de Paiement Mobile Money et Séquestre Mobile ReVibe FliP
+ * 
+ * Intègre les paiements Mobile Money sous séquestre garanti ReVibe Shield :
+ *  * - initiatePayment : initialisation de la transaction Mobile Money (Wave, Orange Money, MTN MoMo, Moov)
+ *  * - getEscrowStatus : consultation en temps réel de la consignation des fonds sous séquestre
+ *  * - confirmPayment : confirmation de capture des fonds par l'opérateur
+ */
+
 import api from '../api';
 import { PaymentMethod } from '../types';
 

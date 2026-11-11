@@ -1,3 +1,13 @@
+/**
+ * Écran Suivi de Commande (OrderDetailScreen) ReVibe FliP Mobile
+ * 
+ * Suivi transparent du cycle de vie d'une commande passée ou vendue :
+ *  * - Timeline visuelle du statut de livraison (En attente, Payée, Expédiée, Livrée, Clôturée)
+ *  * - Détails du montant consigné sous séquestre bancaire
+ *  * - Bouton de confirmation de conformité débloquant instantanément les fonds du vendeur
+ *  * - Possibilité d'ouvrir un litige en cas de réclamation
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

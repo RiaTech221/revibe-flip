@@ -1,3 +1,9 @@
+/**
+ * Barre de Saisie et Négociation du Chat ReVibe FliP Mobile
+ * 
+ * Zone inférieure du chat comportant le champ de texte, bouton d'envoi et bouton "Faire une offre" pour proposer un prix négocié.
+ */
+
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Send, Tag } from 'lucide-react-native';

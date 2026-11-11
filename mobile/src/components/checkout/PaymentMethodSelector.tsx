@@ -1,3 +1,9 @@
+/**
+ * Sélecteur de Moyen de Paiement Mobile Money ReVibe FliP Mobile
+ * 
+ * Composant tactile permettant de choisir l'opérateur Mobile Money (Wave, Orange Money, MTN MoMo, Moov) pour régler la commande.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Check } from 'lucide-react-native';

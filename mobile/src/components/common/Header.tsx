@@ -1,3 +1,9 @@
+/**
+ * Composant En-Tête Supérieur (Header) ReVibe FliP Mobile
+ * 
+ * Barre de navigation supérieure réutilisable avec titre, logo, bouton retour et actions personnalisables.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';

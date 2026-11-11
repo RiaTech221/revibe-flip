@@ -1,3 +1,13 @@
+/**
+ * Écran d'Accueil (HomeScreen) ReVibe FliP Mobile
+ * 
+ * Écran principal de navigation de l'application :
+ *  * - Bannière de mise en avant du Séquestre Garanti ReVibe Shield
+ *  * - Raccourcis visuels par catégories de mode (Wax, Bazin, Chaussures, etc.)
+ *  * - Grille des dernières pépites publiées avec rafraîchissement au tirage (pull-to-refresh)
+ *  * - Accès rapide à la publication d'une annonce via bouton flottant
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

@@ -1,3 +1,9 @@
+/**
+ * Sélecteur d'État de Conservation ReVibe FliP Mobile
+ * 
+ * Puces de sélection tactile de l'état de la pièce (Neuf avec étiquette, Très bon état, Bon état, Satisfaisant).
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ProductCondition } from '../../types';

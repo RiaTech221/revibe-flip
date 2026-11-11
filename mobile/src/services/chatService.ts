@@ -1,3 +1,14 @@
+/**
+ * Service de Chat et Négociation d'Offres Mobile ReVibe FliP
+ * 
+ * Pilote les échanges de messagerie et propositions de prix sous séquestre :
+ *  * - getConversations : liste des discussions actives avec badges de non-lus
+ *  * - getMessages : historique chronologique d'une conversation
+ *  * - sendMessage : envoi d'un message texte
+ *  * - makeOffer : proposition d'un prix négocié avec expiration 24h
+ *  * - respondOffer : acceptation ou refus d'une offre de prix par le vendeur
+ */
+
 import api from '../api';
 import { Conversation, Message, ChatOffer } from '../types';
 

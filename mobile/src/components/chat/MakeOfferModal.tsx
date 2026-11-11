@@ -1,3 +1,9 @@
+/**
+ * Modale de Proposition d'Offre de Prix ReVibe FliP Mobile
+ * 
+ * Fenêtre modale permettant à l'acheteur de saisir un montant proposé et de soumettre son offre au vendeur.
+ */
+
 import React from 'react';
 import {
   View,

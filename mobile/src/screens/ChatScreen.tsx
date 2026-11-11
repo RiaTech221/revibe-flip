@@ -1,3 +1,13 @@
+/**
+ * Écran de Chat et Négociation (ChatScreen) ReVibe FliP Mobile
+ * 
+ * Fil de discussion instantané et sécurisé entre acheteur et vendeur :
+ *  * - Bannière supérieure rappelant les règles de sécurité du séquestre ReVibe FliP
+ *  * - En-tête contextuel avec vignette et prix de l'article négocié
+ *  * - Bulles de messages et cartes interactives d'offres de prix directes
+ *  * - Actions d'offre : accepter, refuser, ou payer directement sous séquestre
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   FlatList,

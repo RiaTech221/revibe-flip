@@ -1,3 +1,12 @@
+/**
+ * Service d'Authentification Mobile ReVibe FliP
+ * 
+ * Gère les requêtes d'authentification et gestion de session :
+ *  * - login : connexion par téléphone/email et récupération du token JWT
+ *  * - register : inscription d'un nouvel utilisateur avec pays d'Afrique de l'Ouest/Centrale
+ *  * - getProfile : récupération du profil complet (Trust Score, note, pays)
+ */
+
 import api from '../api';
 import { User } from '../types';
 

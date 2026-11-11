@@ -1,3 +1,9 @@
+/**
+ * Ligne de Menu de Profil ReVibe FliP Mobile
+ * 
+ * Composant de liste tactile avec icône personnalisée, libellé, compteur éventuel et chevron de redirection.
+ */
+
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';

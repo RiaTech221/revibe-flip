@@ -1,3 +1,14 @@
+/**
+ * Barre de Navigation par Onglets Inférieurs ReVibe FliP Mobile
+ * 
+ * Configure la barre d'onglets tactile permanente (Bottom Tab Navigator) :
+ *  * - Accueil : découverte des pépites et sélections phares
+ *  * - Explorer : recherche et filtrage multi-critères du catalogue
+ *  * - Vendre : bouton central surélevé pour publier une annonce
+ *  * - Messages : accès direct aux discussions et négociations d'offres
+ *  * - Profil : espace compte, commandes et paramètres
+ */
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types/navigation';

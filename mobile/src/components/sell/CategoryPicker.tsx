@@ -1,3 +1,9 @@
+/**
+ * Sélecteur de Catégorie de Produit ReVibe FliP Mobile
+ * 
+ * Menu tactile de sélection de la catégorie d'article lors de la publication d'une annonce.
+ */
+
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Category } from '../../types';

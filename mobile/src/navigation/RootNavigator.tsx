@@ -1,3 +1,13 @@
+/**
+ * Navigateur Racine (Stack Navigator) ReVibe FliP Mobile
+ * 
+ * Définit la pile principale d'écrans de l'application :
+ *  * - Onglets principaux MainTabs (TabNavigator)
+ *  * - Écrans de détails : fiche article (ProductDetail), fil de chat (Chat), tunnel d'achat (Checkout), commande (OrderDetail)
+ *  * - Écrans d'authentification : connexion (Login), inscription (Register)
+ *  * - Animations de transition fluide slide_from_right
+ */
+
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';

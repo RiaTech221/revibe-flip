@@ -1,3 +1,12 @@
+/**
+ * Écran de Connexion (LoginScreen) ReVibe FliP Mobile
+ * 
+ * Interface d'authentification mobile :
+ *  * - Saisie du numéro de téléphone ou adresse email et mot de passe
+ *  * - Gestion des erreurs de connexion et indicateur de chargement
+ *  * - Lien vers l'écran d'inscription pour les nouveaux membres
+ */
+
 import React, { useState } from 'react';
 import {
   View,

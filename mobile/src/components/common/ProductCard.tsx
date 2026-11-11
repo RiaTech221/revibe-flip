@@ -1,3 +1,9 @@
+/**
+ * Composant Carte Article (ProductCard) ReVibe FliP Mobile
+ * 
+ * Carte visuelle d'un produit optimisée pour les grilles mobiles à deux colonnes avec image, prix, marque, état et badge séquestre.
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Product } from '../../types';

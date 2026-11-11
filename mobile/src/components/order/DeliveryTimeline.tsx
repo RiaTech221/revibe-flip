@@ -1,3 +1,9 @@
+/**
+ * Frise Chronologique de Livraison ReVibe FliP Mobile
+ * 
+ * Composant visuel représentant les étapes successives d'une commande (Création, Paiement sous séquestre, Expédition, Réception, Clôture).
+ */
+
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CheckCircle2, Clock, Truck } from 'lucide-react-native';

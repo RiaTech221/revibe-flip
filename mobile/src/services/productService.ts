@@ -1,3 +1,13 @@
+/**
+ * Service Catalogue et Annonces Mobile ReVibe FliP
+ * 
+ * Gère la consultation et publication des articles :
+ *  * - getProducts : recherche multi-critères et pagination du catalogue
+ *  * - getProductById : fiche détaillée d'un article et profil vendeur
+ *  * - getCategories : liste des catégories de mode et accessoires
+ *  * - createProduct : publication d'une nouvelle annonce avec photos et caractéristiques
+ */
+
 import api from '../api';
 import { Product, Category, ProductCondition } from '../types';
 

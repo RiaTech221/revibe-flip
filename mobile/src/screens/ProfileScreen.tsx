@@ -1,3 +1,12 @@
+/**
+ * Écran Espace Profil (ProfileScreen) ReVibe FliP Mobile
+ * 
+ * Gestion du compte et vue d'ensemble de l'activité utilisateur :
+ *  * - En-tête de profil avec avatar, note moyenne, Trust Score et pays de résidence
+ *  * - Raccourcis vers Mes Achats, Mes Ventes, Paramètres de sécurité, Aide & FAQ
+ *  * - Bouton de déconnexion sécurisée
+ */
+
 import React from 'react';
 import {
   View,

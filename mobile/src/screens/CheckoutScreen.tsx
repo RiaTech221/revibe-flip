@@ -1,3 +1,13 @@
+/**
+ * Écran Tunnel d'Achat et Séquestre (CheckoutScreen) ReVibe FliP Mobile
+ * 
+ * Processus de paiement sécurisé d'une commande :
+ *  * - Récapitulatif financier complet (prix article, frais de séquestre 1%, frais de livraison)
+ *  * - Sélection du mode de livraison (À domicile ou Point Relais)
+ *  * - Choix du moyen de paiement Mobile Money (Wave, Orange Money, MTN MoMo, Moov)
+ *  * - Carte de rappel de la garantie séquestre ReVibe Shield
+ */
+
 import React, { useState } from 'react';
 import {
   View,

@@ -1,3 +1,13 @@
+/**
+ * Écran de Mise en Vente (SellScreen) ReVibe FliP Mobile
+ * 
+ * Formulaire ergonomique pour publier un article en vente :
+ *  * - Sélection des photos et informations clés (titre, description, catégorie, marque, état)
+ *  * - Saisie du prix de vente en FCFA
+ *  * - Carte de calcul instantané de la commission et du montant net versé au vendeur
+ *  * - Validation des champs et soumission vers l'API
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,

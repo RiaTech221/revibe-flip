@@ -1,3 +1,12 @@
+/**
+ * Modèles de Données et Types TypeScript Mobile ReVibe FliP
+ * 
+ * Définit les interfaces et énumérations du modèle de données mobile :
+ *  * - Entités : User, Product, Category, Order, EscrowTransaction, Review, Conversation, Message, Offer
+ *  * - Énumérations de statuts : ProductCondition, ProductStatus, OrderStatus, EscrowStatus, OfferStatus, PaymentProvider
+ *  * - DTOs de réponse et de pagination
+ */
+
 export interface User {
   id: number;
   phone: string;
