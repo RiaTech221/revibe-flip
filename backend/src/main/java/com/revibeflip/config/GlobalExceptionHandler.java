@@ -40,6 +40,22 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.revibeflip.exception.SellerConflictException.class)
+    public ResponseEntity<ApiResponse<Map<String, Object>>> handleSellerConflict(com.revibeflip.exception.SellerConflictException ex) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("existingSellerId", ex.getExistingSellerId());
+        data.put("existingSellerName", ex.getExistingSellerName());
+        data.put("newSellerId", ex.getNewSellerId());
+        data.put("newSellerName", ex.getNewSellerName());
+        data.put("sellerConflict", true);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.<Map<String, Object>>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(data)
+                        .build());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

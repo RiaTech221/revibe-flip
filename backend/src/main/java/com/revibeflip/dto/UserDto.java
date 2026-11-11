@@ -52,8 +52,8 @@ public class UserDto {
                 .city(user.getCity())
                 .trustScore(user.getTrustScore())
                 .rating(user.getRating())
-                .reviewCount(user.getReviewCount())
-                .isSuspended(user.getIsSuspended())
+                .reviewCount(user.getReviewCount() != null ? user.getReviewCount() : 0)
+                .isSuspended(Boolean.TRUE.equals(user.getIsSuspended()))
                 .createdAt(user.getCreatedAt())
                 .build();
     }

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { authApi, countryApi } from '../services/api';
 import { Country } from '../types';
 import { X, Phone, Lock, User, Mail, Globe, ArrowRight, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, authModalMode, pendingPhone, closeAuthModal, login, openAuthModal } = useAuth();
@@ -144,8 +145,8 @@ export const AuthModal: React.FC = () => {
 
         {/* Header Banner */}
         <div className="bg-gradient-to-r from-purple-700 via-purple-800 to-pink-600 p-6 text-white text-center">
-          <div className="flex justify-center mb-2">
-            <img src="/logo.png" alt="ReVibe FliP" className="h-14 w-auto object-contain brightness-110 drop-shadow" />
+          <div className="flex justify-center mb-3">
+            <Logo variant="dark" size="md" layout="stacked" />
           </div>
           <h2 className="text-xl font-bold">
             {mode === 'login' && 'Connexion à votre compte'}

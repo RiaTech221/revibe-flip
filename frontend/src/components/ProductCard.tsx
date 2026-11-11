@@ -1,111 +1,133 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
-import { MapPin, Star, ShieldCheck } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { Heart, ShoppingCart, Plus, Check } from 'lucide-react';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { addToCart } = useCart();
+  const [isLiked, setIsLiked] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
+
   const formatPrice = (amount: number) => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const getConditionColor = (cond: string) => {
-    switch (cond) {
-      case 'NEW_WITH_TAG':
-        return 'bg-emerald-500 text-white';
-      case 'VERY_GOOD':
-        return 'bg-purple-600 text-white';
-      case 'GOOD':
-        return 'bg-blue-600 text-white';
-      default:
-        return 'bg-gray-600 text-white';
-    }
+  const imageSrc =
+    product.primaryImage ||
+    (product.images && product.images.length > 0
+      ? product.images[0]
+      : 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80');
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
   };
 
-  const imageSrc = product.primaryImage || (product.images && product.images.length > 0 ? product.images[0] : 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80');
+  const handleToggleLike = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsLiked(!isLiked);
+  };
+
+  // Tag d'état épuré pour la seconde main
+  const conditionShort = product.conditionLabel
+    ? product.conditionLabel.replace('avec étiquette', '')
+    : null;
 
   return (
-    <div className="group bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col">
-      {/* Seller Header */}
-      <div className="p-3 flex items-center justify-between border-b border-gray-50">
-        <div className="flex items-center gap-2">
-          <img
-            src={product.seller?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller?.fullName || 'Vendeur')}&background=9333ea&color=fff`}
-            alt={product.seller?.fullName}
-            className="w-7 h-7 rounded-full object-cover border border-purple-100"
-          />
-          <span className="text-xs font-semibold text-gray-800 truncate max-w-[120px]">
-            {product.seller?.fullName}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 text-xs text-amber-500 font-bold">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          <span>{product.seller?.rating ? product.seller.rating.toFixed(1) : '5.0'}</span>
-        </div>
-      </div>
-
-      {/* Product Image */}
-      <Link to={`/product/${product.id}`} className="relative block aspect-[4/5] overflow-hidden bg-gray-100">
+    <div className="group flex flex-col justify-between bg-white rounded-2xl overflow-hidden border border-slate-200/80 hover:border-purple-300 hover:shadow-lg transition-all duration-300">
+      {/* 1. PHOTO DE L'ARTICLE DE SECONDE MAIN (ÉPURÉE, RATIO 3:4) */}
+      <Link
+        to={`/product/${product.id}`}
+        className="relative block w-full aspect-[3/4] overflow-hidden bg-slate-50"
+      >
         <img
           src={imageSrc}
           alt={product.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300 ease-out"
         />
 
-        {/* Condition Tag */}
-        <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md ${getConditionColor(product.condition)}`}>
-          {product.conditionLabel}
-        </span>
+        {/* État de l'article (unique badge essentiel en seconde main) */}
+        {conditionShort && (
+          <span className="absolute bottom-2.5 left-2.5 bg-slate-900/80 backdrop-blur-xs text-white text-[10px] font-medium px-2.5 py-0.5 rounded-md shadow-2xs">
+            {conditionShort}
+          </span>
+        )}
 
-        {/* Sold Badge */}
+        {/* Bouton Favori discret */}
+        <button
+          type="button"
+          onClick={handleToggleLike}
+          className={`absolute top-2.5 right-2.5 w-8 h-8 rounded-full backdrop-blur-xs flex items-center justify-center transition-all shadow-xs ${
+            isLiked
+              ? 'bg-white text-red-500 scale-105'
+              : 'bg-white/85 hover:bg-white text-slate-500 hover:text-red-500 opacity-90 sm:opacity-0 sm:group-hover:opacity-100'
+          }`}
+          title={isLiked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+        >
+          <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-500' : ''}`} />
+        </button>
+
+        {/* Badge Vendu si indisponible */}
         {product.status === 'SOLD' && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-rose-600 text-white font-black text-sm uppercase tracking-wider px-4 py-1.5 rounded-full shadow-lg transform -rotate-6">
+            <span className="bg-purple-700 text-white font-black text-xs uppercase tracking-wider px-3.5 py-1.5 rounded-full shadow-lg transform -rotate-6">
               Vendu
             </span>
           </div>
         )}
       </Link>
 
-      {/* Product Info */}
-      <div className="p-4 flex flex-col flex-1 justify-between">
-        <div>
-          <div className="flex items-baseline justify-between gap-2">
-            <h3 className="text-base font-extrabold text-gray-900 group-hover:text-purple-700 transition-colors">
-              {formatPrice(product.price)}
-            </h3>
-            {product.size && (
-              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-700">
-                {product.size}
-              </span>
+      {/* 2. DÉTAILS ÉPURÉS SECONDE MAIN (AÉRÉS & SANS SURCHARGE) */}
+      <div className="p-3.5 sm:p-4 flex flex-col justify-between flex-1 gap-2">
+        <Link to={`/product/${product.id}`} className="block">
+          {/* Titre aéré sur 2 lignes sans coupure */}
+          <h3 className="text-[13px] sm:text-sm font-semibold text-slate-800 line-clamp-2 min-h-[36px] sm:min-h-[40px] leading-snug group-hover:text-purple-700 transition-colors">
+            {product.title}
+          </h3>
+
+          {/* Micro-détail seconde main : Taille ou Marque ou Ville */}
+          <p className="text-xs text-slate-500 truncate mt-1">
+            {product.size ? `Taille ${product.size}` : (product.brand || product.locationCity || 'Dakar')}
+            {product.brand && product.size && <span className="text-slate-300"> • </span>}
+            {product.brand && product.size && <span>{product.brand}</span>}
+          </p>
+        </Link>
+
+        {/* 3. PRIX NET SECONDE MAIN + BOUTON PANIER */}
+        <div className="flex items-center justify-between pt-2 mt-auto border-t border-slate-100">
+          <span className="text-sm sm:text-base font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors">
+            {formatPrice(product.price)}
+          </span>
+
+          <button
+            type="button"
+            onClick={handleAdd}
+            className={`h-7 px-2.5 rounded-full border transition-all active:scale-95 flex items-center gap-1 shadow-2xs ${
+              justAdded
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'border-slate-200 hover:border-purple-600 hover:bg-purple-600 hover:text-white text-slate-600 bg-white'
+            }`}
+            title="Ajouter au panier"
+          >
+            {justAdded ? (
+              <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+            ) : (
+              <>
+                <ShoppingCart className="w-3.5 h-3.5" />
+                <Plus className="w-2.5 h-2.5 stroke-[3]" />
+              </>
             )}
-          </div>
-
-          <Link to={`/product/${product.id}`} className="block mt-1">
-            <p className="text-sm font-medium text-gray-700 line-clamp-1 group-hover:text-gray-900">
-              {product.title}
-            </p>
-          </Link>
-
-          {product.brand && (
-            <p className="text-xs text-gray-400 mt-0.5 font-medium">
-              {product.brand}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-gray-500">
-          <span className="flex items-center gap-1 truncate">
-            <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-            <span className="truncate">{product.locationCity || 'Dakar'}</span>
-          </span>
-          <span className="flex items-center gap-1 text-emerald-700 font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-            Escrow
-          </span>
+          </button>
         </div>
       </div>
     </div>

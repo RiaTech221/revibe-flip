@@ -1,5 +1,6 @@
 package com.revibeflip.entity;
 
+import com.revibeflip.entity.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,18 @@ public class Message {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MessageType messageType = MessageType.TEXT;
+
+    @Column(length = 500)
+    private String imageUrl;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "offer_id")
+    private ChatOffer offer;
 
     @Column(nullable = false)
     @Builder.Default

@@ -1,3 +1,15 @@
+export interface PageResponse<T> {
+  content: T[];
+  pageNumber: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
+  isFirst: boolean;
+  isLast: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
 export interface User {
   id: number;
   firstName: string;
@@ -41,9 +53,40 @@ export interface Category {
 }
 
 export type ProductCondition = 'NEW_WITH_TAG' | 'VERY_GOOD' | 'GOOD' | 'SATISFACTORY';
-export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'SOLD' | 'INACTIVE';
+export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'RESERVED' | 'SOLD' | 'INACTIVE';
 export type ReportReason = 'MISLEADING_LISTING' | 'COUNTERFEIT' | 'SCAM' | 'FAKE_PROFILE' | 'ABUSIVE_BEHAVIOR' | 'OTHER';
 export type ReportStatus = 'PENDING' | 'RESOLVED' | 'DISMISSED';
+
+export type OfferStatus = 'OFFER_SENT' | 'OFFER_ACCEPTED' | 'OFFER_DECLINED' | 'OFFER_EXPIRED' | 'OFFER_CANCELLED';
+export type MessageType = 'TEXT' | 'IMAGE' | 'OFFER' | 'SYSTEM';
+
+export interface ChatOffer {
+  id: number;
+  conversationId: number;
+  sellerId: number;
+  sellerName: string;
+  buyerId: number;
+  buyerName: string;
+  productId: number;
+  productTitle: string;
+  productImageUrl?: string;
+  productCondition?: string;
+  initialPrice: number;
+  agreedPrice: number;
+  deliveryMode: DeliveryMode;
+  deliveryModeLabel?: string;
+  deliveryFee: number;
+  validationFee: number;
+  totalAmount: number;
+  validityHours: number;
+  expiresAt: string;
+  status: OfferStatus;
+  orderId?: number;
+  orderNumber?: string;
+  isExpired: boolean;
+  secondsRemaining: number;
+  createdAt: string;
+}
 
 export interface Product {
   id: number;
@@ -56,6 +99,8 @@ export interface Product {
   color?: string;
   condition: ProductCondition;
   conditionLabel: string;
+  defects?: string;
+  measurements?: string;
   status: ProductStatus;
   categoryId: number;
   categoryName: string;
@@ -73,7 +118,7 @@ export interface Product {
 
 export type DeliveryMode = 'HOME_DELIVERY' | 'DIRECT_HANDOVER';
 export type DeliveryStatus = 'PENDING' | 'PICKED_UP' | 'IN_TRANSIT' | 'OUT_FOR_DELIVERY' | 'DELIVERED';
-export type OrderStatus = 'PENDING_PAYMENT' | 'PAID_ESCROW_LOCKED' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED';
+export type OrderStatus = 'AWAITING_PAYMENT' | 'PENDING_PAYMENT' | 'PAID_ESCROW_LOCKED' | 'SHIPPED' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED' | 'EXPIRED';
 export type PaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY';
 export type EscrowStatus = 'LOCKED' | 'RELEASED_TO_SELLER' | 'REFUNDED_TO_BUYER';
 
@@ -109,6 +154,14 @@ export interface Payment {
   escrowReleasedDate?: string;
 }
 
+export interface OrderItem {
+  id: number;
+  productId: number;
+  productTitle: string;
+  productImageUrl?: string;
+  price: number;
+}
+
 export interface Order {
   id: number;
   orderNumber: string;
@@ -116,6 +169,8 @@ export interface Order {
   productTitle: string;
   productImageUrl?: string;
   itemPrice: number;
+  originalPrice?: number;
+  agreedPrice?: number;
   validationFee: number;
   deliveryFee: number;
   totalAmount: number;
@@ -128,10 +183,16 @@ export interface Order {
   deliveryPhone?: string;
   deliveryNotes?: string;
   status: OrderStatus;
+  deliveryStatus?: DeliveryStatus;
+  deliveryStatusLabel?: string;
   buyer: User;
   seller: User;
   delivery?: Delivery;
   payment?: Payment;
+  items?: OrderItem[];
+  itemCount?: number;
+  chatOfferId?: number;
+  reservationExpiresAt?: string;
   createdAt: string;
 }
 
@@ -142,6 +203,9 @@ export interface Message {
   senderName: string;
   senderAvatar?: string;
   content: string;
+  messageType?: MessageType;
+  imageUrl?: string;
+  offer?: ChatOffer;
   isRead: boolean;
   sentAt: string;
 }
@@ -152,8 +216,11 @@ export interface Conversation {
   productTitle?: string;
   productImageUrl?: string;
   productPrice?: string;
+  productCondition?: string;
   buyer: User;
   seller: User;
+  referencedProducts?: Product[];
+  activeOffer?: ChatOffer;
   lastMessagePreview?: string;
   lastMessageAt?: string;
   unreadCount: number;
@@ -184,11 +251,183 @@ export interface Notification {
 
 export interface AdminDashboard {
   totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
   totalProducts: number;
   activeProducts: number;
+  soldProducts: number;
+  inactiveProducts: number;
   totalOrders: number;
+  totalTransactions: number;
   totalTransactionsAmount: number;
   totalCommissions: number;
   totalValidationFees: number;
   pendingReports: number;
+  topCategories?: { name: string; productCount: number; percentage: number }[];
+  paymentDistributions?: { paymentMethod: string; count: number; totalAmount: number; percentage: number }[];
+  salesTrends?: { label: string; amount: number; orderCount: number }[];
+}
+
+export interface AdminUserDetail {
+  user: User;
+  products: Product[];
+  purchases: Order[];
+  sales: Order[];
+  reviews: Review[];
+  totalSpent: number;
+  totalEarned: number;
+  averageRating: number;
+  totalReviews: number;
+}
+
+export interface AdminPayment {
+  id: number;
+  transactionReference: string;
+  orderId: number;
+  orderNumber: string;
+  productTitle: string;
+  buyerName: string;
+  buyerPhone: string;
+  sellerName: string;
+  sellerPhone: string;
+  itemPrice: number;
+  validationFee: number;
+  deliveryFee: number;
+  totalAmount: number;
+  platformCommission: number;
+  sellerPayout: number;
+  paymentMethod: string;
+  paymentMethodName: string;
+  status: string;
+  escrowStatus: string;
+  escrowStatusDescription: string;
+  payerPhoneNumber?: string;
+  paymentDate?: string;
+  createdAt: string;
+}
+
+export interface PlatformSettings {
+  id: number;
+  commissionRate: number;
+  validationFeeRate: number;
+  platformName: string;
+  supportEmail: string;
+  supportPhone: string;
+  currency: string;
+  offerValidityHours?: number;
+  reservationDurationHours?: number;
+  demoMode?: boolean;
+  updatedBy: string;
+  updatedAt: string;
+}
+
+export interface AdminActionLog {
+  id: number;
+  adminName: string;
+  adminPhone: string;
+  actionType: string;
+  targetType: string;
+  targetId: string;
+  details: string;
+  createdAt: string;
+}
+
+// --- CMS & Dynamic Content Types ---
+
+export type PageStatus = 'DRAFT' | 'PUBLISHED';
+export type FooterColumn = 'HELP' | 'LEGAL' | 'NONE';
+
+export interface CmsPage {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+  status: PageStatus;
+  showInFooter: boolean;
+  footerColumn: FooterColumn;
+  sortOrder: number;
+  isSystemPage: boolean;
+  pdfUrl?: string;
+  updatedByName?: string;
+  createdAt: string;
+  updatedAt: string;
+  currentVersion?: number;
+}
+
+export interface PageVersion {
+  id: number;
+  pageId: number;
+  versionNumber: number;
+  title: string;
+  content: string;
+  pdfUrl?: string;
+  status: PageStatus;
+  changeSummary?: string;
+  createdByName?: string;
+  createdAt: string;
+}
+
+export interface FaqItem {
+  id: number;
+  question: string;
+  answer: string;
+  category: string;
+  sortOrder: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ContactMessageStatus = 'NEW' | 'READ' | 'RESOLVED' | 'ARCHIVED';
+
+export interface ContactMessage {
+  id: number;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  ipAddress?: string;
+  status: ContactMessageStatus;
+  adminNotes?: string;
+  handledByName?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+export interface FooterConfig {
+  platformName: string;
+  catchphrase: string;
+  copyright: string;
+  supportEmail: string;
+  supportPhone: string;
+  supportAddress: string;
+  supportHours: string;
+  demoMode: boolean;
+  logoDarkBgUrl?: string;
+  logoLightBgUrl?: string;
+  socialLinks: Record<string, string>;
+  helpPages: CmsPage[];
+  legalPages: CmsPage[];
+}
+
+export interface AnnouncementBanner {
+  enabled: boolean;
+  message: string;
+  link?: string;
+  startDate?: string;
+  endDate?: string;
+  isCurrentlyActive: boolean;
+}
+
+export interface MediaAsset {
+  id: number;
+  filename: string;
+  originalFilename: string;
+  fileType: string;
+  fileSize: number;
+  url: string;
+  altText: string;
+  uploadedByName: string;
+  createdAt: string;
 }

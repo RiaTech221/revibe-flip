@@ -9,6 +9,13 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * DTO de paiement et séquestre.
+ *
+ * NOTE SUR LE SÉQUESTRE :
+ * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
+ * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,14 +40,14 @@ public class PaymentDto {
         return PaymentDto.builder()
                 .id(payment.getId())
                 .orderId(payment.getOrder() != null ? payment.getOrder().getId() : null)
-                .paymentMethod(payment.getPaymentMethod().name())
-                .paymentMethodName(payment.getPaymentMethod().getDisplayName())
+                .paymentMethod(payment.getPaymentMethod() != null ? payment.getPaymentMethod().name() : null)
+                .paymentMethodName(payment.getPaymentMethod() != null ? payment.getPaymentMethod().getDisplayName() : null)
                 .transactionReference(payment.getTransactionReference())
                 .amount(payment.getAmount())
                 .validationFee(payment.getValidationFee())
-                .status(payment.getStatus().name())
-                .escrowStatus(payment.getEscrowStatus().name())
-                .escrowStatusDescription(payment.getEscrowStatus().getDescription())
+                .status(payment.getStatus() != null ? payment.getStatus().name() : null)
+                .escrowStatus(payment.getEscrowStatus() != null ? payment.getEscrowStatus().name() : null)
+                .escrowStatusDescription(payment.getEscrowStatus() != null ? payment.getEscrowStatus().getDescription() : null)
                 .payerPhoneNumber(payment.getPayerPhoneNumber())
                 .paymentDate(payment.getPaymentDate())
                 .escrowReleasedDate(payment.getEscrowReleasedDate())

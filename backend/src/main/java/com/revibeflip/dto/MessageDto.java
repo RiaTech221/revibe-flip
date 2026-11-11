@@ -19,6 +19,9 @@ public class MessageDto {
     private String senderName;
     private String senderAvatar;
     private String content;
+    private String messageType;
+    private String imageUrl;
+    private ChatOfferDto offer;
     private Boolean isRead;
     private LocalDateTime sentAt;
 
@@ -31,6 +34,9 @@ public class MessageDto {
                 .senderName(message.getSender() != null ? message.getSender().getFullName() : null)
                 .senderAvatar(message.getSender() != null ? message.getSender().getProfilePicture() : null)
                 .content(message.getContent())
+                .messageType(message.getMessageType() != null ? message.getMessageType().name() : "TEXT")
+                .imageUrl(message.getImageUrl())
+                .offer(message.getOffer() != null ? ChatOfferDto.fromEntity(message.getOffer()) : null)
                 .isRead(message.getIsRead())
                 .sentAt(message.getSentAt())
                 .build();

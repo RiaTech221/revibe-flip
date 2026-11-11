@@ -42,3 +42,37 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #cbd5e1;
 }
+
+/* Hide scrollbar completely when requested (Chrome, Safari, Edge, Firefox, IE) */
+.no-scrollbar,
+.scrollbar-none,
+[data-no-scrollbar] {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;     /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar,
+[data-no-scrollbar]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar-thumb,
+.scrollbar-none::-webkit-scrollbar-thumb,
+[data-no-scrollbar]::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
+  opacity: 0 !important;
+}
+
+.no-scrollbar::-webkit-scrollbar-track,
+.scrollbar-none::-webkit-scrollbar-track,
+[data-no-scrollbar]::-webkit-scrollbar-track {
+  display: none !important;
+  background: transparent !important;
+  opacity: 0 !important;
+}

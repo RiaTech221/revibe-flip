@@ -3,7 +3,12 @@ package com.revibeflip.entity.enums;
 public enum NotificationType {
     OTP,
     NEW_MESSAGE,
+    NEW_OFFER,
+    OFFER_ACCEPTED,
+    OFFER_DECLINED,
+    OFFER_EXPIRING,
     ORDER_CREATED,
+    ORDER_EXPIRED,
     PAYMENT_CONFIRMED,
     DELIVERY_STATUS_CHANGED,
     ORDER_DELIVERED,

@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dossier UML Visual Paradigm Edition — ReVibe FliP (V1 MVP)</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --vp-purple-dark: #2e1065;
+            --vp-purple-main: #5b21b6;
+            --vp-purple-accent: #7c3aed;
+            --vp-purple-border: #6d28d9;
+            --vp-purple-fill: #f3e8ff;
+            --vp-purple-soft: #faf5ff;
+            --vp-text: #1e1b4b;
+            --vp-muted: #5b21b6;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f5f3ff;
+            color: var(--vp-text);
+            line-height: 1.55;
+        }
+        header {
+            background: linear-gradient(135deg, #1e0b4b 0%, #4c1d95 50%, #6d28d9 100%);
+            color: white;
+            padding: 1.5rem 2.2rem;
+            border-bottom: 4px solid #c084fc;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            box-shadow: 0 4px 20px rgba(46, 16, 101, 0.35);
+        }
+        .header-title h1 {
+            margin: 0;
+            font-size: 1.45rem;
+            letter-spacing: -0.01em;
+        }
+        .header-title p {
+            margin: 0.25rem 0 0;
+            color: #e9d5ff;
+            font-size: 0.87rem;
+        }
+        .toolbar {
+            display: flex;
+            gap: 0.7rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: #9333ea;
+            color: white;
+            border: 1px solid #d8b4fe;
+            padding: 0.58rem 1.15rem;
+            border-radius: 7px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.86rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(147, 51, 234, 0.4);
+        }
+        .btn:hover { background: #7e22ce; transform: translateY(-1px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(233,213,255,0.45);
+            box-shadow: none;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.25); }
+        .layout {
+            display: grid;
+            grid-template-columns: 305px 1fr;
+            max-width: 1850px;
+            margin: 0 auto;
+        }
+        aside {
+            background: #ffffff;
+            border-right: 2px solid #ddd6fe;
+            padding: 1.1rem 0.9rem;
+            height: calc(100vh - 90px);
+            position: sticky;
+            top: 90px;
+            overflow-y: auto;
+        }
+        aside h3 {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--vp-purple-accent);
+            margin: 0.85rem 0 0.4rem 0.45rem;
+            font-weight: 800;
+            border-left: 3px solid var(--vp-purple-accent);
+            padding-left: 0.45rem;
+        }
+        aside h3:first-child { margin-top: 0; }
+        aside nav a {
+            display: block;
+            padding: 0.38rem 0.65rem;
+            color: var(--vp-text);
+            text-decoration: none;
+            font-size: 0.82rem;
+            border-radius: 6px;
+            margin-bottom: 0.12rem;
+            transition: all 0.15s;
+        }
+        aside nav a:hover {
+            background: var(--vp-purple-fill);
+            color: var(--vp-purple-main);
+            font-weight: 700;
+            padding-left: 0.9rem;
+        }
+        main {
+            padding: 1.6rem 2.2rem;
+            min-width: 0;
+        }
+        .vp-banner {
+            background: linear-gradient(90deg, #ede9fe 0%, #f3e8ff 100%);
+            border: 2px solid #8b5cf6;
+            color: #2e1065;
+            padding: 0.75rem 1.2rem;
+            border-radius: 9px;
+            margin-bottom: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+        section.diagram-card {
+            background: #ffffff;
+            border: 2px solid #c4b5fd;
+            border-radius: 10px;
+            margin-bottom: 2.2rem;
+            box-shadow: 0 6px 18px rgba(76, 29, 149, 0.08);
+            page-break-inside: avoid;
+            overflow: hidden;
+        }
+        /* Visual Paradigm Window Frame Header */
+        .vp-frame-bar {
+            background: linear-gradient(90deg, #4c1d95 0%, #6d28d9 100%);
+            color: white;
+            padding: 0.45rem 1.1rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .vp-frame-tag {
+            background: #f3e8ff;
+            color: #3b0764;
+            padding: 0.15rem 0.65rem;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+            font-weight: 800;
+            font-size: 0.75rem;
+        }
+        .diagram-body {
+            padding: 1.25rem 1.6rem 1.6rem;
+        }
+        .diagram-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid #e9d5ff;
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.9rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .diagram-header h2 {
+            margin: 0;
+            color: var(--vp-purple-dark);
+            font-size: 1.22rem;
+        }
+        .diagram-desc {
+            color: #4b5563;
+            font-size: 0.88rem;
+            margin: 0.25rem 0 0;
+        }
+        .spec-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 0.65rem;
+            background: #faf5ff;
+            border: 1px solid #ddd6fe;
+            border-left: 4px solid #7c3aed;
+            border-radius: 6px;
+            padding: 0.7rem 0.95rem;
+            margin-bottom: 1rem;
+            font-size: 0.81rem;
+        }
+        .spec-item strong {
+            color: var(--vp-purple-main);
+            display: block;
+            margin-bottom: 0.1rem;
+        }
+        .diagram-container {
+            background: #ffffff;
+            background-image: radial-gradient(#ddd6fe 1px, transparent 1px);
+            background-size: 18px 18px;
+            border: 1.5px solid #a78bfa;
+            border-radius: 6px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            text-align: center;
+            position: relative;
+        }
+        /* Visual Paradigm Pentagon Corner Label inside Diagram Canvas */
+        .vp-canvas-Pentagon {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: #ede9fe;
+            border-right: 1.5px solid #7c3aed;
+            border-bottom: 1.5px solid #7c3aed;
+            color: #2e1065;
+            font-size: 0.73rem;
+            font-weight: 800;
+            padding: 0.2rem 0.85rem 0.2rem 0.55rem;
+            border-bottom-right-radius: 10px;
+            font-family: 'Segoe UI', sans-serif;
+            z-index: 2;
+        }
+        .diagram-container svg {
+            max-width: 100%;
+            height: auto;
+            margin-top: 0.75rem;
+        }
+        .btn-sm {
+            background: #f3e8ff;
+            color: #4c1d95;
+            border: 1px solid #c4b5fd;
+            padding: 0.38rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-sm:hover {
+            background: #7c3aed;
+            color: white;
+        }
+        @media print {
+            header, aside, .btn-sm, .toolbar, .vp-banner { display: none !important; }
+            .layout { display: block; }
+            main { padding: 0; }
+            section.diagram-card { box-shadow: none; margin-bottom: 1.2rem; page-break-inside: avoid; }
+        }
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+            aside { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">
+        <h1>💜 ReVibe FliP (V1 MVP) — Modélisation UML Standard Visual Paradigm</h1>
+        <p>Acteurs Bonhommes UML (Stickmen) • Fourches Parallèles (Fork/Join & par) • Ellipses Use Cases • Thème Mauve</p>
+    </div>
+    <div class="toolbar">
+        <button class="btn" onclick="window.print()">📥 Exporter le Dossier en PDF</button>
+        <button class="btn btn-secondary" onclick="downloadAllSVG()">🖼️ Télécharger les 21 Diagrammes (.SVG)</button>
+    </div>
+</header>
+
+<div class="layout">
+    <aside>
+        <h3>I. Diagrammes Use Case (Visual Paradigm)</h3>
+        <nav>
+            <a href="#uc01">01. Use Case 1 — Vue Globale (Stickmen)</a>
+            <a href="#uc02">02. Use Case 2 — Inscription & OTP SMS</a>
+            <a href="#uc03">03. Use Case 3 — Catalogue, Annonces & Chat</a>
+            <a href="#uc04">04. Use Case 4 — Commande, Paiement & Avis</a>
+            <a href="#uc05">05. Use Case 5 — Back-Office Administrateur</a>
+        </nav>
+        <h3>II. Diagrammes de Packages (Onglets VP)</h3>
+        <nav>
+            <a href="#pk06">06. Package 1 — Architecture Multi-Projets</a>
+            <a href="#pk07">07. Package 2 — Backend Spring Boot</a>
+            <a href="#pk08">08. Package 3 — Clients React & RN</a>
+        </nav>
+        <h3>III. Diagrammes de Classes & MPD</h3>
+        <nav>
+            <a href="#cl08b">08bis. Classes Global — Héritage, Composition, Agrégation</a>
+            <a href="#cl09">09. Classes 1 — Comptes, Pays & Catalogue</a>
+            <a href="#cl10">10. Classes 2 — Commandes, Paiement & Livraison</a>
+            <a href="#cl11">11. Classes 3 — Chat, Avis, Litiges & Notifs</a>
+            <a href="#er12">12. MPD / ERD — Schéma MySQL 8.x (Flyway)</a>
+        </nav>
+        <h3>IV. Séquences (alt, opt, loop, par)</h3>
+        <nav>
+            <a href="#sq13">13. Séquence 1 — Inscription & OTP SMS</a>
+            <a href="#sq14">14. Séquence 2 — Publication & Upload Parallèle</a>
+            <a href="#sq15">15. Séquence 3 — Messagerie STOMP Parallèle</a>
+            <a href="#sq16">16. Séquence 4 — Commande & Paiement Mobile</a>
+            <a href="#sq17">17. Séquence 5 — Livraison, Escrow & Avis</a>
+            <a href="#sq18">18. Séquence 6 — Signalement & Arbitrage Admin</a>
+        </nav>
+        <h3>V. Activité (Fork/Join), États & Déploiement</h3>
+        <nav>
+            <a href="#ac19">19. Activité — Parcours avec Fork/Join Parallèle</a>
+            <a href="#st20">20. États-Transitions — Cycles de Statuts</a>
+            <a href="#dp21">21. Déploiement — Cubes 3D & Composants</a>
+        </nav>
+    </aside>
+
+    <main>
+        <div class="vp-banner">
+            <span>👤 Représentation Visual Paradigm activée : Acteurs en Bonhommes UML (Stickmen), Cas d'utilisation en Ellipses, Packages à onglets et Barres de parallélisme (Fork/Join &amp; par)</span>
+            <span id="render-counter">Chargement des 21 diagrammes...</span>
+        </div>
+
+        <!-- =====================================================================
+             01. USE CASE 1 : VUE GLOBALE (VISUAL PARADIGM NATIF)
+             ===================================================================== -->
+        <section class="diagram-card" id="uc01">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Use Case Diagram</span>
+                <span class="vp-frame-tag">uc ReVibeFliP_Global_Overview</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>01. Use Case 1 — Vue Globale du Système ReVibe FliP (Avec Bonhommes UML)</h2>
+                        <p class="diagram-desc">Restauration et optimisation du Use Case 1 global selon la notation Visual Paradigm : acteurs bonhommes (Stickmen), flèches de généralisation à pointe triangulaire creuse, cadre système et ellipses.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('uc01', '01_VP_UseCase_Global')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="spec-box">
+                    <div class="spec-item"><strong>Acteurs Primaires (Gauche)</strong>Visiteur, Utilisateur Vérifié (dont héritent Acheteur et Vendeur), Administrateur.</div>
+                    <div class="spec-item"><strong>Acteurs Secondaires (Droite)</strong>Passerelle SMS OTP, Opérateurs Mobile Money (Wave/OM/Free), Cloud Storage Images.</div>
+                    <div class="spec-item"><strong>Optimisation Visuelle</strong>Aucun croisement de lignes grâce à l'héritage UML entre Acheteur/Vendeur et Utilisateur.</div>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">uc ReVibeFliP_System_V1</div>
+                    <svg viewBox="0 0 1120 620" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <marker id="vp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                                <path d="M 0 1 L 9 5 L 0 9" fill="none" stroke="#5b21b6" stroke-width="1.8"/>
+                            </marker>
+                            <marker id="vp-inherit" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="9" markerHeight="9" orient="auto-start-reverse">
+                                <polygon points="0,1 11,6 0,11" fill="#ffffff" stroke="#5b21b6" stroke-width="1.8"/>
+                            </marker>
+                            <g id="stickman">
+                                <circle cx="0" cy="-22" r="10" fill="#f3e8ff" stroke="#5b21b6" stroke-width="2.2"/>
+                                <line x1="0" y1="-12" x2="0" y2="14" stroke="#5b21b6" stroke-width="2.2"/>
+                                <line x1="-16" y1="-2" x2="16" y2="-2" stroke="#5b21b6" stroke-width="2.2"/>
+                                <line x1="0" y1="14" x2="-13" y2="34" stroke="#5b21b6" stroke-width="2.2"/>
+                                <line x1="0" y1="14" x2="13" y2="34" stroke="#5b21b6" stroke-width="2.2"/>
+                            </g>
+                        </defs>
+
+                        <!-- System Boundary Box (Visual Paradigm Style) -->
+                        <rect x="275" y="25" width="570" height="570" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="2.2"/>
+                        <rect x="275" y="25" width="570" height="32" fill="#ede9fe" stroke="#6d28d9" stroke-width="2.2"/>
+                        <text x="560" y="46" text-anchor="middle" font-weight="800" font-size="14" fill="#2e1065">«system» Plateforme ReVibe FliP — Version 1 (MVP Sénégal)</text>
+
+                        <!-- Stickmen Left (Primary Actors) -->
+                        <use href="#stickman" x="85" y="95"/>
+                        <text x="85" y="148" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Visiteur</text>
+
+                        <use href="#stickman" x="85" y="240"/>
+                        <text x="85" y="292" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Utilisateur Vérifié</text>
+                        <text x="85" y="307" text-anchor="middle" font-size="11" fill="#6d28d9">(ROLE_USER)</text>
+
+                        <use href="#stickman" x="195" y="175"/>
+                        <text x="195" y="227" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Vendeur</text>
+
+                        <use href="#stickman" x="195" y="325"/>
+                        <text x="195" y="377" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Acheteur</text>
+
+                        <use href="#stickman" x="85" y="505"/>
+                        <text x="85" y="557" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Administrateur</text>
+                        <text x="85" y="572" text-anchor="middle" font-size="11" fill="#6d28d9">(ROLE_ADMIN)</text>
+
+                        <!-- Generalization Arrows (Seller & Buyer inherit from User) -->
+                        <line x1="175" y1="190" x2="108" y2="230" stroke="#5b21b6" stroke-width="1.8" marker-end="url(#vp-inherit)"/>
+                        <line x1="175" y1="315" x2="108" y2="255" stroke="#5b21b6" stroke-width="1.8" marker-end="url(#vp-inherit)"/>
+
+                        <!-- Stickmen Right (Secondary External Actors) -->
+                        <use href="#stickman" x="1010" y="115"/>
+                        <text x="1010" y="167" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">«actor» Passerelle SMS</text>
+                        <text x="1010" y="182" text-anchor="middle" font-size="11" fill="#6d28d9">(OTP +221)</text>
+
+                        <use href="#stickman" x="1010" y="275"/>
+                        <text x="1010" y="327" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">«actor» Cloud Storage</text>
+                        <text x="1010" y="342" text-anchor="middle" font-size="11" fill="#6d28d9">(AWS S3 / Cloudinary)</text>
+
+                        <use href="#stickman" x="1010" y="435"/>
+                        <text x="1010" y="487" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">«actor» Mobile Money</text>
+                        <text x="1010" y="502" text-anchor="middle" font-size="11" fill="#6d28d9">(Wave, Orange Money, Free)</text>
+
+                        <!-- Use Case Ellipses inside System Boundary -->
+                        <ellipse cx="560" cy="95" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="99" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC01 : S'inscrire, Valider OTP SMS &amp; Gérer son Compte</text>
+
+                        <ellipse cx="560" cy="160" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="164" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC02 : Publier et Gérer ses Annonces (Photos, Statuts)</text>
+
+                        <ellipse cx="560" cy="225" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="229" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC03 : Échanger par Messagerie Temps Réel &amp; Notifications</text>
+
+                        <ellipse cx="560" cy="290" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="294" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC04 : Rechercher, Filtrer et Consulter le Catalogue</text>
+
+                        <ellipse cx="560" cy="355" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="359" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC05 : Commander, Choisir la Livraison &amp; Suivre le Colis</text>
+
+                        <ellipse cx="560" cy="420" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="424" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC06 : Payer par Mobile Money (Frais 1% &amp; Séquestre Escrow)</text>
+
+                        <ellipse cx="560" cy="485" rx="185" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="560" y="489" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC07 : Confirmer la Réception, Noter (1-5 ⭐) &amp; Signaler</text>
+
+                        <ellipse cx="560" cy="550" rx="185" ry="26" fill="#ede9fe" stroke="#4c1d95" stroke-width="2.2"/>
+                        <text x="560" y="554" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">UC08 : Superviser le Dashboard KPI &amp; Modérer (Back-Office)</text>
+
+                        <!-- Associations Left Actors -> Use Cases -->
+                        <line x1="115" y1="95" x2="375" y2="95" stroke="#5b21b6" stroke-width="1.6"/>
+                        <line x1="115" y1="105" x2="375" y2="282" stroke="#5b21b6" stroke-width="1.5" stroke-dasharray="4,3"/>
+
+                        <line x1="115" y1="230" x2="375" y2="105" stroke="#5b21b6" stroke-width="1.6"/>
+                        <line x1="115" y1="240" x2="375" y2="225" stroke="#5b21b6" stroke-width="1.6"/>
+
+                        <line x1="215" y1="170" x2="375" y2="160" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="215" y1="185" x2="375" y2="345" stroke="#5b21b6" stroke-width="1.6"/>
+
+                        <line x1="215" y1="315" x2="375" y2="290" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="215" y1="328" x2="375" y2="355" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="215" y1="340" x2="375" y2="420" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="215" y1="352" x2="375" y2="485" stroke="#5b21b6" stroke-width="1.8"/>
+
+                        <line x1="115" y1="510" x2="375" y2="550" stroke="#5b21b6" stroke-width="2"/>
+
+                        <!-- Associations Use Cases -> Secondary Right Actors -->
+                        <line x1="745" y1="95" x2="980" y2="115" stroke="#5b21b6" stroke-width="1.7" marker-end="url(#vp-arrow)"/>
+                        <line x1="745" y1="225" x2="980" y2="130" stroke="#5b21b6" stroke-width="1.5" marker-end="url(#vp-arrow)"/>
+                        <line x1="745" y1="160" x2="980" y2="275" stroke="#5b21b6" stroke-width="1.7" marker-end="url(#vp-arrow)"/>
+                        <line x1="745" y1="420" x2="980" y2="435" stroke="#5b21b6" stroke-width="1.8" marker-end="url(#vp-arrow)"/>
+                        <line x1="745" y1="485" x2="980" y2="450" stroke="#5b21b6" stroke-width="1.6" marker-end="url(#vp-arrow)"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             02. USE CASE 2 : AUTHENTIFICATION & OTP (STICKMEN VP)
+             ===================================================================== -->
+        <section class="diagram-card" id="uc02">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Use Case Diagram</span>
+                <span class="vp-frame-tag">uc Auth_And_OTP_Management</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>02. Use Case 2 — Authentification, Vérification OTP SMS & Gestion du Profil</h2>
+                        <p class="diagram-desc">Représentation Visual Paradigm de la Section 4 : relations stéréotypées «include» et «extend» avec bonhommes UML.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('uc02', '02_VP_UseCase_Auth_OTP')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">uc Authentification_Profil</div>
+                    <svg viewBox="0 0 1080 450" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="220" y="20" width="640" height="410" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="2"/>
+                        <rect x="220" y="20" width="640" height="30" fill="#ede9fe" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="540" y="40" text-anchor="middle" font-weight="800" font-size="13.5" fill="#2e1065">«subsystem» Authentification, OTP &amp; Compte Utilisateur (Section 4)</text>
+
+                        <!-- Stickmen -->
+                        <use href="#stickman" x="90" y="115"/>
+                        <text x="90" y="168" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Visiteur</text>
+
+                        <use href="#stickman" x="90" y="310"/>
+                        <text x="90" y="363" text-anchor="middle" font-weight="700" font-size="12.5" fill="#2e1065">Utilisateur Connecté</text>
+
+                        <use href="#stickman" x="975" y="155"/>
+                        <text x="975" y="208" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">«actor» Passerelle SMS</text>
+
+                        <!-- Ellipses -->
+                        <ellipse cx="415" cy="95" rx="145" ry="26" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="415" y="99" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">S'inscrire (Nom, Téléphone, MDP)</text>
+
+                        <ellipse cx="715" cy="75" rx="120" ry="23" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+                        <text x="715" y="79" text-anchor="middle" font-weight="600" font-size="11.5" fill="#2e1065">Choisir Pays &amp; Indicatif (+221)</text>
+
+                        <ellipse cx="715" cy="155" rx="125" ry="25" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/>
+                        <text x="715" y="159" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Valider Code OTP par SMS</text>
+
+                        <ellipse cx="415" cy="180" rx="135" ry="23" fill="#ffffff" stroke="#8b5cf6" stroke-width="1.8" stroke-dasharray="4,2"/>
+                        <text x="415" y="184" text-anchor="middle" font-size="11.5" fill="#4c1d95">Saisir Email (Facultatif)</text>
+
+                        <ellipse cx="415" cy="250" rx="145" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="415" y="254" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">Se connecter / Mot de passe oublié</text>
+
+                        <ellipse cx="415" cy="325" rx="155" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="415" y="329" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">Modifier Profil, Photo &amp; Adresses</text>
+
+                        <ellipse cx="415" cy="390" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="415" y="394" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">Consulter Annonces, Commandes &amp; Avis</text>
+
+                        <!-- Lines -->
+                        <line x1="115" y1="110" x2="270" y2="95" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="130" x2="270" y2="245" stroke="#5b21b6" stroke-width="1.8"/>
+
+                        <line x1="115" y1="300" x2="260" y2="325" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="320" x2="250" y2="390" stroke="#5b21b6" stroke-width="1.8"/>
+
+                        <!-- Include / Extend -->
+                        <line x1="560" y1="88" x2="592" y2="78" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="575" y="72" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+
+                        <line x1="555" y1="105" x2="595" y2="145" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="588" y="128" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+
+                        <line x1="415" y1="157" x2="415" y2="122" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="452" y="144" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«extend»</text>
+
+                        <line x1="555" y1="240" x2="630" y2="175" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="615" y="218" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«extend» (Reset MDP)</text>
+
+                        <line x1="840" y1="155" x2="945" y2="155" stroke="#5b21b6" stroke-width="1.8" marker-end="url(#vp-arrow)"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             03. USE CASE 3 : CATALOGUE, ANNONCES & MESSAGERIE (STICKMEN VP)
+             ===================================================================== -->
+        <section class="diagram-card" id="uc03">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Use Case Diagram</span>
+                <span class="vp-frame-tag">uc Marketplace_Catalog_Messaging</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>03. Use Case 3 — Marketplace, Annonces, Recherche & Messagerie Temps Réel</h2>
+                        <p class="diagram-desc">Modélisation Visual Paradigm des Sections 5, 6, 7 et 8 avec acteurs bonhommes Acheteur et Vendeur en vis-à-vis.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('uc03', '03_VP_UseCase_Catalogue_Messagerie')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">uc Catalogue_Annonces_Chat</div>
+                    <svg viewBox="0 0 1080 460" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="210" y="20" width="660" height="420" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="2"/>
+                        <rect x="210" y="20" width="660" height="30" fill="#ede9fe" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="540" y="40" text-anchor="middle" font-weight="800" font-size="13.5" fill="#2e1065">«subsystem» Catalogue, Gestion des Annonces &amp; Messagerie (Sections 5 à 8)</text>
+
+                        <!-- Stickman Buyer Left -->
+                        <use href="#stickman" x="90" y="195"/>
+                        <text x="90" y="248" text-anchor="middle" font-weight="700" font-size="13" fill="#2e1065">Acheteur</text>
+
+                        <!-- Stickman Seller Right -->
+                        <use href="#stickman" x="985" y="195"/>
+                        <text x="985" y="248" text-anchor="middle" font-weight="700" font-size="13" fill="#2e1065">Vendeur</text>
+
+                        <!-- Buyer Use Cases -->
+                        <ellipse cx="395" cy="95" rx="145" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="395" y="99" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Rechercher par Mot-Clé au Catalogue</text>
+
+                        <ellipse cx="705" cy="95" rx="135" ry="24" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+                        <text x="705" y="99" text-anchor="middle" font-size="11" font-weight="600" fill="#2e1065">Filtrer (Catégorie, Prix, Taille, Pays)</text>
+
+                        <ellipse cx="395" cy="175" rx="145" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="395" y="179" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Consulter Fiche Produit &amp; Note Vendeur</text>
+
+                        <!-- Shared Chat Use Cases -->
+                        <ellipse cx="540" cy="255" rx="165" ry="26" fill="#ede9fe" stroke="#4c1d95" stroke-width="2.2"/>
+                        <text x="540" y="259" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">Échanger par Messages Temps Réel (STOMP)</text>
+
+                        <!-- Seller Use Cases -->
+                        <ellipse cx="685" cy="335" rx="150" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="685" y="339" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Créer &amp; Publier une Annonce</text>
+
+                        <ellipse cx="365" cy="335" rx="125" ry="23" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+                        <text x="365" y="339" text-anchor="middle" font-size="11" font-weight="600" fill="#2e1065">Uploader 1 à N Photos</text>
+
+                        <ellipse cx="685" cy="400" rx="160" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="685" y="404" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Modifier, Désactiver ou Supprimer Annonce</text>
+
+                        <!-- Buyer Associations -->
+                        <line x1="115" y1="180" x2="250" y2="95" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="195" x2="250" y2="175" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="210" x2="375" y2="255" stroke="#5b21b6" stroke-width="1.8"/>
+
+                        <!-- Seller Associations -->
+                        <line x1="960" y1="210" x2="705" y2="255" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="960" y1="225" x2="835" y2="335" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="960" y1="240" x2="845" y2="400" stroke="#5b21b6" stroke-width="1.8"/>
+
+                        <!-- Include / Extend -->
+                        <line x1="570" y1="95" x2="542" y2="95" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="556" y="84" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«extend»</text>
+
+                        <line x1="485" y1="230" x2="435" y2="200" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="505" y="216" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«extend» (Contacter)</text>
+
+                        <line x1="535" y1="335" x2="492" y2="335" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="514" y="325" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             04. USE CASE 4 : COMMANDE, PAIEMENT MOBILE, LIVRAISON & AVIS
+             ===================================================================== -->
+        <section class="diagram-card" id="uc04">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Use Case Diagram</span>
+                <span class="vp-frame-tag">uc Order_Payment_Delivery_Review</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>04. Use Case 4 — Commandes, Paiement Mobile (1% & Escrow), Livraison & Avis</h2>
+                        <p class="diagram-desc">Modélisation Visual Paradigm des Sections 9 à 13 avec les acteurs Acheteur, Vendeur et Passerelle Mobile Money.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('uc04', '04_VP_UseCase_Transaction_Livraison')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">uc Transactions_Et_Livraison</div>
+                    <svg viewBox="0 0 1080 470" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="210" y="20" width="660" height="430" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="2"/>
+                        <rect x="210" y="20" width="660" height="30" fill="#ede9fe" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="540" y="40" text-anchor="middle" font-weight="800" font-size="13.5" fill="#2e1065">«subsystem» Commandes, Paiement Mobile, Livraison &amp; Avis (Sections 9 à 13)</text>
+
+                        <!-- Stickmen -->
+                        <use href="#stickman" x="90" y="205"/>
+                        <text x="90" y="258" text-anchor="middle" font-weight="700" font-size="13" fill="#2e1065">Acheteur</text>
+
+                        <use href="#stickman" x="985" y="135"/>
+                        <text x="985" y="188" text-anchor="middle" font-weight="700" font-size="12" fill="#2e1065">«actor» Mobile Money</text>
+                        <text x="985" y="203" text-anchor="middle" font-size="11" fill="#6d28d9">(Wave / OM / Free)</text>
+
+                        <use href="#stickman" x="985" y="325"/>
+                        <text x="985" y="378" text-anchor="middle" font-weight="700" font-size="13" fill="#2e1065">Vendeur</text>
+
+                        <!-- Ellipses -->
+                        <ellipse cx="385" cy="95" rx="135" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="385" y="99" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Passer une Commande</text>
+
+                        <ellipse cx="715" cy="80" rx="130" ry="22" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+                        <text x="715" y="84" text-anchor="middle" font-size="11" font-weight="600" fill="#2e1065">Choisir Livraison (Domicile/Main)</text>
+
+                        <ellipse cx="715" cy="145" rx="135" ry="24" fill="#ede9fe" stroke="#4c1d95" stroke-width="2"/>
+                        <text x="715" y="149" text-anchor="middle" font-size="11" font-weight="700" fill="#2e1065">Payer (Prix + 1% Frais + Livraison)</text>
+
+                        <ellipse cx="540" cy="225" rx="170" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="540" y="229" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Préparer et Suivre les 5 Statuts de Livraison</text>
+
+                        <ellipse cx="395" cy="305" rx="145" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="395" y="309" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Confirmer la Réception (Déblocage)</text>
+
+                        <ellipse cx="715" cy="305" rx="130" ry="23" fill="#ede9fe" stroke="#7c3aed" stroke-width="1.8"/>
+                        <text x="715" y="309" text-anchor="middle" font-size="11" font-weight="600" fill="#2e1065">Noter (1 à 5 ⭐) &amp; Commenter</text>
+
+                        <ellipse cx="540" cy="395" rx="165" ry="25" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="540" y="399" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Signaler un Article ou un Utilisateur (Litige)</text>
+
+                        <!-- Lines -->
+                        <line x1="115" y1="185" x2="250" y2="95" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="205" x2="370" y2="225" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="220" x2="250" y2="305" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="115" y1="235" x2="375" y2="395" stroke="#5b21b6" stroke-width="1.6"/>
+
+                        <line x1="960" y1="315" x2="710" y2="225" stroke="#5b21b6" stroke-width="1.8"/>
+                        <line x1="960" y1="340" x2="705" y2="395" stroke="#5b21b6" stroke-width="1.6"/>
+
+                        <line x1="850" y1="145" x2="955" y2="145" stroke="#5b21b6" stroke-width="1.8" marker-end="url(#vp-arrow)"/>
+
+                        <!-- Include / Extend -->
+                        <line x1="520" y1="90" x2="582" y2="82" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="552" y="75" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+
+                        <line x1="515" y1="105" x2="585" y2="138" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="550" y="135" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+
+                        <line x1="585" y1="305" x2="542" y2="305" stroke="#6d28d9" stroke-width="1.6" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="564" y="295" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b21b6">«extend»</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             05. USE CASE 5 : BACK-OFFICE ADMINISTRATEUR (STICKMAN VP)
+             ===================================================================== -->
+        <section class="diagram-card" id="uc05">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Use Case Diagram</span>
+                <span class="vp-frame-tag">uc BackOffice_Administration</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>05. Use Case 5 — Back-Office Administrateur (Dashboard KPI & Modération)</h2>
+                        <p class="diagram-desc">Modélisation Visual Paradigm de la Section 15 avec l'acteur bonhomme Administrateur (`ROLE_ADMIN`).</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('uc05', '05_VP_UseCase_Admin_BackOffice')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">uc BackOffice_Admin</div>
+                    <svg viewBox="0 0 1050 430" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="230" y="20" width="770" height="390" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="2"/>
+                        <rect x="230" y="20" width="770" height="30" fill="#ede9fe" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="615" y="40" text-anchor="middle" font-weight="800" font-size="13.5" fill="#2e1065">«subsystem» Back-Office Administrateur ReVibe FliP (Section 15)</text>
+
+                        <use href="#stickman" x="100" y="205"/>
+                        <text x="100" y="258" text-anchor="middle" font-weight="700" font-size="13" fill="#2e1065">Administrateur</text>
+                        <text x="100" y="274" text-anchor="middle" font-size="11" fill="#6d28d9">(ROLE_ADMIN)</text>
+
+                        <!-- Column 1 Use Cases -->
+                        <ellipse cx="445" cy="95" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="445" y="99" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Consulter Dashboard KPI &amp; Commissions 1%</text>
+
+                        <ellipse cx="445" cy="160" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="445" y="164" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Rechercher, Suspendre ou Réactiver Comptes</text>
+
+                        <ellipse cx="445" cy="225" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="445" y="229" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Désactiver ou Supprimer des Annonces</text>
+
+                        <ellipse cx="445" cy="290" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="445" y="294" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Gérer les Catégories (Créer, Modifier, Suppr.)</text>
+
+                        <ellipse cx="445" cy="355" rx="165" ry="24" fill="#f3e8ff" stroke="#6d28d9" stroke-width="2"/>
+                        <text x="445" y="359" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Traiter et Clôturer les Signalements &amp; Litiges</text>
+
+                        <!-- Included Auth & Audit Use Case -->
+                        <ellipse cx="835" cy="225" rx="130" ry="28" fill="#ede9fe" stroke="#4c1d95" stroke-width="2"/>
+                        <text x="835" y="222" text-anchor="middle" font-weight="700" font-size="11.5" fill="#2e1065">Vérifier ROLE_ADMIN</text>
+                        <text x="835" y="237" text-anchor="middle" font-size="10.5" fill="#4c1d95">&amp; Journaliser l'Audit</text>
+
+                        <!-- Lines -->
+                        <line x1="125" y1="185" x2="280" y2="95" stroke="#5b21b6" stroke-width="1.7"/>
+                        <line x1="125" y1="195" x2="280" y2="160" stroke="#5b21b6" stroke-width="1.7"/>
+                        <line x1="125" y1="205" x2="280" y2="225" stroke="#5b21b6" stroke-width="1.7"/>
+                        <line x1="125" y1="215" x2="280" y2="290" stroke="#5b21b6" stroke-width="1.7"/>
+                        <line x1="125" y1="225" x2="280" y2="355" stroke="#5b21b6" stroke-width="1.7"/>
+
+                        <line x1="610" y1="160" x2="715" y2="210" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <line x1="610" y1="225" x2="705" y2="225" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <line x1="610" y1="290" x2="715" y2="240" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <line x1="610" y1="355" x2="735" y2="250" stroke="#6d28d9" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#vp-arrow)"/>
+                        <text x="665" y="218" font-size="10.5" font-weight="700" fill="#5b21b6">«include»</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             06. PACKAGE 1 : ARCHITECTURE GLOBALE
+             ===================================================================== -->
+        <section class="diagram-card" id="pk06">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Package Diagram</span>
+                <span class="vp-frame-tag">pkg ReVibeFliP_MultiProject_Architecture</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>06. Package 1 — Organisation Globale Multi-Projets (Web, Mobile, API, BDD)</h2>
+                        <p class="diagram-desc">Dépendances UML entre les packages applicatifs Frontend React, Mobile React Native et Backend Spring Boot.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('pk06', '06_VP_Package_Global')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">pkg Global_Ecosystem</div>
+                    <script type="text/plain" class="mermaid-source">
+flowchart TB
+    subgraph ClientTier["Couche Présentation & Clients (TypeScript)"]
+        direction LR
+        subgraph WebApp["📁 «package» frontend-web (React TS)"]
+            W_Pages["📁 pages\n(Marketplace, Product, Checkout, Admin)"]
+            W_Comp["📁 components & hooks\n(UI Kit, AuthContext, StompHook)"]
+            W_SDK["📁 services.api\n(Axios REST + STOMP Client)"]
+            W_Pages --> W_Comp --> W_SDK
+        end
+
+        subgraph MobApp["📁 «package» mobile-app (React Native TS)"]
+            M_Screens["📁 screens & navigation\n(Onboarding, OTP, Feed, Sell, Orders)"]
+            M_Comp["📁 components & store\n(CameraPicker, OrderStepper)"]
+            M_SDK["📁 services.api\n(Mobile REST + STOMP Client)"]
+            M_Screens --> M_Comp --> M_SDK
+        end
+    end
+
+    subgraph ServerTier["📁 «package» backend-api : com.revibeflip (Spring Boot / Java)"]
+        direction TB
+        B_Web["📁 presentation.controllers\n(REST Controllers, WebSocket STOMP, Webhook Callbacks)"]
+        B_Sec["📁 security.jwt\n(Spring Security 6, JwtFilter, RBAC ROLE_USER / ROLE_ADMIN)"]
+        B_Dom["📁 domain.modules\n(auth, user, catalog, messaging, order, payment, delivery, review, report, notification, admin)"]
+        B_Inf["📁 infrastructure.persistence & adapters\n(Spring Data JPA, Flyway, Wave/OM/Free Adapters, SMS OTP, S3)"]
+
+        B_Web --> B_Sec --> B_Dom --> B_Inf
+    end
+
+    W_SDK -. "«import / HTTPS & WSS»" .-> B_Web
+    M_SDK -. "«import / HTTPS & WSS»" .-> B_Web
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             07. PACKAGE 2 : BACKEND SPRING BOOT
+             ===================================================================== -->
+        <section class="diagram-card" id="pk07">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Package Diagram</span>
+                <span class="vp-frame-tag">pkg SpringBoot_Clean_Modular_Architecture</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>07. Package 2 — Architecture Interne du Backend Spring Boot</h2>
+                        <p class="diagram-desc">Découpage modulaire par domaine métier et Bus d'Événements asynchrone permettant de brancher la V2 sans modifier le cœur V1 (Section 24).</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('pk07', '07_VP_Package_Backend_SpringBoot')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">pkg com.revibeflip.backend</div>
+                    <script type="text/plain" class="mermaid-source">
+flowchart TB
+    subgraph CoreSecurity["📁 «package» common & security"]
+        direction LR
+        S_JWT["security.jwt\n(JwtProvider, JwtAuthFilter)"]
+        S_ERR["exception.handler\n(GlobalExceptionHandler, ApiError)"]
+        S_CFG["config\n(WebSocketConfig, SwaggerConfig)"]
+    end
+
+    subgraph DomainPackages["📁 «package» modules (Domaines Métier V1)"]
+        direction LR
+        subgraph P_Identity["Identité & Accès"]
+            M1["📁 auth (OTP, Login)"]
+            M2["📁 user (User, Country, Address)"]
+        end
+        subgraph P_Catalog["Catalogue & Chat"]
+            M3["📁 catalog (Product, Category, Image)"]
+            M4["📁 messaging (Conversation, Message)"]
+        end
+        subgraph P_Transac["Transactions & Escrow"]
+            M5["📁 order (Order, Calcul 1%)"]
+            M6["📁 payment (Payment, Escrow)"]
+            M7["📁 delivery (Delivery 5 Statuts)"]
+        end
+        subgraph P_Trust["Confiance & Admin"]
+            M8["📁 review (Note 1-5 & Avis)"]
+            M9["📁 report (Signalements)"]
+            M10["📁 admin (Dashboard & Modération)"]
+            M11["📁 notification (Async Listeners)"]
+        end
+    end
+
+    subgraph PortsAdapters["📁 «package» infrastructure.adapters (Ports Externes)"]
+        direction LR
+        A_Pay["📁 payment.gateway\n(WaveAdapter, OrangeMoneyAdapter, FreeMoneyAdapter)"]
+        A_Sms["📁 sms.gateway\n(SenegalOtpSmsAdapter)"]
+        A_Img["📁 storage.cloud\n(S3CloudinaryAdapter)"]
+    end
+
+    CoreSecurity --> DomainPackages
+    M1 --> A_Sms
+    M3 --> A_Img
+    M6 --> A_Pay
+    P_Transac -. "«publish async events»" .-> M11
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             08. PACKAGE 3 : CLIENTS REACT & REACT NATIVE
+             ===================================================================== -->
+        <section class="diagram-card" id="pk08">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Package Diagram</span>
+                <span class="vp-frame-tag">pkg Frontend_React_And_ReactNative</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>08. Package 3 — Architecture Frontend Web (React) & Mobile (React Native)</h2>
+                        <p class="diagram-desc">Organisation modulaire TypeScript par *Feature Packages*.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('pk08', '08_VP_Package_Clients_TS')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">pkg Client_TypeScript_Modules</div>
+                    <script type="text/plain" class="mermaid-source">
+flowchart TB
+    subgraph FeatureModules["📁 «package» src.features"]
+        direction LR
+        F_Auth["📁 auth\n(Register, OtpInput, CountrySelect)"]
+        F_Cat["📁 catalog\n(ProductGrid, Filters, ProductDetail, PublishAd)"]
+        F_Chat["📁 messaging\n(ConversationList, StompChatBox)"]
+        F_Ord["📁 orders\n(Checkout1Percent, MobilePay, DeliveryTracker)"]
+        F_Rev["📁 reviews-reports\n(StarRating, ReportDialog)"]
+        F_Adm["📁 admin-backoffice\n(KpiDashboard, ModerationTables)"]
+    end
+
+    subgraph CoreInfra["📁 «package» src.core"]
+        direction LR
+        C_Http["📁 api.rest\n(Axios Instance + Bearer Token Interceptor)"]
+        C_Ws["📁 api.websocket\n(STOMP Over WebSocket Client)"]
+        C_Guard["📁 routing.guards\n(AuthGuard & AdminRoleGuard)"]
+    end
+
+    subgraph SharedPkg["📁 «package» src.shared"]
+        direction LR
+        SH_UI["📁 components.ui\n(Buttons, Inputs, Modals, Badges)"]
+        SH_Types["📁 models.types\n(DTO Interfaces TypeScript)"]
+        SH_Util["📁 utils.formatters\n(Devise XOF, Indicatif +221, Dates)"]
+    end
+
+    FeatureModules --> CoreInfra
+    FeatureModules --> SharedPkg
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             08bis. CLASSES GLOBAL : HERITAGE, COMPOSITION, AGREGATION, REALISATION
+             ===================================================================== -->
+        <section class="diagram-card" id="cl08b">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Master Class Diagram (Inheritance, Composition, Aggregation, Realization)</span>
+                <span class="vp-frame-tag">cd Master_Domain_Relationships</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>08bis. Diagramme de Classes Global — Héritage, Composition, Agrégation & Réalisation</h2>
+                        <p class="diagram-desc">Synthèse architecturale de toutes les relations UML 2.5 : Héritage (`BaseEntity <|--`), Réalisation d'interfaces (`PaymentGatewayPort <|..`), Composition forte (`*--`), Agrégation partagée (`o--`) et Association orientée (`-->`).</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('cl08b', '08bis_VP_Classes_Master_Relations')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="spec-box">
+                    <div class="spec-item"><strong>🔺 Généralisation / Héritage (`<|--`)</strong>Toutes les entités métier héritent de la super-classe abstraite `BaseEntity` (`id`, `createdAt`, `updatedAt`).</div>
+                    <div class="spec-item"><strong>💎 Composition Forte (`*--`, losange plein)</strong>`Product *-- ProductImage`, `Conversation *-- Message`, `Order *-- Payment`, `Order *-- Delivery`, `User *-- Address`.</div>
+                    <div class="spec-item"><strong>◇ Agrégation Partagée (`o--`, losange creux)</strong>`Country o-- User` (Un pays regroupe des utilisateurs), `Category o-- Product` (Une catégorie regroupe des produits).</div>
+                    <div class="spec-item"><strong>🔌 Réalisation d'Interface (`<|..`)</strong>`PaymentGatewayPort <|.. WaveAdapter`, `OrangeMoneyAdapter`, `FreeMoneyAdapter`.</div>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">cd Master_UML_Relationships</div>
+                    <script type="text/plain" class="mermaid-source">
+classDiagram
+    direction TB
+
+    class BaseEntity {
+        <<abstract>>
+        #Long id
+        #LocalDateTime createdAt
+        #LocalDateTime updatedAt
+    }
+
+    class Country {
+        -String codeIso2
+        -String name
+        -String phonePrefix
+        -String currencyCode
+    }
+
+    class User {
+        -String firstName
+        -String lastName
+        -String phone
+        -RoleName role
+        -AccountStatus status
+        -Double averageRating
+    }
+
+    class Address {
+        -String city
+        -String district
+        -String streetDetails
+    }
+
+    class Category {
+        -String name
+        -String slug
+    }
+
+    class Product {
+        -String title
+        -BigDecimal price
+        -ProductCondition condition
+        -ProductStatus status
+    }
+
+    class ProductImage {
+        -String imageUrl
+        -Integer displayOrder
+        -Boolean isMain
+    }
+
+    class Conversation {
+        -LocalDateTime lastMessageAt
+    }
+
+    class Message {
+        -String content
+        -Boolean isRead
+    }
+
+    class Order {
+        -String orderNumber
+        -BigDecimal itemPrice
+        -BigDecimal validationFee
+        -BigDecimal deliveryFee
+        -BigDecimal totalAmount
+        -OrderStatus status
+    }
+
+    class Payment {
+        -String transactionReference
+        -PaymentMethod provider
+        -PaymentStatus status
+        -Boolean isEscrowHeld
+    }
+
+    class Delivery {
+        -DeliveryMode mode
+        -DeliveryStatus status
+        -String trackingCode
+    }
+
+    class Review {
+        -Integer rating
+        -String comment
+    }
+
+    class Report {
+        -ReportReason reason
+        -ReportStatus status
+    }
+
+    class Notification {
+        -NotificationType type
+        -String title
+        -Boolean isRead
+    }
+
+    class PaymentGatewayPort {
+        <<interface>>
+        +initiateCheckout(Order o) String
+        +releaseEscrow(Payment p) void
+        +refundEscrow(Payment p) void
+    }
+
+    class WaveAdapter {
+        +initiateCheckout(Order o) String
+        +releaseEscrow(Payment p) void
+        +refundEscrow(Payment p) void
+    }
+
+    class OrangeMoneyAdapter {
+        +initiateCheckout(Order o) String
+        +releaseEscrow(Payment p) void
+        +refundEscrow(Payment p) void
+    }
+
+    class FreeMoneyAdapter {
+        +initiateCheckout(Order o) String
+        +releaseEscrow(Payment p) void
+        +refundEscrow(Payment p) void
+    }
+
+    %% 1. Généralisation / Héritage (Pointe triangulaire creuse)
+    BaseEntity <|-- User
+    BaseEntity <|-- Product
+    BaseEntity <|-- Order
+    BaseEntity <|-- Payment
+    BaseEntity <|-- Delivery
+    BaseEntity <|-- Conversation
+    BaseEntity <|-- Review
+    BaseEntity <|-- Report
+
+    %% 2. Agrégation (Losange creux o--)
+    Country "1" o-- "*" User : regroupe_residents
+    Category "1" o-- "*" Product : catalogue_articles
+    Category "0..1" o-- "*" Category : sous_categories
+
+    %% 3. Composition forte (Losange plein *--)
+    User "1" *-- "*" Address : possede_adresses
+    User "1" *-- "*" Notification : boite_notifications
+    Product "1" *-- "1..*" ProductImage : galerie_photos
+    Conversation "1" *-- "1..*" Message : historique_messages
+    Order "1" *-- "1" Payment : transaction_paiement
+    Order "1" *-- "1" Delivery : suivi_livraison
+
+    %% 4. Associations métier dirigées (-->)
+    User "1" --> "*" Product : publie_vendeur
+    User "1" --> "*" Order : passe_acheteur
+    Product "1" <-- "*" Order : porte_sur
+    Order "1" --> "0..1" Review : genere_evaluation
+    User "1" --> "*" Report : soumet_signalement
+
+    %% 5. Réalisation d'interface (<|..) & Dépendance (..>)
+    Payment ..> PaymentGatewayPort : utilise
+    PaymentGatewayPort <|.. WaveAdapter : realise
+    PaymentGatewayPort <|.. OrangeMoneyAdapter : realise
+    PaymentGatewayPort <|.. FreeMoneyAdapter : realise
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             09. CLASSES 1 : COMPTES, PAYS & CATALOGUE
+             ===================================================================== -->
+        <section class="diagram-card" id="cl09">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Class Diagram (1/3)</span>
+                <span class="vp-frame-tag">cd Identity_And_Catalog_Domain</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>09. Classes 1 — Domaine Comptes, OTP, Pays, Adresses & Catalogue</h2>
+                        <p class="diagram-desc">Compartiments UML complets (Attributs typés + Opérations métier) et multiplicités exactes.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('cl09', '09_VP_Classes_Comptes_Catalogue')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">cd Identity_Catalog</div>
+                    <script type="text/plain" class="mermaid-source">
+classDiagram
+    direction LR
+
+    class Country {
+        -Long id
+        -String codeIso2
+        -String name
+        -String phonePrefix
+        -String currencyCode
+        -Boolean isActive
+    }
+
+    class User {
+        -Long id
+        -String firstName
+        -String lastName
+        -String phone
+        -String email
+        -String passwordHash
+        -String profilePictureUrl
+        -RoleName role
+        -AccountStatus status
+        -Boolean phoneVerified
+        -Double averageRating
+        -Integer reviewCount
+        -LocalDateTime createdAt
+        +activateAccount() void
+        +suspendAccount() void
+        +updateRating(int score) void
+    }
+
+    class OtpVerification {
+        -Long id
+        -String phone
+        -String otpCodeHash
+        -String purpose
+        -LocalDateTime expiresAt
+        -Integer attempts
+        -Boolean verified
+        +isValid(String code) Boolean
+    }
+
+    class Address {
+        -Long id
+        -String label
+        -String city
+        -String district
+        -String streetDetails
+        -Boolean isDefault
+    }
+
+    class Category {
+        -Long id
+        -String name
+        -String slug
+        -String description
+        -Boolean isActive
+    }
+
+    class Product {
+        -Long id
+        -String title
+        -String description
+        -BigDecimal price
+        -ProductCondition condition
+        -ProductStatus status
+        -String size
+        -String brand
+        -String color
+        -String locationCity
+        -LocalDateTime createdAt
+        +publish() void
+        +reserve() void
+        +markAsSold() void
+        +deactivate() void
+    }
+
+    class ProductImage {
+        -Long id
+        -String imageUrl
+        -Integer displayOrder
+        -Boolean isMain
+    }
+
+    class BaseEntity {
+        <<abstract>>
+        #Long id
+        #LocalDateTime createdAt
+        #LocalDateTime updatedAt
+    }
+
+    BaseEntity <|-- User
+    BaseEntity <|-- Product
+    BaseEntity <|-- Address
+    Country "1" o-- "*" User : regroupe_residents
+    User "1" *-- "*" Address : possede_composition
+    User "1" ..> "*" OtpVerification : valide_par_dependance
+    User "1" --> "*" Product : publie_vendeur
+    Category "1" o-- "*" Product : agrege_produits
+    Category "0..1" o-- "*" Category : sous_categorie
+    Product "1" *-- "1..*" ProductImage : illustre_par_composition
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             10. CLASSES 2 : COMMANDES, PAIEMENT & LIVRAISON
+             ===================================================================== -->
+        <section class="diagram-card" id="cl10">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Class Diagram (2/3)</span>
+                <span class="vp-frame-tag">cd Order_Payment_Escrow_Delivery</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>10. Classes 2 — Domaine Commandes, Paiement Mobile (1% & Escrow) & Livraison</h2>
+                        <p class="diagram-desc">Modélisation précise de `Order` (distinction `itemPrice`, `validationFee` 1%, `deliveryFee`), `Payment` (Escrow) et `Delivery` (5 statuts).</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('cl10', '10_VP_Classes_Transactions_Livraison')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">cd Transactions_Escrow</div>
+                    <script type="text/plain" class="mermaid-source">
+classDiagram
+    direction LR
+
+    class Order {
+        -Long id
+        -String orderNumber
+        -BigDecimal itemPrice
+        -BigDecimal validationFee
+        -BigDecimal deliveryFee
+        -BigDecimal totalAmount
+        -DeliveryMode deliveryMode
+        -OrderStatus status
+        -LocalDateTime orderedAt
+        -LocalDateTime confirmedAt
+        -LocalDateTime completedAt
+        +calculateOrderTotals() void
+        +confirmDeliveryReceipt() void
+    }
+
+    class Payment {
+        -Long id
+        -String transactionReference
+        -String externalProviderRef
+        -PaymentMethod provider
+        -BigDecimal amount
+        -PaymentStatus status
+        -Boolean isEscrowHeld
+        -LocalDateTime paidAt
+        -LocalDateTime releasedAt
+        +holdFundsInEscrow() void
+        +releasePayoutToSeller() void
+        +refundBuyer() void
+    }
+
+    class Delivery {
+        -Long id
+        -DeliveryMode mode
+        -DeliveryStatus status
+        -String trackingCode
+        -String deliveryAddressSnapshot
+        -LocalDateTime pickedUpAt
+        -LocalDateTime inTransitAt
+        -LocalDateTime outForDeliveryAt
+        -LocalDateTime deliveredAt
+        +transitionTo(DeliveryStatus next) void
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        PENDING_PAYMENT
+        PAID
+        PREPARING
+        IN_DELIVERY
+        DELIVERED
+        COMPLETED
+        CANCELLED
+        DISPUTED
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        INITIATED
+        AUTHORIZED_ESCROW
+        RELEASED_TO_SELLER
+        FAILED
+        REFUNDED
+    }
+
+    class DeliveryStatus {
+        <<enumeration>>
+        PENDING
+        PICKED_UP
+        IN_TRANSIT
+        OUT_FOR_DELIVERY
+        DELIVERED
+    }
+
+    Order "1" *-- "1" Payment : reglee_par
+    Order "1" *-- "1" Delivery : livree_par
+    Order ..> OrderStatus : statut
+    Payment ..> PaymentStatus : statut
+    Delivery ..> DeliveryStatus : statut
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             11. CLASSES 3 : MESSAGERIE, AVIS, SIGNALEMENTS & NOTIFICATIONS
+             ===================================================================== -->
+        <section class="diagram-card" id="cl11">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Class Diagram (3/3)</span>
+                <span class="vp-frame-tag">cd Messaging_Reviews_Reports_Notifications</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>11. Classes 3 — Domaine Messagerie STOMP, Avis (1-5), Signalements & Notifications</h2>
+                        <p class="diagram-desc">Entités de communication temps réel, d'évaluation post-réception et de modération Back-Office.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('cl11', '11_VP_Classes_Chat_Avis_Signalements')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">cd Trust_And_Messaging</div>
+                    <script type="text/plain" class="mermaid-source">
+classDiagram
+    direction LR
+
+    class Conversation {
+        -Long id
+        -Long productId
+        -Long buyerId
+        -Long sellerId
+        -LocalDateTime lastMessageAt
+        -LocalDateTime createdAt
+    }
+
+    class Message {
+        -Long id
+        -Long senderId
+        -String content
+        -Boolean isRead
+        -LocalDateTime readAt
+        -LocalDateTime sentAt
+        +markAsRead() void
+    }
+
+    class Review {
+        -Long id
+        -Long orderId
+        -Long reviewerId
+        -Long reviewedSellerId
+        -Integer rating
+        -String comment
+        -LocalDateTime createdAt
+    }
+
+    class Report {
+        -Long id
+        -Long reporterId
+        -Long reportedUserId
+        -Long reportedProductId
+        -String targetType
+        -ReportReason reason
+        -String description
+        -ReportStatus status
+        -String adminResolutionNote
+        -LocalDateTime createdAt
+        -LocalDateTime resolvedAt
+        +resolveReport(String note) void
+    }
+
+    class Notification {
+        -Long id
+        -Long userId
+        -NotificationType type
+        -String title
+        -String body
+        -String referenceId
+        -Boolean isRead
+        -LocalDateTime createdAt
+    }
+
+    class ReportReason {
+        <<enumeration>>
+        MISLEADING_AD
+        SUSPECTED_COUNTERFEIT
+        SCAM
+        FAKE_PROFILE
+        ABUSIVE_BEHAVIOR
+        OTHER
+    }
+
+    class NotificationType {
+        <<enumeration>>
+        OTP
+        NEW_MESSAGE
+        ORDER_CREATED
+        PAYMENT_CONFIRMED
+        DELIVERY_UPDATE
+        ORDER_DELIVERED
+        NEW_REVIEW
+    }
+
+    Conversation "1" *-- "1..*" Message : contient
+    Report ..> ReportReason : motif
+    Notification ..> NotificationType : type
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             12. MPD / ERD MYSQL
+             ===================================================================== -->
+        <section class="diagram-card" id="er12">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm Data Modeler — Physical ERD (MySQL 8.x)</span>
+                <span class="vp-frame-tag">erd ReVibeFliP_MySQL_Schema</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>12. Modèle Physique de Données (MPD / ERD MySQL 8.x — Migration Flyway)</h2>
+                        <p class="diagram-desc">14 tables relationnelles normalisées (3NF) avec clés primaires `PK`, clés étrangères `FK` et contraintes uniques `UK`.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('er12', '12_VP_ERD_MySQL')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">erd MySQL_Physical_Model</div>
+                    <script type="text/plain" class="mermaid-source">
+erDiagram
+    COUNTRIES ||--o{ USERS : "country_id"
+    USERS ||--o{ ADDRESSES : "user_id"
+    USERS ||--o{ PRODUCTS : "seller_id"
+    CATEGORIES ||--o{ PRODUCTS : "category_id"
+    PRODUCTS ||--|{ PRODUCT_IMAGES : "product_id"
+    PRODUCTS ||--o{ CONVERSATIONS : "product_id"
+    CONVERSATIONS ||--o{ MESSAGES : "conversation_id"
+    USERS ||--o{ ORDERS : "buyer_and_seller"
+    PRODUCTS ||--o{ ORDERS : "product_id"
+    ORDERS ||--|| PAYMENTS : "order_id"
+    ORDERS ||--|| DELIVERIES : "order_id"
+    ORDERS ||--o| REVIEWS : "order_id"
+    USERS ||--o{ REPORTS : "reporter_id"
+    USERS ||--o{ NOTIFICATIONS : "user_id"
+
+    COUNTRIES {
+        bigint id PK
+        varchar code_iso2 UK
+        varchar name
+        varchar phone_prefix
+        varchar currency_code
+    }
+    USERS {
+        bigint id PK
+        bigint country_id FK
+        varchar first_name
+        varchar last_name
+        varchar phone UK
+        varchar email UK
+        varchar password_hash
+        varchar role
+        varchar status
+        boolean phone_verified
+        decimal average_rating
+    }
+    ADDRESSES {
+        bigint id PK
+        bigint user_id FK
+        varchar city
+        varchar district
+        varchar street_details
+    }
+    CATEGORIES {
+        bigint id PK
+        bigint parent_id FK
+        varchar name
+        varchar slug UK
+    }
+    PRODUCTS {
+        bigint id PK
+        bigint seller_id FK
+        bigint category_id FK
+        varchar title
+        decimal price
+        varchar product_condition
+        varchar status
+        varchar size
+        varchar location_city
+    }
+    PRODUCT_IMAGES {
+        bigint id PK
+        bigint product_id FK
+        varchar image_url
+        int display_order
+        boolean is_main
+    }
+    CONVERSATIONS {
+        bigint id PK
+        bigint product_id FK
+        bigint buyer_id FK
+        bigint seller_id FK
+        datetime last_message_at
+    }
+    MESSAGES {
+        bigint id PK
+        bigint conversation_id FK
+        bigint sender_id FK
+        text content
+        boolean is_read
+    }
+    ORDERS {
+        bigint id PK
+        varchar order_number UK
+        bigint buyer_id FK
+        bigint seller_id FK
+        bigint product_id FK
+        decimal item_price
+        decimal validation_fee
+        decimal delivery_fee
+        decimal total_amount
+        varchar delivery_mode
+        varchar status
+    }
+    PAYMENTS {
+        bigint id PK
+        bigint order_id FK
+        varchar transaction_reference UK
+        varchar provider
+        decimal amount
+        varchar status
+        boolean is_escrow_held
+    }
+    DELIVERIES {
+        bigint id PK
+        bigint order_id FK
+        bigint address_id FK
+        varchar mode
+        varchar status
+        varchar tracking_code
+    }
+    REVIEWS {
+        bigint id PK
+        bigint order_id FK
+        bigint reviewer_id FK
+        bigint reviewed_seller_id FK
+        int rating
+        text comment
+    }
+    REPORTS {
+        bigint id PK
+        bigint reporter_id FK
+        bigint reported_user_id FK
+        bigint reported_product_id FK
+        varchar reason
+        varchar status
+    }
+    NOTIFICATIONS {
+        bigint id PK
+        bigint user_id FK
+        varchar type
+        varchar title
+        boolean is_read
+    }
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             13. SEQUENCE 1 : INSCRIPTION, OTP SMS & PARALLELISME
+             ===================================================================== -->
+        <section class="diagram-card" id="sq13">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram (Lifelines &amp; Combined Fragments)</span>
+                <span class="vp-frame-tag">sd Register_OTP_And_JWT</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>13. Séquence 1 — Inscription, Envoi OTP Parallèle (`par`) & Validation (`loop`, `alt`, `opt`)</h2>
+                        <p class="diagram-desc">Acteur bonhomme (`actor`), barres d'activation sur les lignes de vie, et exécution en parallèle (`par`) de la persistance OTP et de l'envoi SMS.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq13', '13_VP_Sequence_Auth_OTP')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Auth_OTP_Verification</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor U as Utilisateur
+    participant C as :ClientApp
+    participant API as :AuthController
+    participant S as :AuthService
+    participant DB as :MySQLDatabase
+    participant SMS as :SmsGateway
+
+    U->>+C: Sélectionne Pays (+221) et saisit Nom, Téléphone, MDP
+    C->>+API: POST /api/v1/auth/register (RegisterDto)
+    API->>+S: registerUser(dto)
+    S->>+DB: existsByPhone("+221...")
+    DB-->>-S: boolean
+
+    alt [Numéro déjà inscrit en base]
+        S-->>API: throw PhoneAlreadyExistsException
+        API-->>C: 409 Conflict (Numéro déjà utilisé)
+    else [Numéro disponible]
+        opt [Email facultatif renseigné]
+            S->>DB: existsByEmail(email)
+        end
+        S->>S: hashPassword(BCrypt) & generateOtpCode(6 digits)
+
+        par [Persistance Compte & Envoi SMS OTP en parallèle]
+            S->>+DB: INSERT User (PENDING_OTP) & INSERT OtpVerification (exp=5min)
+            DB-->>-S: userId
+        and
+            S->>+SMS: sendOtpSms("+221...", code)
+            SMS-->>-S: 200 OK (MessageId)
+        end
+
+        S-->>-API: RegisterResponse (otpRequired = true)
+        API-->>-C: 201 Created
+        deactivate C
+
+        loop [Validation OTP : Maximum 3 tentatives]
+            U->>+C: Saisit le code OTP à 6 chiffres
+            C->>+API: POST /api/v1/auth/verify-otp (phone, code)
+            API->>+S: verifyOtp(phone, code)
+            S->>+DB: findActiveOtp(phone)
+            DB-->>-S: OtpVerification
+
+            alt [Code valide et non expiré]
+                par [Activation du compte & Génération Tokens JWT]
+                    S->>DB: UPDATE User SET status=ACTIVE, phoneVerified=true
+                and
+                    S->>S: generateJwtTokens(userId, ROLE_USER)
+                end
+                S-->>API: AuthTokenResponse (accessToken, refreshToken)
+                API-->>C: 200 OK (Compte Activé)
+            else [Code erroné et attempts < 3]
+                S->>DB: UPDATE OtpVerification SET attempts = attempts + 1
+                S-->>API: throw InvalidOtpException
+                API-->>C: 400 Bad Request
+            else [attempts >= 3 ou Expiré]
+                S->>DB: invalidateOtp(phone)
+                S-->>-API: throw OtpLockedException
+                API-->>-C: 429 Too Many Requests
+                deactivate C
+            end
+        end
+    end
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             14. SEQUENCE 2 : PUBLICATION ANNONCE AVEC UPLOAD PARALLELE (PAR)
+             ===================================================================== -->
+        <section class="diagram-card" id="sq14">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram</span>
+                <span class="vp-frame-tag">sd Publish_Ad_Parallel_Upload</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>14. Séquence 2 — Publication d'Annonce (Upload Parallèle `par` des Photos) & Recherche</h2>
+                        <p class="diagram-desc">Optimisation par parallélisme (`par`) : compression et upload simultané des N photos vers le Cloud Storage avant l'enregistrement transactionnel.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq14', '14_VP_Sequence_Publication_Catalogue')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Publish_And_Search_Catalog</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor V as Vendeur
+    participant C as :ClientApp
+    participant API as :ProductController
+    participant S as :ProductService
+    participant Cloud as :CloudStorage
+    participant DB as :MySQLDatabase
+    actor B as Acheteur
+
+    V->>+C: Saisit Titre, Catégorie, Prix, État + Sélectionne N Photos
+    C->>+API: POST /api/v1/products (MultipartFiles + ProductDto)
+    API->>+S: createProduct(sellerId, dto, files)
+
+    alt [Validation échouée : 0 photo ou prix <= 0]
+        S-->>API: throw ValidationException
+        API-->>C: 400 Bad Request
+    else [Données valides]
+        par [Upload et compression parallèle des photos vers le Cloud]
+            S->>+Cloud: uploadAsync(photo_1 : Main)
+            Cloud-->>-S: url_1
+        and
+            S->>+Cloud: uploadAsync(photo_2..N : Galerie)
+            Cloud-->>-S: urls_2..N
+        end
+
+        alt [Action == Publier immédiatement]
+            S->>DB: INSERT Product (status = ACTIVE)
+        else [Action == Sauvegarder en brouillon]
+            S->>DB: INSERT Product (status = DRAFT)
+        end
+        S->>DB: BATCH INSERT ProductImage (url_1..N)
+        S-->>-API: ProductDetailDto
+        API-->>-C: 201 Created
+        deactivate C
+    end
+
+    B->>+C: Recherche par mot-clé + Filtres V1
+    C->>+API: GET /api/v1/products?q=...&category=...&minPrice=...
+    API->>+S: searchCatalog(FilterCriteria, Pageable)
+    opt [Filtres optionnels actifs : Taille, État, Pays, Prix]
+        S->>S: buildJpaSpecification(FilterCriteria)
+    end
+    par [Requête Paginée & Comptage Total en parallèle]
+        S->>+DB: SELECT Products (status = ACTIVE) LIMIT 20
+        DB-->>-S: List<Product>
+    and
+        S->>+DB: SELECT COUNT(*) FROM Products (status = ACTIVE)
+        DB-->>-S: totalElements
+    end
+    S-->>-API: PageResponse<ProductSummaryDto>
+    API-->>-C: 200 OK
+    deactivate C
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             15. SEQUENCE 3 : MESSAGERIE STOMP PARALLELE
+             ===================================================================== -->
+        <section class="diagram-card" id="sq15">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram</span>
+                <span class="vp-frame-tag">sd Realtime_Messaging_STOMP</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>15. Séquence 3 — Messagerie Temps Réel WebSocket / STOMP (`opt`, `par`, `alt`)</h2>
+                        <p class="diagram-desc">Exécution en parallèle (`par`) de la persistance MySQL, du push WebSocket STOMP et de la notification mobile.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq15', '15_VP_Sequence_Messagerie_STOMP')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Realtime_Chat_STOMP</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor B as Acheteur
+    participant CB as :ClientAcheteur
+    participant WS as :StompBroker
+    participant MS as :MessagingService
+    participant DB as :MySQLDatabase
+    participant NS as :NotificationService
+    participant CV as :ClientVendeur
+    actor V as Vendeur
+
+    B->>+CB: Clique sur "Contacter le vendeur" depuis la fiche produit
+    CB->>+MS: POST /api/v1/conversations (productId)
+    MS->>+DB: findByProductAndBuyer(productId, buyerId)
+    DB-->>-MS: Optional<Conversation>
+    opt [Première prise de contact sur cette annonce]
+        MS->>DB: INSERT Conversation (productId, buyerId, sellerId)
+    end
+    MS-->>-CB: 200 OK (conversationId, messagesHistory)
+    deactivate CB
+
+    B->>+CB: Envoie un message texte
+    CB->>+WS: SEND /app/chat.send (conversationId, content)
+    WS->>+MS: handleIncomingMessage(senderId, payload)
+
+    par [Persistance Base de données & Diffusion Temps Réel en parallèle]
+        MS->>+DB: INSERT Message (isRead=false) & UPDATE Conversation.lastMessageAt
+        DB-->>-MS: messageId
+    and
+        alt [Vendeur connecté au canal WebSocket STOMP]
+            MS->>WS: convertAndSendToUser(sellerId, "/queue/messages", MessageDto)
+            WS-->>CV: MESSAGE STOMP temps réel
+            CV-->>V: Affichage instantané du message
+        else [Vendeur hors-ligne]
+            MS->>+NS: sendNotification(sellerId, NEW_MESSAGE)
+            NS->>DB: INSERT Notification (type=NEW_MESSAGE)
+            NS-->>-MS: ok
+        end
+    end
+    deactivate MS
+    deactivate WS
+    deactivate CB
+
+    V->>+CV: Ouvre la conversation
+    CV->>+WS: SEND /app/chat.read (conversationId)
+    WS->>+MS: markConversationAsRead(conversationId, sellerId)
+    MS->>DB: UPDATE Message SET isRead=true, readAt=now
+    MS->>WS: convertAndSendToUser(buyerId, "/queue/read-receipts", ReadReceiptDto)
+    WS-->>CB: Statut mis à jour : "Lu ✓✓"
+    deactivate MS
+    deactivate WS
+    deactivate CV
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             16. SEQUENCE 4 : COMMANDE, PAIEMENT MOBILE & ESCROW (PAR / ALT / OPT)
+             ===================================================================== -->
+        <section class="diagram-card" id="sq16">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram</span>
+                <span class="vp-frame-tag">sd Order_MobilePayment_Escrow</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>16. Séquence 4 — Commande, Calcul 1%, Paiement Mobile (Wave/OM/Free) & Escrow</h2>
+                        <p class="diagram-desc">Gestion du verrouillage concurrent de l'article (`alt`), de la création parallèle Commande/Livraison (`par`) et du Webhook HMAC.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq16', '16_VP_Sequence_Commande_Paiement')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Order_Checkout_Escrow</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor B as Acheteur
+    participant C as :ClientApp
+    participant OC as :OrderController
+    participant OS as :OrderService
+    participant PS as :PaymentService
+    participant MM as :MobileMoneyGateway
+    participant DB as :MySQLDatabase
+    participant NS as :NotificationService
+    actor V as Vendeur
+
+    B->>+C: Clique sur "Acheter", choisit Mode Livraison & Opérateur (Wave/OM/Free)
+    opt [Mode de livraison == HOME_DELIVERY]
+        B->>C: Sélectionne son adresse de livraison à domicile
+    end
+    C->>+OC: POST /api/v1/orders (CreateOrderRequest)
+    OC->>+OS: createOrderAndInitPayment(buyerId, request)
+    OS->>+DB: SELECT Product FOR UPDATE (Verrouillage transactionnel)
+    DB-->>-OS: Product
+
+    alt [Article indisponible : status != ACTIVE]
+        OS-->>OC: throw ProductNotAvailableException
+        OC-->>C: 409 Conflict (Article déjà réservé ou vendu)
+    else [Article disponible : status == ACTIVE]
+        OS->>OS: Calcule : itemPrice, validationFee (1%), deliveryFee, totalAmount
+
+        par [Réservation Article, Création Commande & Initialisation Livraison]
+            OS->>DB: UPDATE Product SET status = RESERVED
+        and
+            OS->>DB: INSERT Order (status = PENDING_PAYMENT, totalAmount)
+        and
+            OS->>DB: INSERT Delivery (status = PENDING, mode)
+        end
+
+        OS->>+PS: initiateMobilePayment(order, provider)
+        PS->>DB: INSERT Payment (status = INITIATED, amount = totalAmount)
+        PS->>+MM: POST /checkout/sessions (amount, orderNumber, webhookUrl)
+        MM-->>-PS: CheckoutSession (paymentUrl, externalRef)
+        PS-->>-OS: PaymentInitDto
+        OS-->>-OC: OrderCreatedResponse (orderNumber, paymentUrl)
+        OC-->>-C: 201 Created
+        deactivate C
+
+        B->>+MM: Valide le paiement Mobile Money (Code PIN Wave / USSD OM)
+        MM->>+PS: POST /api/v1/webhooks/payments (HMAC Signature + Status)
+        deactivate MM
+        PS->>PS: verifyHmacSignature(payload, signature)
+
+        alt [Webhook Status == SUCCESS]
+            par [Mise en Séquestre Escrow, Confirmation Commande & Notifications Parallèles]
+                PS->>DB: UPDATE Payment SET status = AUTHORIZED_ESCROW, isEscrowHeld = true
+                PS->>DB: UPDATE Order SET status = PAID, confirmedAt = now
+            and
+                PS->>NS: notifyBuyer(buyerId, PAYMENT_CONFIRMED)
+            and
+                PS->>NS: notifySeller(sellerId, ORDER_CREATED)
+                NS-->>V: Push "Commande payée ! Préparez l'article"
+            end
+            PS-->>MM: 200 OK
+        else [Webhook Status == FAILED ou CANCELLED]
+            par [Annulation Commande & Remise en ligne de l'Annonce]
+                PS->>DB: UPDATE Payment SET status = FAILED
+                PS->>DB: UPDATE Order SET status = CANCELLED
+            and
+                PS->>DB: UPDATE Product SET status = ACTIVE
+            end
+            PS-->>-MM: 200 OK
+        end
+    end
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             17. SEQUENCE 5 : LIVRAISON, RECEPTION, LIBERATION ESCROW & AVIS
+             ===================================================================== -->
+        <section class="diagram-card" id="sq17">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram</span>
+                <span class="vp-frame-tag">sd Delivery_EscrowRelease_Review</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>17. Séquence 5 — Suivi Livraison (`loop`), Réception, Déblocage Escrow (`par`) & Avis (`opt`)</h2>
+                        <p class="diagram-desc">Confirmation de réception déclenchant en parallèle le virement au vendeur, la retenue de la commission de 1% et la clôture de l'annonce.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq17', '17_VP_Sequence_Livraison_Avis')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Delivery_And_Review</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor V as Vendeur
+    actor B as Acheteur
+    participant API as :OrderDeliveryController
+    participant S as :OrderDeliveryService
+    participant DB as :MySQLDatabase
+    participant MM as :MobileMoneyEscrow
+    participant NS as :NotificationService
+
+    loop [Progression des 5 statuts : PENDING -> PICKED_UP -> IN_TRANSIT -> OUT_FOR_DELIVERY -> DELIVERED]
+        V->>+API: PATCH /api/v1/orders/{id}/delivery (nextStatus)
+        API->>+S: updateDeliveryStatus(orderId, nextStatus)
+        par [Mise à jour Statut & Notification Acheteur en parallèle]
+            S->>DB: UPDATE Delivery SET status = nextStatus
+        and
+            S->>NS: notifyBuyer(buyerId, DELIVERY_UPDATE / ORDER_DELIVERED)
+            NS-->>B: Alerte suivi de livraison
+        end
+        S-->>-API: DeliveryDto
+        API-->>-V: 200 OK
+    end
+
+    alt [L'acheteur confirme que l'article reçu est conforme]
+        B->>+API: POST /api/v1/orders/{id}/confirm-receipt
+        API->>+S: confirmOrderReceipt(buyerId, orderId)
+
+        par [Clôture Commande, Statut SOLD & Libération des Fonds Escrow en parallèle]
+            S->>DB: UPDATE Order SET status = COMPLETED, completedAt = now
+            S->>DB: UPDATE Product SET status = SOLD
+        and
+            S->>+MM: releaseEscrow(sellerPhone, payout = itemPrice, fee = validationFee 1%)
+            MM-->>-S: 200 OK (Transfert Vendeur effectué)
+            S->>DB: UPDATE Payment SET status = RELEASED_TO_SELLER, isEscrowHeld = false
+        end
+
+        S-->>-API: OrderCompletedDto
+        API-->>-B: 200 OK (Transaction finalisée)
+
+        opt [Évaluation du Vendeur par l'Acheteur (Note 1 à 5)]
+            B->>+API: POST /api/v1/orders/{id}/reviews (rating, comment)
+            API->>+S: submitReview(buyerId, orderId, rating, comment)
+            par [Enregistrement Avis, Recalcul Note Moyenne & Notification Vendeur]
+                S->>DB: INSERT Review (rating, comment)
+                S->>DB: UPDATE User SET averageRating = AVG(), reviewCount = COUNT()
+            and
+                S->>NS: notifySeller(sellerId, NEW_REVIEW)
+                NS-->>V: Alerte "Vous avez reçu un nouvel avis ⭐"
+            end
+            S-->>-API: ReviewDto
+            API-->>-B: 201 Created
+        end
+    else [Article non conforme : L'acheteur ouvre un Litige]
+        B->>+API: POST /api/v1/reports (orderId, reason)
+        API->>+S: openDispute(buyerId, orderId, reason)
+        S->>DB: UPDATE Order SET status = DISPUTED (Fonds maintenus bloqués en Escrow)
+        S->>DB: INSERT Report (status = PENDING)
+        S-->>-API: ReportDto
+        API-->>-B: 201 Created (Transmis à l'Administrateur)
+    end
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             18. SEQUENCE 6 : SIGNALEMENT & ARBITRAGE ADMIN
+             ===================================================================== -->
+        <section class="diagram-card" id="sq18">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Sequence Diagram</span>
+                <span class="vp-frame-tag">sd Report_And_Admin_Moderation</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>18. Séquence 6 — Signalement & Arbitrage Administrateur (`alt`, `opt`, `par`)</h2>
+                        <p class="diagram-desc">Traitement des signalements (Section 13 & 15) depuis le Back-Office Administrateur.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('sq18', '18_VP_Sequence_Signalement_Admin')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">sd Admin_Dispute_Resolution</div>
+                    <script type="text/plain" class="mermaid-source">
+sequenceDiagram
+    autonumber
+    actor U as Utilisateur
+    participant App as :ClientApp
+    participant API as :AdminModerationController
+    participant S as :ModerationService
+    participant DB as :MySQLDatabase
+    participant MM as :MobileMoneyEscrow
+    participant BO as :BackOfficeWeb
+    actor A as Administrateur
+
+    U->>+App: Signale une annonce ou un utilisateur (Arnaque, Contrefaçon, Faux profil...)
+    App->>+API: POST /api/v1/reports (ReportRequest)
+    API->>+S: submitReport(reporterId, request)
+    S->>DB: INSERT Report (status = PENDING)
+    S-->>-API: ReportCreatedDto
+    API-->>-App: 201 Created
+    deactivate App
+
+    A->>+BO: Ouvre la file des signalements en attente
+    BO->>+API: GET /api/v1/admin/reports?status=PENDING [ROLE_ADMIN]
+    API->>+S: getPendingReports()
+    S->>+DB: SELECT Reports WHERE status = PENDING
+    DB-->>-S: List<Report>
+    S-->>-API: Page<ReportDto>
+    API-->>-BO: 200 OK
+    deactivate BO
+
+    A->>+BO: Choisit une décision (Sanctionner / Rembourser / Rejeter)
+    BO->>+API: PATCH /api/v1/admin/reports/{id}/resolve (ResolutionRequest)
+    API->>+S: resolveReport(adminId, reportId, request)
+
+    alt [Signalement fondé : Application des mesures]
+        par [Exécution parallèle des sanctions et de la clôture]
+            opt [Désactivation de l'annonce frauduleuse]
+                S->>DB: UPDATE Product SET status = INACTIVE
+            end
+            opt [Suspension du compte utilisateur fautif]
+                S->>DB: UPDATE User SET status = SUSPENDED
+            end
+            opt [Litige commande : Remboursement Escrow de l'Acheteur]
+                S->>+MM: refundEscrowToBuyer(orderNumber)
+                MM-->>-S: 200 OK
+                S->>DB: UPDATE Payment SET status = REFUNDED & UPDATE Order SET status = CANCELLED
+            end
+        and
+            S->>DB: UPDATE Report SET status = RESOLVED, resolvedAt = now
+        end
+        S-->>API: ResolutionDto (RESOLVED)
+        API-->>BO: 200 OK
+    else [Signalement non fondé]
+        S->>DB: UPDATE Report SET status = REJECTED, resolvedAt = now
+        S-->>-API: ResolutionDto (REJECTED)
+        API-->>-BO: 200 OK
+        deactivate BO
+    end
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             19. ACTIVITE : PARCOURS METIER AVEC FOURCHES PARALLELES (FORK / JOIN)
+             ===================================================================== -->
+        <section class="diagram-card" id="ac19">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Activity Diagram (With Fork &amp; Join Bars)</span>
+                <span class="vp-frame-tag">act EndToEnd_Parallel_Workflow</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>19. Diagramme d'Activité — Parcours Métier Global avec Barres de Parallélisme (Fork / Join)</h2>
+                        <p class="diagram-desc">Modélisation Visual Paradigm intégrant les barres noires/violettes de synchronisation parallèle (`Fork` et `Join`) pour les actions simultanées.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('ac19', '19_VP_Activite_Fork_Join')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="spec-box">
+                    <div class="spec-item"><strong>Fork / Join 1 (Catalogue)</strong>En parallèle : Publication d'annonces par les Vendeurs ET Recherche/Filtrage par les Acheteurs.</div>
+                    <div class="spec-item"><strong>Fork / Join 2 (Post-Paiement)</strong>En parallèle après paiement Mobile Money : Blocage Escrow, Notification Vendeur et Initialisation Livraison.</div>
+                    <div class="spec-item"><strong>Fork / Join 3 (Post-Réception)</strong>En parallèle après confirmation de réception : Virement Vendeur, Prélèvement 1% et Ouverture du droit à l'évaluation.</div>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">act Parcours_Global_Fork_Join</div>
+                    <script type="text/plain" class="mermaid-source">
+flowchart TD
+    classDef forkJoin fill:#2e1065,stroke:#2e1065,color:#ffffff,height:8px;
+
+    Start(["⚫ Début du Parcours"]) --> Reg["S'inscrire (Nom, Téléphone, Pays +221)"]
+    Reg --> SendOTP["Envoi Code OTP par SMS"]
+    SendOTP --> CheckOTP{"Code OTP Valide ?"}
+    CheckOTP -- "[Non]" --> SendOTP
+    CheckOTP -- "[Oui]" --> ActiveUser["Compte Activé (ROLE_USER)"]
+
+    ActiveUser --> Fork1["=== BARRE FORK 1 : Actions Marketplace en Parallèle ==="]:::forkJoin
+    Fork1 --> SellerPub["🏷️ Vendeur : Créer & Publier une Annonce (Photos, Prix, État)"]
+    Fork1 --> BuyerSearch["🛒 Acheteur : Rechercher & Filtrer le Catalogue"]
+    SellerPub --> Join1["=== BARRE JOIN 1 : Convergence sur Fiche Produit ==="]:::forkJoin
+    BuyerSearch --> Join1
+
+    Join1 --> ViewDetail["Consulter la Fiche Détail Produit"]
+    ViewDetail --> NeedChat{"Contacter le vendeur ?"}
+    NeedChat -- "[Oui]" --> ChatSTOMP["Échanger via Messagerie Temps Réel (WebSocket STOMP)"]
+    ChatSTOMP --> OrderInit["Choisir Mode de Livraison (Domicile / Main propre) & Commander"]
+    NeedChat -- "[Non]" --> OrderInit
+
+    OrderInit --> CalcTotal["Calculer Total = Prix Article + 1% Frais Validation + Frais Livraison"]
+    CalcTotal --> MobilePay["Payer via Mobile Money (Wave / Orange Money / Free Money)"]
+    MobilePay --> PayCheck{"Paiement Confirmé ?"}
+    PayCheck -- "[Échec]" --> ReleaseAd["Remettre l'annonce en statut ACTIVE"]
+    PayCheck -- "[Succès]" --> Fork2["=== BARRE FORK 2 : Traitement Post-Paiement Parallèle ==="]:::forkJoin
+
+    Fork2 --> HoldEscrow["Bloquer les fonds en Séquestre (AUTHORIZED_ESCROW)"]
+    Fork2 --> NotifySeller["Notifier le Vendeur (ORDER_CREATED & PAYMENT_CONFIRMED)"]
+    Fork2 --> InitDelivery["Initialiser le suivi de livraison (DeliveryStatus = PENDING)"]
+
+    HoldEscrow --> Join2["=== BARRE JOIN 2 : Synchronisation Expédition ==="]:::forkJoin
+    NotifySeller --> Join2
+    InitDelivery --> Join2
+
+    Join2 --> TrackSteps["Suivi Livraison : PENDING ➔ PICKED_UP ➔ IN_TRANSIT ➔ OUT_FOR_DELIVERY ➔ DELIVERED"]
+    TrackSteps --> RecCheck{"Article reçu conforme ?"}
+    RecCheck -- "[Non : Litige]" --> Dispute["Ouvrir un Signalement -> Arbitrage Admin Back-Office"]
+    RecCheck -- "[Oui : Confirmé]" --> Fork3["=== BARRE FORK 3 : Clôture Financière & Métier Parallèle ==="]:::forkJoin
+
+    Fork3 --> PayoutSeller["Verser le Prix Produit au Vendeur (RELEASED_TO_SELLER)"]
+    Fork3 --> KeepFee["Prélever la Commission Plateforme de 1%"]
+    Fork3 --> MarkSold["Passer l'Annonce en SOLD et la Commande en COMPLETED"]
+
+    PayoutSeller --> Join3["=== BARRE JOIN 3 ==="]:::forkJoin
+    KeepFee --> Join3
+    MarkSold --> Join3
+
+    Join3 --> LeaveReview["Acheteur : Attribuer une note (1 à 5 ⭐) & un avis au Vendeur"]
+    LeaveReview --> End(["◉ Fin de la Transaction"])
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             20. ETATS-TRANSITIONS : CYCLES DE VIE COMPLETS
+             ===================================================================== -->
+        <section class="diagram-card" id="st20">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — State Machine Diagram</span>
+                <span class="vp-frame-tag">stm Lifecycle_State_Machines</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>20. Diagrammes d'États-Transitions — Annonce, Commande, Livraison & Paiement</h2>
+                        <p class="diagram-desc">Machines à états finis UML avec événements déclencheurs et conditions de garde.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('st20', '20_VP_State_Machines')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">stm Entity_Lifecycles</div>
+                    <script type="text/plain" class="mermaid-source">
+flowchart TB
+    subgraph STM_Product["1. Machine à États : Annonce (ProductStatus - Section 5.2)"]
+        direction LR
+        P0(["⚫"]) --> P_DRAFT["DRAFT\n(Brouillon)"]
+        P_DRAFT -->|"publier()"| P_ACTIVE["ACTIVE\n(En ligne)"]
+        P_ACTIVE <-->|"désactiver() / réactiver()"| P_INACTIVE["INACTIVE\n(Masquée)"]
+        P_ACTIVE -->|"créerCommande()"| P_RESERVED["RESERVED\n(Réservée)"]
+        P_RESERVED -->|"échecPaiement()"| P_ACTIVE
+        P_RESERVED -->|"confirmerRéception()"| P_SOLD["SOLD\n(Vendue) ◉"]
+    end
+
+    subgraph STM_Delivery["2. Machine à États : Livraison (DeliveryStatus - Section 11.2)"]
+        direction LR
+        D0(["⚫"]) --> D_PEND["PENDING"]
+        D_PEND -->|"priseEnCharge()"| D_PICK["PICKED_UP"]
+        D_PICK -->|"expédition()"| D_TRAN["IN_TRANSIT"]
+        D_TRAN -->|"enDistribution()"| D_OUT["OUT_FOR_DELIVERY"]
+        D_OUT -->|"remiseAcheteur()"| D_DEL["DELIVERED ◉"]
+    end
+
+    subgraph STM_Payment["3. Machine à États : Paiement & Escrow (PaymentStatus - Section 10)"]
+        direction LR
+        M0(["⚫"]) --> M_INIT["INITIATED"]
+        M_INIT -->|"webhookSuccess()"| M_ESC["AUTHORIZED_ESCROW\n(Fonds bloqués)"]
+        M_INIT -->|"webhookFail()"| M_FAIL["FAILED ◉"]
+        M_ESC -->|"réceptionConfirmée()"| M_REL["RELEASED_TO_SELLER\n(Vendeur payé - 1%) ◉"]
+        M_ESC -->|"litigeAcheteur()"| M_REF["REFUNDED\n(Remboursé) ◉"]
+    end
+                    </script>
+                    <div class="mermaid-render"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- =====================================================================
+             21. DEPLOIEMENT : CUBES 3D VISUAL PARADIGM & COMPOSANTS
+             ===================================================================== -->
+        <section class="diagram-card" id="dp21">
+            <div class="vp-frame-bar">
+                <span>Visual Paradigm UML 2.5 — Deployment &amp; Component Diagram (3D Nodes)</span>
+                <span class="vp-frame-tag">dep ReVibeFliP_Production_Topology</span>
+            </div>
+            <div class="diagram-body">
+                <div class="diagram-header">
+                    <div>
+                        <h2>21. Diagramme de Déploiement — Nœuds 3D Visual Paradigm, Conteneurs Docker & Protocoles</h2>
+                        <p class="diagram-desc">Représentation physique officielle Visual Paradigm avec nœuds 3D («device», «executionEnvironment»), artefacts déployés et liens de communication.</p>
+                    </div>
+                    <button class="btn-sm" onclick="exportSingleSVG('dp21', '21_VP_Deployment_3D_Topology')">⬇️ Télécharger SVG</button>
+                </div>
+                <div class="diagram-container">
+                    <div class="vp-canvas-Pentagon">dep Production_Infrastructure_V1</div>
+                    <svg viewBox="0 0 1120 520" xmlns="http://www.w3.org/2000/svg">
+                        <!-- 3D Box Helper Macro Style via Polygons -->
+                        <!-- Client Node 1 : Web Browser -->
+                        <g transform="translate(30, 55)">
+                            <polygon points="0,12 12,0 232,0 220,12" fill="#ddd6fe" stroke="#5b21b6" stroke-width="1.8"/>
+                            <polygon points="220,12 232,0 232,145 220,157" fill="#c4b5fd" stroke="#5b21b6" stroke-width="1.8"/>
+                            <rect x="0" y="12" width="220" height="145" fill="#faf5ff" stroke="#5b21b6" stroke-width="2"/>
+                            <text x="110" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">«device»</text>
+                            <text x="110" y="50" text-anchor="middle" font-size="12.5" font-weight="800" fill="#2e1065">Poste Client Web</text>
+                            <rect x="18" y="65" width="184" height="75" rx="3" fill="#f3e8ff" stroke="#7c3aed" stroke-width="1.6"/>
+                            <text x="110" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95">«artifact» react-web-spa</text>
+                            <text x="110" y="104" text-anchor="middle" font-size="10.5" fill="#2e1065">React 18 + TypeScript</text>
+                            <text x="110" y="122" text-anchor="middle" font-size="10.5" fill="#2e1065">Marketplace &amp; Back-Office</text>
+                        </g>
+
+                        <!-- Client Node 2 : Mobile Smartphone -->
+                        <g transform="translate(30, 285)">
+                            <polygon points="0,12 12,0 232,0 220,12" fill="#ddd6fe" stroke="#5b21b6" stroke-width="1.8"/>
+                            <polygon points="220,12 232,0 232,145 220,157" fill="#c4b5fd" stroke="#5b21b6" stroke-width="1.8"/>
+                            <rect x="0" y="12" width="220" height="145" fill="#faf5ff" stroke="#5b21b6" stroke-width="2"/>
+                            <text x="110" y="34" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">«device»</text>
+                            <text x="110" y="50" text-anchor="middle" font-size="12.5" font-weight="800" fill="#2e1065">Smartphone iOS / Android</text>
+                            <rect x="18" y="65" width="184" height="75" rx="3" fill="#f3e8ff" stroke="#7c3aed" stroke-width="1.6"/>
+                            <text x="110" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#4c1d95">«artifact» revibe-mobile</text>
+                            <text x="110" y="104" text-anchor="middle" font-size="10.5" fill="#2e1065">React Native + TypeScript</text>
+                            <text x="110" y="122" text-anchor="middle" font-size="10.5" fill="#2e1065">REST JSON &amp; STOMP Client</text>
+                        </g>
+
+                        <!-- Central Server 3D Node : Docker Host -->
+                        <g transform="translate(345, 25)">
+                            <polygon points="0,15 15,0 445,0 430,15" fill="#ddd6fe" stroke="#4c1d95" stroke-width="2"/>
+                            <polygon points="430,15 445,0 445,455 430,470" fill="#c4b5fd" stroke="#4c1d95" stroke-width="2"/>
+                            <rect x="0" y="15" width="430" height="455" fill="#faf5ff" stroke="#4c1d95" stroke-width="2.2"/>
+                            <text x="215" y="37" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">«executionEnvironment»</text>
+                            <text x="215" y="54" text-anchor="middle" font-size="13.5" font-weight="800" fill="#2e1065">Serveur Cloud Production (Docker Host)</text>
+
+                            <!-- Nginx Reverse Proxy -->
+                            <rect x="25" y="72" width="380" height="58" rx="4" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.8"/>
+                            <text x="215" y="94" text-anchor="middle" font-size="11.5" font-weight="800" fill="#2e1065">«container» Nginx Reverse Proxy / TLS 1.3</text>
+                            <text x="215" y="114" text-anchor="middle" font-size="10.5" fill="#4c1d95">Terminaison HTTPS (443) &amp; Upgrade WebSocket WSS</text>
+
+                            <!-- Spring Boot Container -->
+                            <rect x="25" y="155" width="380" height="155" rx="4" fill="#f3e8ff" stroke="#5b21b6" stroke-width="2"/>
+                            <text x="215" y="177" text-anchor="middle" font-size="12" font-weight="800" fill="#2e1065">«container» spring-boot-api (Java 21 JVM)</text>
+                            <rect x="45" y="190" width="160" height="46" rx="3" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5"/>
+                            <text x="125" y="210" text-anchor="middle" font-size="10.5" font-weight="700" fill="#2e1065">«component» REST API</text>
+                            <text x="125" y="226" text-anchor="middle" font-size="9.5" fill="#5b21b6">Spring Security + JWT</text>
+
+                            <rect x="225" y="190" width="160" height="46" rx="3" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5"/>
+                            <text x="305" y="210" text-anchor="middle" font-size="10.5" font-weight="700" fill="#2e1065">«component» STOMP Broker</text>
+                            <text x="305" y="226" text-anchor="middle" font-size="9.5" fill="#5b21b6">Messagerie Temps Réel</text>
+
+                            <rect x="45" y="248" width="340" height="46" rx="3" fill="#ffffff" stroke="#7c3aed" stroke-width="1.5"/>
+                            <text x="215" y="268" text-anchor="middle" font-size="10.5" font-weight="700" fill="#2e1065">«component» Spring Data JPA / Hibernate + Flyway</text>
+                            <text x="215" y="284" text-anchor="middle" font-size="9.5" fill="#5b21b6">Swagger / OpenAPI 3.0 Documentation</text>
+
+                            <!-- MySQL Container -->
+                            <rect x="25" y="335" width="380" height="110" rx="4" fill="#ede9fe" stroke="#4c1d95" stroke-width="2"/>
+                            <text x="215" y="358" text-anchor="middle" font-size="12" font-weight="800" fill="#2e1065">«database» Conteneur MySQL 8.x (Port 3306)</text>
+                            <text x="215" y="382" text-anchor="middle" font-size="11" fill="#2e1065">«schema» revibe_flip_prod (14 Tables + Index)</text>
+                            <text x="215" y="404" text-anchor="middle" font-size="10.5" fill="#4c1d95">Volume Docker Persistant + Scripts Flyway V1</text>
+                        </g>
+
+                        <!-- External 3D Nodes Right -->
+                        <g transform="translate(865, 40)">
+                            <polygon points="0,10 10,0 230,0 220,10" fill="#ddd6fe" stroke="#5b21b6" stroke-width="1.6"/>
+                            <polygon points="220,10 230,0 230,115 220,125" fill="#c4b5fd" stroke="#5b21b6" stroke-width="1.6"/>
+                            <rect x="0" y="10" width="220" height="115" fill="#faf5ff" stroke="#5b21b6" stroke-width="1.8"/>
+                            <text x="110" y="32" text-anchor="middle" font-size="10.5" font-weight="700" fill="#6d28d9">«externalSystem»</text>
+                            <text x="110" y="50" text-anchor="middle" font-size="12" font-weight="800" fill="#2e1065">Mobile Money Sénégal</text>
+                            <text x="110" y="72" text-anchor="middle" font-size="11" fill="#4c1d95">Wave • Orange Money</text>
+                            <text x="110" y="90" text-anchor="middle" font-size="11" fill="#4c1d95">Free Money (Escrow API)</text>
+                        </g>
+
+                        <g transform="translate(865, 200)">
+                            <polygon points="0,10 10,0 230,0 220,10" fill="#ddd6fe" stroke="#5b21b6" stroke-width="1.6"/>
+                            <polygon points="220,10 230,0 230,110 220,120" fill="#c4b5fd" stroke="#5b21b6" stroke-width="1.6"/>
+                            <rect x="0" y="10" width="220" height="110" fill="#faf5ff" stroke="#5b21b6" stroke-width="1.8"/>
+                            <text x="110" y="32" text-anchor="middle" font-size="10.5" font-weight="700" fill="#6d28d9">«externalSystem»</text>
+                            <text x="110" y="50" text-anchor="middle" font-size="12" font-weight="800" fill="#2e1065">Passerelle SMS / OTP</text>
+                            <text x="110" y="72" text-anchor="middle" font-size="11" fill="#4c1d95">Envoi Codes OTP (+221)</text>
+                            <text x="110" y="90" text-anchor="middle" font-size="11" fill="#4c1d95">&amp; Alertes Critiques</text>
+                        </g>
+
+                        <g transform="translate(865, 355)">
+                            <polygon points="0,10 10,0 230,0 220,10" fill="#ddd6fe" stroke="#5b21b6" stroke-width="1.6"/>
+                            <polygon points="220,10 230,0 230,110 220,120" fill="#c4b5fd" stroke="#5b21b6" stroke-width="1.6"/>
+                            <rect x="0" y="10" width="220" height="110" fill="#faf5ff" stroke="#5b21b6" stroke-width="1.8"/>
+                            <text x="110" y="32" text-anchor="middle" font-size="10.5" font-weight="700" fill="#6d28d9">«externalSystem»</text>
+                            <text x="110" y="50" text-anchor="middle" font-size="12" font-weight="800" fill="#2e1065">Cloud Object Storage</text>
+                            <text x="110" y="72" text-anchor="middle" font-size="11" fill="#4c1d95">AWS S3 / Cloudinary</text>
+                            <text x="110" y="90" text-anchor="middle" font-size="11" fill="#4c1d95">Galerie Photos Produits</text>
+                        </g>
+
+                        <!-- Deployment Communication Links -->
+                        <line x1="262" y1="125" x2="370" y2="125" stroke="#5b21b6" stroke-width="2.2"/>
+                        <text x="305" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">HTTPS / WSS</text>
+
+                        <line x1="262" y1="355" x2="345" y2="140" stroke="#5b21b6" stroke-width="2.2"/>
+                        <text x="292" y="275" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">HTTPS / WSS</text>
+
+                        <line x1="560" y1="155" x2="560" y2="180" stroke="#5b21b6" stroke-width="2"/>
+                        <line x1="560" y1="335" x2="560" y2="360" stroke="#5b21b6" stroke-width="2"/>
+                        <text x="605" y="352" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">JDBC :3306</text>
+
+                        <line x1="750" y1="215" x2="865" y2="105" stroke="#5b21b6" stroke-width="2"/>
+                        <text x="815" y="142" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">REST + Webhook</text>
+
+                        <line x1="750" y1="255" x2="865" y2="255" stroke="#5b21b6" stroke-width="2"/>
+                        <text x="815" y="246" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">HTTPS SMS</text>
+
+                        <line x1="750" y1="295" x2="865" y2="410" stroke="#5b21b6" stroke-width="2"/>
+                        <text x="815" y="375" text-anchor="middle" font-size="10" font-weight="700" fill="#4c1d95">HTTPS S3</text>
+                    </svg>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: 'base',
+        securityLevel: 'loose',
+        fontFamily: 'Segoe UI, sans-serif',
+        flowchart: {
+            useMaxWidth: true,
+            htmlLabels: true,
+            curve: 'basis',
+            nodeSpacing: 42,
+            rankSpacing: 52
+        },
+        sequence: {
+            useMaxWidth: true,
+            mirrorActors: true,
+            messageMargin: 34,
+            boxMargin: 10
+        },
+        themeVariables: {
+            background: '#ffffff',
+            primaryColor: '#f3e8ff',
+            primaryTextColor: '#2e1065',
+            primaryBorderColor: '#6d28d9',
+            lineColor: '#5b21b6',
+            secondaryColor: '#ede9fe',
+            secondaryTextColor: '#3b0764',
+            secondaryBorderColor: '#7c3aed',
+            tertiaryColor: '#faf5ff',
+            tertiaryTextColor: '#2e1065',
+            tertiaryBorderColor: '#8b5cf6',
+            noteBkgColor: '#f5f3ff',
+            noteTextColor: '#4c1d95',
+            noteBorderColor: '#7c3aed',
+            actorBkg: '#f3e8ff',
+            actorBorder: '#5b21b6',
+            actorTextColor: '#2e1065',
+            actorLineColor: '#5b21b6',
+            signalColor: '#4c1d95',
+            signalTextColor: '#2e1065',
+            labelBoxBkgColor: '#ede9fe',
+            labelBoxBorderColor: '#6d28d9',
+            labelTextColor: '#2e1065',
+            loopTextColor: '#2e1065',
+            activationBorderColor: '#5b21b6',
+            activationBkgColor: '#c4b5fd',
+            sequenceNumberColor: '#ffffff'
+        }
+    });
+
+    async function renderAllDiagrams() {
+        const cards = document.querySelectorAll('section.diagram-card');
+        let okCount = 0;
+        let errCount = 0;
+
+        for (let i = 0; i < cards.length; i++) {
+            const card = cards[i];
+            const sourceEl = card.querySelector('.mermaid-source');
+            const targetEl = card.querySelector('.mermaid-render');
+
+            // Native SVG Visual Paradigm diagrams (UC 01..05 & Deployment 21) are already rendered in pure SVG
+            if (!sourceEl || !targetEl) {
+                okCount++;
+                continue;
+            }
+
+            const code = sourceEl.textContent.trim();
+            const svgId = 'vp-mermaid-svg-' + (i + 1);
+
+            try {
+                const { svg } = await mermaid.render(svgId, code);
+                targetEl.innerHTML = svg;
+                okCount++;
+            } catch (err) {
+                errCount++;
+                targetEl.innerHTML = '<div style="color:#b91c1c;background:#fef2f2;padding:1rem;border-radius:8px;border:1px solid #fca5a5;">Erreur sur le diagramme #' + (i + 1) + ' : ' + err.message + '</div>';
+                console.error('Mermaid error on diagram', i + 1, err);
+            }
+        }
+
+        const counterEl = document.getElementById('render-counter');
+        if (errCount === 0) {
+            counterEl.textContent = '✅ ' + okCount + ' / ' + cards.length + ' diagrammes Visual Paradigm générés sans erreur';
+        } else {
+            counterEl.textContent = '⚠️ ' + okCount + ' réussis, ' + errCount + ' en erreur';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderAllDiagrams);
+
+    function exportSingleSVG(sectionId, filename) {
+        const section = document.getElementById(sectionId);
+        const svg = section.querySelector('.diagram-container svg');
+        if (!svg) {
+            alert('Le diagramme est encore en cours de rendu.');
+            return;
+        }
+        const serializer = new XMLSerializer();
+        let source = serializer.serializeToString(svg);
+        if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
+            source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename + '.svg';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadAllSVG() {
+        const sections = document.querySelectorAll('section.diagram-card');
+        sections.forEach((sec, idx) => {
+            setTimeout(() => {
+                const num = String(idx + 1).padStart(2, '0');
+                exportSingleSVG(sec.id, num + '_VP_' + sec.id);
+            }, idx * 250);
+        });
+    }
+</script>
+</body>
+</html>

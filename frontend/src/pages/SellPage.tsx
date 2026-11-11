@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const SellPage: React.FC = () => {
-  const { isAuthenticated, openAuthModal } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -25,6 +25,8 @@ export const SellPage: React.FC = () => {
   const [originalPrice, setOriginalPrice] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [condition, setCondition] = useState<ProductCondition>('VERY_GOOD');
+  const [defects, setDefects] = useState('');
+  const [measurements, setMeasurements] = useState('');
   const [brand, setBrand] = useState('');
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
@@ -38,7 +40,8 @@ export const SellPage: React.FC = () => {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      openAuthModal('login');
+      navigate('/login?redirect=/sell');
+      return;
     }
     categoryApi.getAll().then((res) => {
       if (res.data?.data) {
@@ -46,7 +49,7 @@ export const SellPage: React.FC = () => {
         if (res.data.data.length > 0) setCategoryId(res.data.data[0].id);
       }
     }).catch(console.error);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -106,6 +109,8 @@ export const SellPage: React.FC = () => {
         originalPrice: originalPrice ? Number(originalPrice) : undefined,
         categoryId: Number(categoryId),
         condition,
+        defects: defects || undefined,
+        measurements: measurements || undefined,
         brand: brand || undefined,
         size: size || undefined,
         color: color || undefined,
@@ -162,7 +167,7 @@ export const SellPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(idx)}
-                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-rose-600 text-white rounded-full transition-colors"
+                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-purple-700 text-white rounded-full transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -287,6 +292,47 @@ export const SellPage: React.FC = () => {
                 onChange={(e) => setColor(e.target.value)}
                 className="w-full px-4 py-2 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
               />
+            </div>
+          </div>
+
+          {/* DÉTAILS SECONDE MAIN (DÉFAUTS & MESURES) */}
+          <div className="p-4 bg-purple-50/50 rounded-2xl border border-purple-100 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-purple-700" />
+                Précisions seconde main
+              </span>
+              <span className="text-[10px] text-purple-700 font-bold">
+                💡 Plus l’état est détaillé, moins vous aurez de questions
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Défauts éventuels (optionnel)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Micro-déchirure bas, bouton manquant..."
+                  value={defects}
+                  onChange={(e) => setDefects(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Mesures (optionnel)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: Épaules 44cm, Longueur 72cm..."
+                  value={measurements}
+                  onChange={(e) => setMeasurements(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600 bg-white"
+                />
+              </div>
             </div>
           </div>
 

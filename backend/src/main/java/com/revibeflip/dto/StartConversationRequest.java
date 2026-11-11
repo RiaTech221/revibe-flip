@@ -13,9 +13,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StartConversationRequest {
 
-    @NotNull(message = "L'ID du produit est obligatoire")
     private Long productId;
 
-    @NotBlank(message = "Le premier message ne peut pas être vide")
+    private java.util.List<Long> productIds;
+
     private String initialMessage;
 }

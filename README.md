@@ -23,6 +23,24 @@
 
 ---
 
+## 📚 Documentation Complète & Assurance Qualité
+
+- 📖 **Documentation Technique Exhaustive (Fichier par fichier)** : [`DOCUMENTATION_COMPLETE_REVIBE_FLIP.md`](DOCUMENTATION_COMPLETE_REVIBE_FLIP.md)
+- 🧪 **Plan de Tests & Cahier de Recette E2E (13 Classes JUnit 5 & Scénarios UAT)** : [`PLAN_DE_TESTS_ET_RECETTE.md`](PLAN_DE_TESTS_ET_RECETTE.md)
+
+---
+
+Toute l'ingénierie logicielle et la modélisation complète de la **Version 1 (MVP)** sont regroupées dans le sous-dossier `conception-uml/` :
+
+| Fichier | Description |
+|---|---|
+| `conception-uml/DOSSIER_COMPLET_UML_REVIBE_FLIP_V1.html` | **22 Diagrammes UML & Architecture** (style Visual Paradigm en thème mauve, acteurs stickmen, héritage, `«include»`/`«extend»`, composition/agrégation, fragments `alt`/`opt`/`loop`/`par`, barres `Fork/Join`, déploiement 3D, téléchargeables en PDF/SVG) |
+| `conception-uml/DESCRIPTIONS_TEXTUELLES_USE_CASES_V1.md` | **Fiches descriptives textuelles complètes** des 18 Cas d'Utilisation (`UC-01` à `UC-18`) : préconditions, postconditions, scénarios nominaux, alternatifs et d'exception |
+| `conception-uml/USER_STORIES_BACKLOG_V1.md` | **Product Backlog Agile Scrum complet** : 10 Epics, 36 User Stories (`US-01` à `US-36`), critères d'acceptation Gherkin (`Given/When/Then`), Story Points, DoR/DoD et Sprint Planning |
+| `conception-uml/PROTOTYPE_COMPLET_REVIBE_FLIP_V1.html` | **Prototype interactif HTML End-to-End** avec portail d'authentification/OTP en page d'accueil et 3 interfaces distinctes dédiées (**Acheteur**, **Vendeur**, **Admin Back-Office**) |
+
+---
+
 ## 🏗️ Architecture & Stack Technique
 
 - **Backend** : Java 21, Spring Boot 3.4.3, Spring Security 6 (JWT), Spring Data JPA / Hibernate, WebSocket STOMP, Swagger OpenAPI 3.
@@ -54,10 +72,12 @@ Depuis le dossier `frontend` :
 
 ```powershell
 cd frontend
+npm install
 npm run dev
 ```
 
 - L'application Web est accessible sur : **`http://localhost:5173`**
+- Le logo épuré, le panier mono-vendeur et le passage en caisse sécurisé y sont immédiatement opérationnels.
 
 ---
 

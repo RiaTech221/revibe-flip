@@ -45,6 +45,12 @@ public class Product {
     @Column(length = 50)
     private String color;
 
+    @Column(columnDefinition = "TEXT")
+    private String defects; // « Défauts éventuels » (facultatif mais encouragé)
+
+    @Column(length = 200)
+    private String measurements; // « Mesures » (ex: Tour de poitrine 95cm, Longueur 110cm)
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     @Builder.Default

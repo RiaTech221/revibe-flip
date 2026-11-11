@@ -3,7 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productApi, chatApi, reportApi } from '../services/api';
 import { Product, ReportReason } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { EscrowShield } from '../components/EscrowShield';
+import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import {
   ShieldCheck,
   MapPin,
@@ -11,18 +13,21 @@ import {
   Truck,
   MessageSquare,
   ShoppingBag,
+  CreditCard,
   Flag,
   Share2,
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Sparkles,
   X
 } from 'lucide-react';
 
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { addToCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -41,15 +46,27 @@ export const ProductDetailPage: React.FC = () => {
   useEffect(() => {
     if (!id) return;
     setLoading(true);
-    productApi.getById(Number(id))
+
+    const numId = Number(id);
+    const fallback = CURATED_PRODUCTS.find((p) => p.id === numId);
+
+    productApi.getById(numId)
       .then((res) => {
         if (res.data && res.data.data) {
           setProduct(res.data.data);
+        } else if (fallback) {
+          setProduct(fallback);
+        } else {
+          setError('Article introuvable ou indisponible.');
         }
       })
       .catch((err) => {
-        setError('Article introuvable ou indisponible.');
-        console.error(err);
+        if (fallback) {
+          setProduct(fallback);
+        } else {
+          setError('Article introuvable ou indisponible.');
+          console.error(err);
+        }
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -59,19 +76,20 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleBuyNow = () => {
+    if (!product) return;
     if (!isAuthenticated) {
-      openAuthModal('login');
+      navigate(`/login?redirect=${encodeURIComponent(`/checkout/${product.id}`)}`);
       return;
     }
-    navigate(`/checkout/${product?.id}`);
+    navigate(`/checkout/${product.id}`);
   };
 
   const handleContactSeller = async () => {
+    if (!product) return;
     if (!isAuthenticated) {
-      openAuthModal('login');
+      navigate(`/login?redirect=${encodeURIComponent(`/product/${product.id}`)}`);
       return;
     }
-    if (!product) return;
 
     setChatLoading(true);
     try {
@@ -81,8 +99,8 @@ export const ProductDetailPage: React.FC = () => {
       });
       navigate(`/messages?conversationId=${res.data.data.id}`);
     } catch (err) {
-      console.error('Erreur démarrage conversation', err);
-      navigate('/messages');
+      console.error('Erreur démarrage conversation, redirection avec contexte produit', err);
+      navigate(`/messages?productId=${product.id}`);
     } finally {
       setChatLoading(false);
     }
@@ -90,11 +108,11 @@ export const ProductDetailPage: React.FC = () => {
 
   const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!product) return;
     if (!isAuthenticated) {
-      openAuthModal('login');
+      navigate(`/login?redirect=${encodeURIComponent(`/product/${product.id}`)}`);
       return;
     }
-    if (!product) return;
 
     try {
       await reportApi.create({
@@ -145,19 +163,37 @@ export const ProductDetailPage: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Breadcrumbs */}
-      <div className="text-xs text-gray-500 mb-6 flex items-center gap-2">
-        <Link to="/" className="hover:text-purple-700">Accueil</Link>
-        <span>/</span>
-        <Link to="/catalog" className="hover:text-purple-700">Catalogue</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-semibold truncate max-w-xs">{product.title}</span>
+      {/* Navigation retour & Catégorie moderne */}
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-all shadow-2xs hover:border-purple-300"
+        >
+          <ChevronLeft className="w-3.5 h-3.5 text-purple-700" />
+          <span>Retour</span>
+        </button>
+
+        <div className="flex items-center gap-2 text-xs">
+          <Link
+            to="/catalog"
+            className="text-gray-500 hover:text-purple-700 font-medium transition-colors"
+          >
+            Catégories
+          </Link>
+          <span className="text-gray-300">›</span>
+          <Link
+            to={`/catalog?categoryId=${product.categoryId}`}
+            className="px-2.5 py-0.5 rounded-full bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold border border-purple-100 transition-colors"
+          >
+            {product.categoryName || 'Articles'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* LEFT: IMAGE GALLERY (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="relative aspect-[4/5] sm:aspect-square bg-gray-100 rounded-3xl overflow-hidden border border-gray-100 shadow-md">
+          <div className="relative aspect-[4/5] sm:aspect-square bg-slate-100 rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
             <img
               src={images[activeImageIndex]}
               alt={product.title}
@@ -167,7 +203,7 @@ export const ProductDetailPage: React.FC = () => {
             {/* Sold overlay */}
             {isSold && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
-                <span className="bg-rose-600 text-white font-black text-xl uppercase tracking-widest px-8 py-3 rounded-2xl shadow-2xl transform -rotate-6">
+                <span className="bg-purple-700 text-white font-black text-xl uppercase tracking-widest px-8 py-3 rounded-2xl shadow-2xl transform -rotate-6">
                   Article Vendu
                 </span>
               </div>
@@ -178,13 +214,13 @@ export const ProductDetailPage: React.FC = () => {
               <>
                 <button
                   onClick={() => setActiveImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-lg backdrop-blur-sm transition-transform active:scale-95"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md backdrop-blur-sm transition-transform active:scale-95"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setActiveImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/80 hover:bg-white text-gray-800 shadow-lg backdrop-blur-sm transition-transform active:scale-95"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2.5 rounded-full bg-white/90 hover:bg-white text-slate-800 shadow-md backdrop-blur-sm transition-transform active:scale-95"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
@@ -192,7 +228,7 @@ export const ProductDetailPage: React.FC = () => {
             )}
 
             {/* Condition tag */}
-            <span className="absolute top-4 left-4 bg-purple-700/90 backdrop-blur-md text-white font-bold text-xs px-3 py-1.5 rounded-full shadow-lg">
+            <span className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur-md text-white font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm">
               {product.conditionLabel}
             </span>
           </div>
@@ -205,7 +241,7 @@ export const ProductDetailPage: React.FC = () => {
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
                   className={`w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 transition-all ${
-                    idx === activeImageIndex ? 'border-purple-600 shadow-md scale-105' : 'border-gray-200 opacity-70 hover:opacity-100'
+                    idx === activeImageIndex ? 'border-purple-700 shadow-sm scale-105' : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />
@@ -218,48 +254,42 @@ export const ProductDetailPage: React.FC = () => {
         {/* RIGHT: DETAILS & ACTIONS (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
           {/* Price & Title Card */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
             <div>
               <div className="flex items-baseline justify-between">
-                <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-black text-purple-700">
                   {formatPrice(product.price)}
                 </h1>
                 {product.originalPrice && (
-                  <span className="text-sm text-gray-400 line-through font-semibold">
+                  <span className="text-sm text-slate-400 line-through font-semibold">
                     {formatPrice(product.originalPrice)}
                   </span>
                 )}
               </div>
-
-              {/* Escrow note */}
-              <p className="text-[11px] text-gray-500 mt-1 flex items-center gap-1.5">
-                <span className="text-purple-700 font-bold">+ {formatPrice(validationFee)}</span>
-                <span>frais de protection séquestre (1%)</span>
-              </p>
             </div>
 
-            <h2 className="text-lg font-bold text-gray-800 leading-snug">
+            <h2 className="text-lg font-bold text-slate-800 leading-snug">
               {product.title}
             </h2>
 
             {/* Attribute Badges */}
             <div className="grid grid-cols-2 gap-3 text-xs pt-2">
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-gray-400 block text-[10px] font-bold uppercase">Catégorie</span>
-                <span className="font-bold text-gray-800">{product.categoryName}</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Catégorie</span>
+                <span className="font-bold text-slate-800">{product.categoryName}</span>
               </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-gray-400 block text-[10px] font-bold uppercase">Taille</span>
-                <span className="font-bold text-gray-800">{product.size || 'Taille unique'}</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Taille</span>
+                <span className="font-bold text-slate-800">{product.size || 'Taille unique'}</span>
               </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-gray-400 block text-[10px] font-bold uppercase">Marque</span>
-                <span className="font-bold text-gray-800">{product.brand || 'Artisanal'}</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Marque</span>
+                <span className="font-bold text-slate-800">{product.brand || 'Artisanal'}</span>
               </div>
-              <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                <span className="text-gray-400 block text-[10px] font-bold uppercase">Localisation</span>
-                <span className="font-bold text-gray-800 flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-gray-400" />
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                <span className="text-slate-400 block text-[10px] font-bold uppercase">Localisation</span>
+                <span className="font-bold text-slate-800 flex items-center gap-1">
+                  <MapPin className="w-3 h-3 text-slate-400" />
                   {product.locationCity || 'Dakar'}
                 </span>
               </div>
@@ -269,45 +299,52 @@ export const ProductDetailPage: React.FC = () => {
             <div className="space-y-3 pt-4">
               {!isOwner && !isSold && (
                 <>
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full py-3.5 bg-gradient-to-r from-purple-600 via-purple-700 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-purple-200 transition-all transform active:scale-98 flex items-center justify-center gap-2"
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Acheter avec protection Escrow</span>
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={handleBuyNow}
+                      className="w-full py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs rounded-2xl shadow-md shadow-purple-700/20 transition-all transform active:scale-98 flex items-center justify-center gap-2"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      <span>Acheter ({formatPrice(product.price)})</span>
+                    </button>
+
+                    <button
+                      onClick={() => product && addToCart(product)}
+                      className="w-full py-3.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-extrabold text-xs rounded-2xl shadow-xs transition-all transform active:scale-98 flex items-center justify-center gap-2"
+                    >
+                      <ShoppingBag className="w-4 h-4 text-purple-700" />
+                      <span>Ajouter au panier</span>
+                    </button>
+                  </div>
 
                   <button
                     onClick={handleContactSeller}
                     disabled={chatLoading}
-                    className="w-full py-3 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold text-xs rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 font-bold text-xs rounded-2xl transition-all flex items-center justify-center gap-2"
                   >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>{chatLoading ? 'Ouverture du chat...' : 'Contacter le vendeur'}</span>
+                    <MessageSquare className="w-4 h-4 text-purple-700" />
+                    <span>{chatLoading ? 'Ouverture...' : 'Discuter avec le vendeur'}</span>
                   </button>
                 </>
               )}
 
               {isSold && (
-                <div className="p-4 bg-gray-50 rounded-2xl text-center">
-                  <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <div className="p-4 bg-slate-100 rounded-2xl text-center">
+                  <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                     Cet article a déjà été vendu
                   </p>
                 </div>
               )}
 
               {isOwner && (
-                <div className="p-4 bg-purple-50 rounded-2xl text-center">
-                  <p className="text-xs font-bold text-purple-900">
+                <div className="p-4 bg-purple-50 rounded-2xl text-center border border-purple-100">
+                  <p className="text-xs font-bold text-purple-800">
                     Vous êtes le propriétaire de cette annonce
                   </p>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Escrow Shield Info */}
-          <EscrowShield />
 
           {/* Seller Card */}
           <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
@@ -344,11 +381,43 @@ export const ProductDetailPage: React.FC = () => {
               </span>
               <button
                 onClick={() => setIsReportModalOpen(true)}
-                className="text-gray-400 hover:text-rose-600 transition-colors flex items-center gap-1 text-[11px]"
+                className="text-gray-400 hover:text-purple-700 transition-colors flex items-center gap-1 text-[11px]"
               >
                 <Flag className="w-3 h-3" />
                 Signaler
               </button>
+            </div>
+          </div>
+
+          {/* État détaillé de l'article (Défauts & Mesures) */}
+          <div className="bg-white rounded-3xl p-6 border border-gray-150 shadow-xs space-y-4">
+            <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-purple-700" />
+              <span>État détaillé de l'article</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 bg-purple-50/40 rounded-2xl border border-purple-100/80 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-800 block">
+                  Défauts éventuels
+                </span>
+                <p className="text-xs text-gray-700 font-medium">
+                  {product.defects && product.defects.trim().length > 0
+                    ? product.defects
+                    : "Aucun défaut signalé par le vendeur"}
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-gray-50 rounded-2xl border border-gray-150 space-y-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-gray-600 block">
+                  Mesures
+                </span>
+                <p className="text-xs text-gray-700 font-medium">
+                  {product.measurements && product.measurements.trim().length > 0
+                    ? product.measurements
+                    : "Non spécifiées (consultez le vendeur en discussion)"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -374,7 +443,7 @@ export const ProductDetailPage: React.FC = () => {
             </button>
 
             <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
-              <Flag className="w-4 h-4 text-rose-600" />
+              <Flag className="w-4 h-4 text-purple-700" />
               Signaler cette annonce
             </h3>
             <p className="text-xs text-gray-500 mt-1">
@@ -416,7 +485,7 @@ export const ProductDetailPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow transition-colors"
+                  className="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs rounded-xl shadow transition-colors"
                 >
                   Envoyer le signalement
                 </button>

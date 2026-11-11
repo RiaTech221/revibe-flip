@@ -31,10 +31,23 @@ public class UploadController {
     private String uploadDir;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Téléverser une image (photo de vêtement, profil, etc.)")
+    @Operation(summary = "Téléverser une image (photo de vêtement, détail chat, profil, etc.)")
     public ResponseEntity<ApiResponse<String>> uploadFile(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Le fichier envoyé est vide."));
+        }
+
+        // Limite de taille stricte : 5 Mo max
+        if (file.getSize() > 5 * 1024 * 1024) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("La taille du fichier dépasse la limite autorisée de 5 Mo."));
+        }
+
+        // Contrôle du type réel du fichier (JPG, PNG, WebP uniquement)
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.equalsIgnoreCase("image/jpeg") 
+                && !contentType.equalsIgnoreCase("image/png") 
+                && !contentType.equalsIgnoreCase("image/webp"))) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Format de fichier non autorisé. Formats acceptés : JPG, PNG, WebP."));
         }
 
         try {
@@ -43,12 +56,13 @@ public class UploadController {
                 Files.createDirectories(uploadPath);
             }
 
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
+            String extension = switch (contentType.toLowerCase()) {
+                case "image/png" -> ".png";
+                case "image/webp" -> ".webp";
+                default -> ".jpg";
+            };
 
+            // Renommage sécurisé côté serveur avec UUID
             String storedFileName = UUID.randomUUID().toString() + extension;
             Path targetLocation = uploadPath.resolve(storedFileName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);

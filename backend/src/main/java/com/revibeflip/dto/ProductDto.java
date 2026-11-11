@@ -26,6 +26,8 @@ public class ProductDto {
     private String brand;
     private String size;
     private String color;
+    private String defects;
+    private String measurements;
     private String condition;
     private String conditionLabel;
     private String status;
@@ -58,6 +60,8 @@ public class ProductDto {
                 .brand(product.getBrand())
                 .size(product.getSize())
                 .color(product.getColor())
+                .defects(product.getDefects())
+                .measurements(product.getMeasurements())
                 .condition(product.getCondition().name())
                 .conditionLabel(product.getCondition().getLabel())
                 .status(product.getStatus().name())

@@ -9,6 +9,13 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Entité Payment représentant la transaction financière.
+ *
+ * NOTE SUR LE SÉQUESTRE :
+ * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
+ * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
+ */
 @Entity
 @Table(name = "payments")
 @Getter

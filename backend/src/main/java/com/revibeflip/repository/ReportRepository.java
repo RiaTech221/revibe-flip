@@ -12,4 +12,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status);
     long countByStatus(ReportStatus status);
     List<Report> findAllByOrderByCreatedAtDesc();
+    org.springframework.data.domain.Page<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status, org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<Report> findAllByOrderByCreatedAtDesc(org.springframework.data.domain.Pageable pageable);
 }

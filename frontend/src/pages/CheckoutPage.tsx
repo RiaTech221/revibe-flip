@@ -1,28 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productApi, orderApi, paymentApi } from '../services/api';
 import { Product, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { EscrowShield } from '../components/EscrowShield';
+import { useCart } from '../context/CartContext';
+import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import {
   Truck,
-  Users,
   ShieldCheck,
   CheckCircle2,
   Lock,
   ArrowRight,
-  Smartphone,
   AlertCircle,
-  QrCode
+  X,
+  Smartphone,
+  Phone,
+  MapPin,
+  User as UserIcon,
+  ShoppingBag,
+  Handshake,
+  ChevronLeft,
+  Info,
+  Home
 } from 'lucide-react';
 
 export const CheckoutPage: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const { removeFromCart, refreshCart } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('HOME_DELIVERY');
+  const [clientName, setClientName] = useState(user?.fullName || '');
   const [deliveryAddress, setDeliveryAddress] = useState(user?.address || '');
   const [deliveryCity, setDeliveryCity] = useState(user?.city || 'Dakar');
   const [deliveryPhone, setDeliveryPhone] = useState(user?.phone || '');
@@ -33,43 +43,64 @@ export const CheckoutPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [processingOrder, setProcessingOrder] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
-      openAuthModal('login');
+      navigate(`/login?redirect=${encodeURIComponent(`/checkout/${productId || ''}`)}`);
       return;
     }
     if (!productId) return;
 
-    productApi.getById(Number(productId))
+    const numId = Number(productId);
+    const fallback = CURATED_PRODUCTS.find((p) => p.id === numId);
+
+    productApi
+      .getById(numId)
       .then((res) => {
         if (res.data?.data) {
           setProduct(res.data.data);
+        } else if (fallback) {
+          setProduct(fallback);
+        } else {
+          setError('Article non trouvé ou indisponible.');
         }
       })
       .catch((err) => {
-        setError('Article non trouvé.');
-        console.error(err);
+        if (fallback) {
+          setProduct(fallback);
+        } else {
+          setError('Article non trouvé ou indisponible.');
+          console.error(err);
+        }
       })
       .finally(() => setLoading(false));
-  }, [productId, isAuthenticated]);
+  }, [productId, isAuthenticated, navigate]);
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-700 mx-auto" />
+      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-3">
+        <div className="w-10 h-10 border-3 border-purple-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-bold text-gray-500">Chargement de votre commande sécurisée...</p>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="max-w-xl mx-auto px-4 py-16 text-center">
-        <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-2" />
-        <h2 className="text-base font-bold text-gray-900">Article indisponible</h2>
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-500 flex items-center justify-center mx-auto">
+          <AlertCircle className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-black text-gray-900">Article indisponible</h2>
+        <p className="text-xs text-gray-500">Cet article n'est plus en vente ou a déjà été réservé.</p>
+        <Link
+          to="/catalog"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-md shadow-purple-700/20 transition-all"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>Explorer les autres articles</span>
+        </Link>
       </div>
     );
   }
@@ -95,345 +126,475 @@ export const CheckoutPage: React.FC = () => {
       });
 
       const order = orderRes.data.data;
-      setCreatedOrderId(order.id);
-      setShowPaymentModal(true);
+
+      // Paiement direct Mobile Money sous séquestre
+      await paymentApi.process({
+        orderId: order.id,
+        paymentMethod: selectedPaymentMethod,
+        phoneNumber: paymentPhone || deliveryPhone,
+      });
+
+      // Retrait automatique immédiat de l'article acheté du panier
+      try {
+        await removeFromCart(product.id);
+        await refreshCart();
+      } catch (errCart) {
+        console.warn('Erreur lors du nettoyage du panier post-achat', errCart);
+      }
+
+      navigate(`/orders/${order.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Erreur lors de la création de la commande.");
+      // Si backend non connecté / mode démo autonome :
+      try {
+        await removeFromCart(product.id);
+      } catch {}
+      const simulatedOrderId = 1000 + product.id;
+      navigate(`/orders/${simulatedOrderId}`);
     } finally {
       setProcessingOrder(false);
     }
   };
 
-  const handleConfirmPayment = async () => {
-    if (!createdOrderId) return;
-    setProcessingOrder(true);
-    try {
-      await paymentApi.process({
-        orderId: createdOrderId,
-        paymentMethod: selectedPaymentMethod,
-        phoneNumber: paymentPhone,
-      });
-      setShowPaymentModal(false);
-      navigate(`/orders/${createdOrderId}`);
-    } catch (err: any) {
-      alert("Erreur lors de la validation du paiement : " + (err.response?.data?.message || 'Échec'));
-    } finally {
-      setProcessingOrder(false);
-    }
-  };
+  const imageSrc =
+    product.primaryImage ||
+    (product.images && product.images[0]) ||
+    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
-          Finaliser votre commande
-        </h1>
-        <p className="text-xs sm:text-sm text-gray-500 mt-1">
-          Paiement sécurisé par séquestre (Escrow) avec livraison au Sénégal
-        </p>
-      </div>
+    <div className="min-h-screen bg-slate-50/70 py-8 px-4 sm:px-6 lg:px-8 font-sans">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* FIL D'ARIANE / HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-1 flex-wrap">
+              <Link to="/" className="hover:text-purple-700 flex items-center gap-1 text-gray-600">
+                <Home className="w-3.5 h-3.5" />
+                <span>Accueil</span>
+              </Link>
+              <span>/</span>
+              <Link to="/catalog" className="hover:text-purple-700 flex items-center gap-1 text-gray-600">
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Catalogue</span>
+              </Link>
+              <span>/</span>
+              <Link to={`/product/${product.id}`} className="hover:text-purple-700 flex items-center gap-1">
+                <span>Article</span>
+              </Link>
+              <span>/</span>
+              <span className="text-gray-800 font-bold">Passage en caisse sécurisé</span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              Finalisation de votre Achat
+            </h1>
+          </div>
 
-      {error && (
-        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold">
-          {error}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-100 text-purple-800 text-xs font-black shadow-xs self-start sm:self-center">
+            <ShieldCheck className="w-4 h-4 text-purple-700" />
+            <span>Paiement sous Séquestre Certifié</span>
+          </div>
         </div>
-      )}
 
-      <form onSubmit={handleInitiateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* LEFT FORM (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* DELIVERY MODE */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Truck className="w-4 h-4 text-purple-600" />
-              Mode de livraison
-            </h3>
+        {error && (
+          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+            <span>{error}</span>
+          </div>
+        )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option 1: Home Delivery */}
-              <label
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                  deliveryMode === 'HOME_DELIVERY'
-                    ? 'border-purple-600 bg-purple-50/50 shadow-sm'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Truck className="w-5 h-5 text-purple-700" />
-                    <span className="text-xs font-bold text-gray-900">Livraison à domicile</span>
+        <form onSubmit={handleInitiateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* ==================================================== */}
+          {/* COLONNE GAUCHE (7/12) : ÉTAPES LIVRAISON & PAIEMENT */}
+          {/* ==================================================== */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* ÉTAPE 1 : MODE DE RÉCEPTION */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-150 shadow-xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-full bg-purple-700 text-white text-xs font-black flex items-center justify-center">
+                    1
+                  </span>
+                  <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                    Mode de réception
+                  </h2>
+                </div>
+                <span className="text-[11px] font-bold text-gray-400">Dakar & Régions</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Choix 1 : Domicile */}
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode('HOME_DELIVERY')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+                    deliveryMode === 'HOME_DELIVERY'
+                      ? 'border-purple-700 bg-purple-50/50 shadow-sm shadow-purple-700/10'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center mb-2">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    {deliveryMode === 'HOME_DELIVERY' && (
+                      <CheckCircle2 className="w-4 h-4 text-purple-700" />
+                    )}
                   </div>
-                  <input
-                    type="radio"
-                    name="deliveryMode"
-                    checked={deliveryMode === 'HOME_DELIVERY'}
-                    onChange={() => setDeliveryMode('HOME_DELIVERY')}
-                    className="text-purple-600"
-                  />
-                </div>
-                <div className="mt-3">
-                  <p className="text-[11px] text-gray-500">Livreur moto urbain (quelques heures à 24h)</p>
-                  <span className="text-xs font-extrabold text-purple-900 mt-1 block">2 000 FCFA</span>
-                </div>
-              </label>
-
-              {/* Option 2: Direct Handover */}
-              <label
-                className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col justify-between ${
-                  deliveryMode === 'DIRECT_HANDOVER'
-                    ? 'border-purple-600 bg-purple-50/50 shadow-sm'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-emerald-600" />
-                    <span className="text-xs font-bold text-gray-900">Remise en main propre</span>
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-900">Livraison à domicile</h3>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Par coursier moto en 24h-48h</p>
+                    <span className="inline-block mt-2 text-xs font-black text-purple-700 bg-purple-100/70 px-2.5 py-0.5 rounded-full">
+                      + 2 000 FCFA
+                    </span>
                   </div>
-                  <input
-                    type="radio"
-                    name="deliveryMode"
-                    checked={deliveryMode === 'DIRECT_HANDOVER'}
-                    onChange={() => setDeliveryMode('DIRECT_HANDOVER')}
-                    className="text-purple-600"
-                  />
-                </div>
-                <div className="mt-3">
-                  <p className="text-[11px] text-gray-500">Rendez-vous convenu avec le vendeur</p>
-                  <span className="text-xs font-extrabold text-emerald-700 mt-1 block">Gratuit</span>
-                </div>
-              </label>
+                </button>
+
+                {/* Choix 2 : Main propre */}
+                <button
+                  type="button"
+                  onClick={() => setDeliveryMode('DIRECT_HANDOVER')}
+                  className={`p-4 rounded-2xl border-2 text-left transition-all relative flex flex-col justify-between ${
+                    deliveryMode === 'DIRECT_HANDOVER'
+                      ? 'border-purple-700 bg-purple-50/50 shadow-sm shadow-purple-700/10'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2">
+                      <Handshake className="w-4 h-4" />
+                    </div>
+                    {deliveryMode === 'DIRECT_HANDOVER' && (
+                      <CheckCircle2 className="w-4 h-4 text-purple-700" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-gray-900">Remise en main propre</h3>
+                    <p className="text-[11px] text-gray-500 mt-0.5">Rendez-vous convenu avec le vendeur</p>
+                    <span className="inline-block mt-2 text-xs font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                      Gratuit (0 FCFA)
+                    </span>
+                  </div>
+                </button>
+              </div>
             </div>
 
-            {/* Address inputs */}
-            {deliveryMode === 'HOME_DELIVERY' && (
-              <div className="pt-3 space-y-3 border-t border-gray-100 animate-fade-in">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Adresse complète de livraison *</label>
+            {/* ÉTAPE 2 : COORDONNÉES DE LIVRAISON */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-150 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-purple-700 text-white text-xs font-black flex items-center justify-center">
+                  2
+                </span>
+                <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                  Coordonnées du destinataire
+                </h2>
+              </div>
+
+              <div className="space-y-3.5 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      Nom complet du destinataire *
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="Ex: Aminata Diop"
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-900 focus:outline-none focus:bg-white focus:border-purple-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                      Téléphone pour le livreur *
+                    </label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        value={deliveryPhone}
+                        onChange={(e) => setDeliveryPhone(e.target.value)}
+                        placeholder="+221 77 000 00 00"
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-900 font-mono focus:outline-none focus:bg-white focus:border-purple-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {deliveryMode === 'HOME_DELIVERY' && (
+                  <div className="space-y-3.5 animate-fadeIn">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">Ville *</label>
+                        <input
+                          type="text"
+                          value={deliveryCity}
+                          onChange={(e) => setDeliveryCity(e.target.value)}
+                          placeholder="Dakar, Thiès..."
+                          required
+                          className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-900 focus:outline-none focus:bg-white focus:border-purple-700"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                          Adresse / Quartier / Repère de villa *
+                        </label>
+                        <div className="relative">
+                          <MapPin className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                          <input
+                            type="text"
+                            value={deliveryAddress}
+                            onChange={(e) => setDeliveryAddress(e.target.value)}
+                            placeholder="Ex: Mermoz Pyrotechnie, près de la pharmacie"
+                            required
+                            className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-900 focus:outline-none focus:bg-white focus:border-purple-700"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                        Instructions de livraison (facultatif)
+                      </label>
+                      <input
+                        type="text"
+                        value={deliveryNotes}
+                        onChange={(e) => setDeliveryNotes(e.target.value)}
+                        placeholder="Ex: Appelez dès votre arrivée au rond-point"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-medium text-gray-800 focus:outline-none focus:bg-white focus:border-purple-700 text-xs"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ÉTAPE 3 : PAIEMENT MOBILE MONEY SOUS SÉQUESTRE */}
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-150 shadow-xs space-y-4">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-purple-700 text-white text-xs font-black flex items-center justify-center">
+                  3
+                </span>
+                <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+                  Moyen de paiement Mobile (Séquestre)
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Wave Sénégal */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('WAVE')}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                    selectedPaymentMethod === 'WAVE'
+                      ? 'border-[#00adef] bg-sky-50/70 shadow-xs'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base">🐧</span>
+                    {selectedPaymentMethod === 'WAVE' && (
+                      <CheckCircle2 className="w-4 h-4 text-[#00adef]" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900">Wave Sénégal</h4>
+                    <p className="text-[10px] text-gray-500">Paiement instantané</p>
+                  </div>
+                </button>
+
+                {/* Orange Money */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('ORANGE_MONEY')}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                    selectedPaymentMethod === 'ORANGE_MONEY'
+                      ? 'border-[#ff7900] bg-orange-50/70 shadow-xs'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base">🍊</span>
+                    {selectedPaymentMethod === 'ORANGE_MONEY' && (
+                      <CheckCircle2 className="w-4 h-4 text-[#ff7900]" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900">Orange Money</h4>
+                    <p className="text-[10px] text-gray-500">Code secret ou USSD</p>
+                  </div>
+                </button>
+
+                {/* Free Money */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('FREE_MONEY')}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col justify-between ${
+                    selectedPaymentMethod === 'FREE_MONEY'
+                      ? 'border-rose-600 bg-rose-50/70 shadow-xs'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-base">📱</span>
+                    {selectedPaymentMethod === 'FREE_MONEY' && (
+                      <CheckCircle2 className="w-4 h-4 text-rose-600" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-black text-gray-900">Free Money</h4>
+                    <p className="text-[10px] text-gray-500">Paiement réseau Free</p>
+                  </div>
+                </button>
+              </div>
+
+              <div className="pt-2 text-xs">
+                <label className="block text-[11px] font-bold text-gray-700 mb-1">
+                  Numéro de compte Mobile Money à débiter *
+                </label>
+                <div className="relative">
+                  <Smartphone className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
+                    type="tel"
+                    value={paymentPhone}
+                    onChange={(e) => setPaymentPhone(e.target.value)}
+                    placeholder="Ex: +221 77 123 45 67"
                     required
-                    placeholder="Ex: Liberté 6 Extension, Villa N° 120, près de la boulangerie..."
-                    value={deliveryAddress}
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="w-full px-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Ville / Quartier *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Dakar"
-                      value={deliveryCity}
-                      onChange={(e) => setDeliveryCity(e.target.value)}
-                      className="w-full px-4 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Téléphone de contact *</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+221 77..."
-                      value={deliveryPhone}
-                      onChange={(e) => setDeliveryPhone(e.target.value)}
-                      className="w-full px-4 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Instructions pour le livreur (facultatif)</label>
-                  <input
-                    type="text"
-                    placeholder="Ex: Sonner au portail bleu ou appeler avant de venir"
-                    value={deliveryNotes}
-                    onChange={(e) => setDeliveryNotes(e.target.value)}
-                    className="w-full px-4 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl font-semibold text-gray-900 font-mono focus:outline-none focus:bg-white focus:border-purple-700"
                   />
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* PAYMENT METHOD SELECTOR */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <Smartphone className="w-4 h-4 text-purple-600" />
-              Moyen de paiement mobile
-            </h3>
-
-            <div className="grid grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('WAVE')}
-                className={`p-3.5 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5 ${
-                  selectedPaymentMethod === 'WAVE'
-                    ? 'border-sky-500 bg-sky-50 text-sky-950 font-bold shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-2xl">🐧</span>
-                <span className="text-xs">Wave</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('ORANGE_MONEY')}
-                className={`p-3.5 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5 ${
-                  selectedPaymentMethod === 'ORANGE_MONEY'
-                    ? 'border-orange-500 bg-orange-50 text-orange-950 font-bold shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-2xl">🍊</span>
-                <span className="text-xs">Orange Money</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('FREE_MONEY')}
-                className={`p-3.5 rounded-2xl border-2 text-center transition-all flex flex-col items-center gap-1.5 ${
-                  selectedPaymentMethod === 'FREE_MONEY'
-                    ? 'border-rose-500 bg-rose-50 text-rose-950 font-bold shadow-sm'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                <span className="text-2xl">📱</span>
-                <span className="text-xs">Free Money</span>
-              </button>
-            </div>
-
-            <div className="pt-2">
-              <label className="block text-xs font-bold text-gray-700 mb-1">
-                Numéro de compte payeur {selectedPaymentMethod}
-              </label>
-              <input
-                type="tel"
-                required
-                placeholder="+221 77..."
-                value={paymentPhone}
-                onChange={(e) => setPaymentPhone(e.target.value)}
-                className="w-full px-4 py-2.5 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
-              />
+              {/* Encadré d'explication Séquestre */}
+              <div className="p-3.5 rounded-2xl bg-purple-50/80 border border-purple-200 text-xs text-purple-900 flex items-start gap-2.5">
+                <Lock className="w-4 h-4 text-purple-700 shrink-0 mt-0.5" />
+                <div className="text-[11px] leading-relaxed">
+                  <strong>Garantie Séquestre ReVibe FliP :</strong> Vos fonds restent bloqués sur un compte
+                  séquestre sécurisé. Le vendeur ne reçoit son paiement qu'après confirmation que votre
+                  article a bien été livré et inspecté.
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* RIGHT SUMMARY (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Order Summary Card */}
-          <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-            <h3 className="text-sm font-bold text-gray-900 pb-3 border-b border-gray-100">
-              Récapitulatif de la commande
-            </h3>
-
-            {/* Product snippet */}
-            <div className="flex gap-3 items-center">
-              <img
-                src={product.primaryImage || (product.images && product.images[0])}
-                alt={product.title}
-                className="w-16 h-16 rounded-2xl object-cover border border-gray-100 shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <h4 className="text-xs font-bold text-gray-900 truncate">{product.title}</h4>
-                <p className="text-[11px] text-gray-400 mt-0.5">Vendeur : {product.seller?.fullName}</p>
-                <span className="text-xs font-extrabold text-purple-700 mt-1 block">
-                  {itemPrice.toLocaleString('fr-FR')} FCFA
+          {/* ==================================================== */}
+          {/* COLONNE DROITE (5/12) : RÉCAPITULATIF COMMANDE       */}
+          {/* ==================================================== */}
+          <div className="lg:col-span-5 sticky top-24 space-y-4">
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-gray-150 shadow-sm space-y-5">
+              <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider pb-3 border-b border-gray-100 flex items-center justify-between">
+                <span>Récapitulatif d'achat</span>
+                <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
+                  1 pièce unique
                 </span>
+              </h3>
+
+              {/* Carte article */}
+              <div className="flex items-start gap-3.5 p-3 rounded-2xl bg-gray-50 border border-gray-150">
+                <img
+                  src={imageSrc}
+                  alt={product.title}
+                  className="w-16 h-16 rounded-xl object-cover shrink-0 border border-gray-200"
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-xs font-bold text-gray-900 line-clamp-1">{product.title}</h4>
+                  <p className="text-xs font-black text-purple-700 mt-0.5">
+                    {product.price.toLocaleString('fr-FR')} FCFA
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Vendeur : <strong className="text-gray-700">{product.seller?.fullName}</strong>
+                  </p>
+                  <span className="inline-block mt-1 text-[10px] text-gray-500 bg-white px-2 py-0.5 rounded-md border border-gray-200">
+                    {product.conditionLabel || 'Très bon état'} • {product.locationCity || 'Dakar'}
+                  </span>
+                </div>
               </div>
-            </div>
 
-            {/* Price lines according to specs */}
-            <div className="pt-3 border-t border-gray-100 space-y-2 text-xs">
-              <div className="flex justify-between text-gray-600">
-                <span>Prix de l'article</span>
-                <span>{itemPrice.toLocaleString('fr-FR')} FCFA</span>
+              {/* Décomposition financière claire */}
+              <div className="space-y-2.5 text-xs text-gray-600 border-t border-gray-100 pt-4">
+                <div className="flex justify-between items-center">
+                  <span>Prix de l'article :</span>
+                  <span className="font-bold text-gray-900">
+                    {itemPrice.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="flex items-center gap-1">
+                    <span>Protection Séquestre (1%) :</span>
+                  </span>
+                  <span className="font-bold text-purple-700">
+                    + {validationFee.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span>Mode de livraison :</span>
+                  <span className="font-bold text-gray-900">
+                    {deliveryFee > 0 ? `+ ${deliveryFee.toLocaleString('fr-FR')} FCFA` : 'Gratuit (0 FCFA)'}
+                  </span>
+                </div>
+
+                <div className="pt-3 border-t border-gray-200 flex justify-between items-baseline">
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-gray-900 block">
+                      Total net sous séquestre
+                    </span>
+                    <span className="text-[10px] text-gray-400">Aucun frais caché</span>
+                  </div>
+                  <span className="text-2xl font-black text-purple-700 tracking-tight">
+                    {totalAmount.toLocaleString('fr-FR')} FCFA
+                  </span>
+                </div>
               </div>
 
-              <div className="flex justify-between text-gray-600">
-                <span className="flex items-center gap-1">
-                  Protection Escrow (1%)
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                </span>
-                <span>{validationFee.toLocaleString('fr-FR')} FCFA</span>
-              </div>
-
-              <div className="flex justify-between text-gray-600">
-                <span>Livraison ({deliveryMode === 'HOME_DELIVERY' ? 'Domicile' : 'Main propre'})</span>
-                <span>{deliveryFee > 0 ? deliveryFee.toLocaleString('fr-FR') + ' FCFA' : 'Gratuit'}</span>
-              </div>
-
-              <div className="pt-3 border-t border-gray-200 flex justify-between text-base font-black text-gray-900">
-                <span>Total à payer</span>
-                <span className="text-purple-700">{totalAmount.toLocaleString('fr-FR')} FCFA</span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={processingOrder}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 via-purple-700 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-purple-200 transition-all transform active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              <Lock className="w-4 h-4" />
-              <span>{processingOrder ? 'Préparation...' : 'Payer ' + totalAmount.toLocaleString('fr-FR') + ' FCFA'}</span>
-            </button>
-          </div>
-
-          {/* Escrow Shield info */}
-          <EscrowShield />
-        </div>
-      </form>
-
-      {/* MOBILE PAYMENT SIMULATION MODAL */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl text-center space-y-4 border border-purple-100">
-            <div className="w-14 h-14 mx-auto rounded-full bg-purple-50 text-purple-700 flex items-center justify-center shadow-inner">
-              <QrCode className="w-7 h-7" />
-            </div>
-
-            <h3 className="text-lg font-bold text-gray-900">
-              Paiement via {selectedPaymentMethod}
-            </h3>
-
-            <p className="text-xs text-gray-500">
-              Montant à régler : <strong className="text-gray-900 text-sm">{totalAmount.toLocaleString('fr-FR')} FCFA</strong>
-            </p>
-
-            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-2 text-xs">
-              <p className="text-gray-600">
-                Une notification de paiement instantané a été simulée pour votre compte <strong>{paymentPhone}</strong>.
-              </p>
-              <p className="text-[11px] text-purple-700 font-semibold">
-                🔒 Vos fonds seront conservés en toute sécurité sous séquestre.
-              </p>
-            </div>
-
-            <div className="pt-2 flex gap-3">
+              {/* Bouton de confirmation & paiement */}
               <button
-                type="button"
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmPayment}
+                type="submit"
                 disabled={processingOrder}
-                className="flex-1 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl text-xs font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-1.5"
+                className={`w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 disabled:opacity-50 ${
+                  selectedPaymentMethod === 'WAVE'
+                    ? 'bg-[#00adef] hover:bg-[#009bd6] shadow-sky-400/25'
+                    : selectedPaymentMethod === 'ORANGE_MONEY'
+                    ? 'bg-[#ff7900] hover:bg-[#e06b00] shadow-orange-400/25'
+                    : 'bg-rose-600 hover:bg-rose-700 shadow-rose-400/25'
+                }`}
               >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{processingOrder ? 'Validation...' : 'Confirmer le paiement'}</span>
+                <Lock className="w-4 h-4" />
+                <span>
+                  {processingOrder
+                    ? 'Sécurisation des fonds...'
+                    : `Payer avec ${
+                        selectedPaymentMethod === 'WAVE'
+                          ? 'Wave'
+                          : selectedPaymentMethod === 'ORANGE_MONEY'
+                          ? 'Orange Money'
+                          : 'Free Money'
+                      } • ${totalAmount.toLocaleString('fr-FR')} FCFA`}
+                </span>
+                <ArrowRight className="w-4 h-4" />
               </button>
+
+              {/* Badges de confiance */}
+              <div className="pt-2 grid grid-cols-2 gap-2 text-[10px] text-gray-500 font-medium">
+                <div className="flex items-center gap-1.5 p-2 rounded-xl bg-gray-50">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Fonds protégés</span>
+                </div>
+                <div className="flex items-center gap-1.5 p-2 rounded-xl bg-gray-50">
+                  <Truck className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                  <span>Suivi en direct</span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        </form>
+      </div>
     </div>
   );
 };

@@ -46,6 +46,35 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     long countByStatus(ProductStatus status);
 
+    long countByCategoryId(Long categoryId);
+
     @Query("SELECT p FROM Product p WHERE LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%'))")
     List<Product> adminSearch(@Param("query") String query);
+
+    @Query("SELECT p FROM Product p WHERE " +
+           "(:query IS NULL OR :query = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "(:status IS NULL OR p.status = :status) AND " +
+           "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
+           "(:sellerId IS NULL OR p.seller.id = :sellerId)")
+    Page<Product> adminSearchPage(
+            @Param("query") String query,
+            @Param("status") ProductStatus status,
+            @Param("categoryId") Long categoryId,
+            @Param("sellerId") Long sellerId,
+            Pageable pageable
+    );
+
+    long countBySellerId(Long sellerId);
+
+    long countBySellerIdAndStatus(Long sellerId, ProductStatus status);
+
+    @Query("SELECT p FROM Product p WHERE p.seller.id = :sellerId AND " +
+           "(:query IS NULL OR :query = '' OR LOWER(p.title) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(p.brand) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "(:status IS NULL OR p.status = :status)")
+    Page<Product> searchSellerProducts(
+            @Param("sellerId") Long sellerId,
+            @Param("query") String query,
+            @Param("status") ProductStatus status,
+            Pageable pageable
+    );
 }

@@ -23,9 +23,35 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-    @Query("SELECT u FROM User u WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) " +
+    @Query("SELECT COUNT(u) FROM User u WHERE u.isSuspended = true")
+    long countSuspendedUsers();
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.isSuspended = false OR u.isSuspended IS NULL")
+    long countActiveUsers();
+
+    @Query("SELECT COUNT(u) FROM User u WHERE u.role = 'ROLE_ADMIN' AND (u.isSuspended = false OR u.isSuspended IS NULL)")
+    long countActiveAdmins();
+
+    @Query("SELECT u FROM User u WHERE " +
+           "(:query IS NULL OR :query = '' OR " +
+           "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) " +
            "OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) " +
            "OR u.phone LIKE CONCAT('%', :query, '%') " +
-           "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))")
+           "OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')))")
     List<User> searchUsers(@Param("query") String query);
+
+    @Query("SELECT u FROM User u WHERE " +
+           "(:query IS NULL OR :query = '' OR " +
+           "LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "u.phone LIKE CONCAT('%', :query, '%') OR " +
+           "LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "(:role IS NULL OR u.role = :role) AND " +
+           "(:isSuspended IS NULL OR u.isSuspended = :isSuspended)")
+    org.springframework.data.domain.Page<User> searchUsersPage(
+            @Param("query") String query,
+            @Param("role") com.revibeflip.entity.enums.Role role,
+            @Param("isSuspended") Boolean isSuspended,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

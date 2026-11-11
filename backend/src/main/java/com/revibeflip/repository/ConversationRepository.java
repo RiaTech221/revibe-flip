@@ -12,9 +12,12 @@ import java.util.Optional;
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
 
-    @Query("SELECT c FROM Conversation c WHERE c.buyer.id = :userId OR c.seller.id = :userId ORDER BY c.lastMessageAt DESC NULLS LAST")
+    @Query("SELECT c FROM Conversation c WHERE c.buyer.id = :userId OR c.seller.id = :userId ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC")
     List<Conversation> findByUser(@Param("userId") Long userId);
 
     @Query("SELECT c FROM Conversation c WHERE c.product.id = :productId AND ((c.buyer.id = :u1 AND c.seller.id = :u2) OR (c.buyer.id = :u2 AND c.seller.id = :u1))")
     Optional<Conversation> findByProductAndUsers(@Param("productId") Long productId, @Param("u1") Long u1, @Param("u2") Long u2);
+
+    @Query("SELECT c FROM Conversation c WHERE (c.buyer.id = :u1 AND c.seller.id = :u2) OR (c.buyer.id = :u2 AND c.seller.id = :u1) ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC")
+    List<Conversation> findByUsers(@Param("u1") Long u1, @Param("u2") Long u2);
 }

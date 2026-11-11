@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReVibe FliP — Prototype Multi-Interfaces (Acheteur • Vendeur • Admin)</title>
+    <style>
+        :root {
+            --primary: #2e1065;
+            --primary-mid: #4c1d95;
+            --accent: #7c3aed;
+            --accent-hover: #6d28d9;
+            --accent-light: #f3e8ff;
+            --accent-soft: #faf5ff;
+            --border: #e9d5ff;
+            --text: #1e1b4b;
+            --muted: #64748b;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #f8f6ff;
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* =====================================================================
+           1. PORTAIL D'AUTHENTIFICATION (3 PROFILS : ACHETEUR / VENDEUR / ADMIN)
+           ===================================================================== */
+        .auth-gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #1e0b4b 0%, #4c1d95 55%, #7c3aed 100%);
+        }
+        .auth-card {
+            background: white;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 22px;
+            padding: 2.2rem 2rem;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7rem;
+            margin-bottom: 1.4rem;
+        }
+        .auth-brand-logo {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #4c1d95, #9333ea);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.35rem;
+        }
+        /* Role Selector Cards on Login Page */
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.55rem;
+            margin-bottom: 1.4rem;
+        }
+        .role-card {
+            border: 2px solid #e9d5ff;
+            background: #faf5ff;
+            border-radius: 12px;
+            padding: 0.7rem 0.4rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .role-card:hover { border-color: #a855f7; }
+        .role-card.active {
+            border-color: var(--accent);
+            background: var(--accent-light);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.18);
+        }
+        .role-card .icon { font-size: 1.4rem; display: block; margin-bottom: 0.2rem; }
+        .role-card strong { font-size: 0.8rem; color: var(--primary); display: block; }
+        .role-card span { font-size: 0.68rem; color: var(--muted); }
+
+        .mode-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: var(--accent-light);
+            padding: 0.28rem;
+            border-radius: 10px;
+            margin-bottom: 1.25rem;
+        }
+        .mode-tab {
+            border: none;
+            background: transparent;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.86rem;
+            color: var(--primary-mid);
+            cursor: pointer;
+        }
+        .mode-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 6px rgba(76, 29, 149, 0.12);
+        }
+
+        /* =====================================================================
+           2. HEADERS DEDIES PAR ESPACE (ACHETEUR & VENDEUR)
+           ===================================================================== */
+        header.top-bar {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            height: 66px;
+            position: sticky;
+            top: 0;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+        }
+        .top-bar-inner {
+            max-width: 1260px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+        .logo-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 9px;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+        }
+        .space-badge {
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 0.22rem 0.65rem;
+            border-radius: 99px;
+            text-transform: uppercase;
+        }
+        .badge-buyer { background: #ede9fe; color: #5b21b6; }
+        .badge-seller { background: #fef3c7; color: #b45309; }
+
+        .nav-tabs { display: flex; gap: 0.35rem; }
+        .tab-link {
+            border: none;
+            background: transparent;
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+            cursor: pointer;
+        }
+        .tab-link:hover, .tab-link.active {
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        /* =====================================================================
+           3. LAYOUT SPECIFIQUE BACK-OFFICE ADMIN (SIDEBAR GAUCHE PRO)
+           ===================================================================== */
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            min-height: 100vh;
+        }
+        .admin-sidebar {
+            background: #1e0b4b;
+            color: white;
+            padding: 1.5rem 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .admin-menu-btn {
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            color: #e9d5ff;
+            padding: 0.7rem 0.95rem;
+            border-radius: 9px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .admin-menu-btn:hover, .admin-menu-btn.active {
+            background: #6d28d9;
+            color: white;
+        }
+        .admin-main {
+            padding: 2rem 2.5rem;
+            background: #f5f3ff;
+        }
+
+        /* =====================================================================
+           COMPOSANTS COMMUNS
+           ===================================================================== */
+        .page-wrap { max-width: 1220px; margin: 1.75rem auto 4rem; padding: 0 1.5rem; }
+        .sub-view { display: none; animation: fadeIn 0.2s ease; }
+        .sub-view.active { display: block; }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 18px rgba(76, 29, 149, 0.05);
+            margin-bottom: 1.5rem;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+        .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); gap: 1.25rem; }
+        @media (max-width: 860px) {
+            .grid-2, .grid-3, .admin-layout { grid-template-columns: 1fr; }
+        }
+
+        .form-group { margin-bottom: 0.9rem; }
+        label { display: block; font-size: 0.79rem; font-weight: 700; color: var(--primary-mid); margin-bottom: 0.28rem; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.62rem 0.85rem;
+            border: 1.5px solid #d8b4fe;
+            border-radius: 9px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            color: var(--text);
+            background: #fdfcff;
+        }
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.68rem 1.2rem;
+            border-radius: 9px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .btn:hover { background: var(--accent-hover); }
+        .btn-outline { background: white; color: var(--primary-mid); border: 1.5px solid #c4b5fd; }
+        .btn-outline:hover { background: var(--accent-light); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; border-radius: 7px; }
+        .btn-block { width: 100%; }
+
+        .product-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .product-card:hover { transform: translateY(-4px); border-color: #a855f7; box-shadow: 0 10px 22px rgba(124,58,237,0.13); }
+        .product-img { height: 210px; background-size: cover; background-position: center; position: relative; }
+        .tag-pill {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(30, 11, 75, 0.84);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 99px;
+        }
+
+        /* Stepper Livraison */
+        .stepper { display: flex; justify-content: space-between; margin: 1.4rem 0; position: relative; }
+        .stepper::before { content: ''; position: absolute; top: 15px; left: 8%; right: 8%; height: 3px; background: #e9d5ff; z-index: 1; }
+        .s-node { position: relative; z-index: 2; text-align: center; flex: 1; }
+        .s-dot {
+            width: 32px; height: 32px; border-radius: 50%; background: #f3e8ff; border: 2px solid #c4b5fd;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 0.3rem; font-weight: 800; font-size: 0.76rem;
+        }
+        .s-node.done .s-dot { background: var(--accent); border-color: var(--accent); color: white; }
+        .s-node.active .s-dot { background: var(--success); border-color: var(--success); color: white; }
+
+        table.pro-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        table.pro-table th, table.pro-table td { padding: 0.75rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); }
+        table.pro-table th { background: var(--accent-light); color: var(--primary); font-size: 0.75rem; text-transform: uppercase; }
+
+        #toast-box { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 0.5rem; }
+        .toast { background: #2e1065; color: white; padding: 0.8rem 1.2rem; border-radius: 10px; border-left: 4px solid #a855f7; font-size: 0.85rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<!-- =========================================================================
+     PORTAIL DE CONNEXION MULTI-INTERFACES (ACHETEUR / VENDEUR / ADMIN)
+     ========================================================================= -->
+<div id="portal-auth" class="auth-gate">
+
+    <!-- CARTE 1 : CONNEXION / INSCRIPTION -->
+    <div class="auth-card" id="card-login">
+        <div class="auth-brand">
+            <div class="auth-brand-logo">RF</div>
+            <div>
+                <h2 style="margin:0; color:var(--primary); font-size:1.35rem;">ReVibe FliP</h2>
+                <span style="font-size:0.74rem; color:var(--accent); font-weight:700;">CHOISISSEZ VOTRE ESPACE DE CONNEXION</span>
+            </div>
+        </div>
+
+        <!-- Sélecteur visuel des 3 interfaces -->
+        <label style="text-align:center; margin-bottom:0.5rem;">1. Sélectionnez le profil à tester :</label>
+        <div class="role-selector">
+            <div class="role-card active" id="rc-BUYER" onclick="selectLoginRole('BUYER')">
+                <span class="icon">🛒</span>
+                <strong>Acheteur</strong>
+                <span>Awa Diop</span>
+            </div>
+            <div class="role-card" id="rc-SELLER" onclick="selectLoginRole('SELLER')">
+                <span class="icon">🏷️</span>
+                <strong>Vendeur</strong>
+                <span>Moussa Ndiaye</span>
+            </div>
+            <div class="role-card" id="rc-ADMIN" onclick="selectLoginRole('ADMIN')">
+                <span class="icon">🛡️</span>
+                <strong>Admin</strong>
+                <span>Back-Office</span>
+            </div>
+        </div>
+
+        <!-- Onglets Connexion / Inscription (Masqué pour Admin) -->
+        <div class="mode-tabs" id="auth-mode-tabs">
+            <button class="mode-tab active" id="mt-login" onclick="setAuthMode('LOGIN')">Se connecter</button>
+            <button class="mode-tab" id="mt-register" onclick="setAuthMode('REGISTER')">Créer un compte</button>
+        </div>
+
+        <!-- Formulaire Connexion -->
+        <div id="pane-login">
+            <div class="form-group">
+                <label id="lbl-login-id">Numéro de téléphone (Sénégal)</label>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" value="🇸🇳 +221" readonly style="width:92px; font-weight:700; background:#f3e8ff; text-align:center;">
+                    <input type="text" id="inp-login-phone" value="77 450 12 34">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Mot de passe</label>
+                <input type="password" value="••••••••">
+            </div>
+            <button class="btn btn-block" id="btn-submit-login" onclick="enterWorkspace()">
+                🛒 Accéder à l'Interface Acheteur
+            </button>
+        </div>
+
+        <!-- Formulaire Inscription + OTP (Section 4.1) -->
+        <div id="pane-register" style="display:none;">
+            <div class="grid-2" style="gap:0.6rem;">
+                <div class="form-group"><label>Prénom *</label><input type="text" value="Awa"></div>
+                <div class="form-group"><label>Nom *</label><input type="text" value="Diop"></div>
+            </div>
+            <div class="form-group">
+                <label>Pays de résidence *</label>
+                <select onchange="document.getElementById('reg-pref').value = this.value">
+                    <option value="+221">🇸🇳 Sénégal (+221)</option>
+                    <option value="+225">🇨🇮 Côte d'Ivoire (+225)</option>
+                    <option value="+223">🇲🇱 Mali (+223)</option>
+                    <option value="+212">🇲🇦 Maroc (+212)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Téléphone *</label>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="reg-pref" value="+221" readonly style="width:80px; background:#f3e8ff; font-weight:700; text-align:center;">
+                    <input type="text" value="77 450 12 34">
+                </div>
+            </div>
+            <div class="form-group"><label>Mot de passe & Confirmation *</label><input type="password" value="••••••••"></div>
+            <button class="btn btn-block" onclick="showOtpStep()">📩 S'inscrire & Vérifier par OTP SMS</button>
+        </div>
+    </div>
+
+    <!-- CARTE 2 : VERIFICATION OTP SMS (Section 4.2) -->
+    <div class="auth-card" id="card-otp" style="display:none; text-align:center;">
+        <h2 style="margin-top:0; color:var(--primary);">📱 Vérification OTP SMS</h2>
+        <p style="font-size:0.86rem; color:var(--muted);">Code envoyé par SMS au <strong>+221 77 450 12 34</strong></p>
+        <div style="background:#f3e8ff; border:1px dashed #7c3aed; padding:0.75rem; border-radius:10px; margin-bottom:1rem; font-size:0.85rem;">
+            Code SMS reçu : <strong>482910</strong>
+        </div>
+        <div class="form-group">
+            <input type="text" value="482910" style="font-size:1.4rem; text-align:center; letter-spacing:0.35em; font-weight:800;">
+        </div>
+        <button class="btn btn-success btn-block" onclick="enterWorkspace()">✅ Valider l'OTP & Ouvrir mon espace</button>
+        <button class="btn btn-outline btn-block" style="margin-top:0.5rem;" onclick="backToCardLogin()">⬅ Retour</button>
+    </div>
+
+</div>
+
+
+<!-- =========================================================================
+     INTERFACE 1 : ESPACE ACHETEUR (AWA DIOP)
+     ========================================================================= -->
+<div id="workspace-BUYER" style="display:none;">
+    <header class="top-bar">
+        <div class="top-bar-inner">
+            <div class="logo-row">
+                <div class="logo-box">RF</div>
+                <strong style="font-size:1.15rem; color:var(--primary);">ReVibe FliP</strong>
+                <span class="space-badge badge-buyer">🛒 Espace Acheteur</span>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="tab-link active" id="btab-catalog" onclick="openBuyerTab('b-catalog', 'btab-catalog')">🛍️ Catalogue & Recherche</button>
+                <button class="tab-link" id="btab-chat" onclick="openBuyerTab('b-chat', 'btab-chat')">💬 Messagerie</button>
+                <button class="tab-link" id="btab-orders" onclick="openBuyerTab('b-orders', 'btab-orders')">📦 Mes Commandes & Suivi</button>
+                <button class="tab-link" id="btab-notifs" onclick="openBuyerTab('b-notifs', 'btab-notifs')">🔔 Notifications</button>
+            </nav>
+
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span style="font-size:0.82rem; font-weight:700;">🇸🇳 Awa Diop</span>
+                <button class="btn btn-outline btn-sm" onclick="returnToLogin()">Changer de compte / Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-wrap">
+        <!-- Acheteur : Catalogue & Filtres V1 -->
+        <div class="sub-view active" id="b-catalog">
+            <div class="card" style="padding:1rem 1.25rem;">
+                <div style="display:grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap:0.7rem;">
+                    <input type="text" id="bf-kw" placeholder="🔍 Rechercher un article (Nike, Zara, Sac...)" oninput="renderBuyerCatalog()">
+                    <select id="bf-cat" onchange="renderBuyerCatalog()">
+                        <option value="">Toutes catégories</option>
+                        <option value="Chaussures">Chaussures</option>
+                        <option value="Vêtements">Vêtements</option>
+                        <option value="Accessoires">Accessoires</option>
+                    </select>
+                    <select id="bf-size" onchange="renderBuyerCatalog()">
+                        <option value="">Toutes tailles</option>
+                        <option value="42">42</option>
+                        <option value="M">M</option>
+                        <option value="Unique">Unique</option>
+                    </select>
+                    <select id="bf-cond" onchange="renderBuyerCatalog()">
+                        <option value="">Tous états</option>
+                        <option value="Comme neuf">Comme neuf</option>
+                        <option value="Neuf avec étiquette">Neuf avec étiquette</option>
+                        <option value="Très bon état">Très bon état</option>
+                    </select>
+                    <select id="bf-city" onchange="renderBuyerCatalog()">
+                        <option value="">Tout le Sénégal</option>
+                        <option value="Dakar">Dakar</option>
+                        <option value="Thiès">Thiès</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-4" id="buyer-grid"></div>
+        </div>
+
+        <!-- Acheteur : Fiche Détail Produit -->
+        <div class="sub-view" id="b-detail">
+            <button class="btn btn-outline btn-sm" style="margin-bottom:1rem;" onclick="openBuyerTab('b-catalog', 'btab-catalog')">⬅ Retour au catalogue</button>
+            <div class="grid-2" id="buyer-detail-box"></div>
+        </div>
+
+        <!-- Acheteur : Passage de Commande & Paiement 1% -->
+        <div class="sub-view" id="b-checkout">
+            <div class="card" style="max-width:600px; margin:0 auto;">
+                <h2 style="margin-top:0; color:var(--primary);">Passer la commande (Sections 9 & 10)</h2>
+                <div id="buyer-chk-item" style="background:var(--accent-soft); padding:0.85rem; border-radius:10px; margin-bottom:1rem;"></div>
+                <div class="form-group">
+                    <label>Mode de livraison V1</label>
+                    <select id="buyer-chk-mode" onchange="updateBuyerCheckout()">
+                        <option value="HOME">🚚 Livraison à domicile (+1 500 FCFA)</option>
+                        <option value="HAND">🤝 Remise en main propre (0 FCFA)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Adresse / Lieu de remise</label>
+                    <input type="text" value="Mermoz Pyrotechnie, Dakar (+221 77 450 12 34)">
+                </div>
+                <div class="form-group">
+                    <label>Moyen de paiement Mobile Money (Sénégal)</label>
+                    <select id="buyer-chk-pay">
+                        <option value="Wave">🌊 Wave Sénégal</option>
+                        <option value="Orange Money">🍊 Orange Money</option>
+                        <option value="Free Money">🔴 Free Money</option>
+                    </select>
+                </div>
+                <div style="background:#f3e8ff; padding:1rem; border-radius:10px; margin:1rem 0;">
+                    <div style="display:flex; justify-content:space-between;"><span>Prix du produit :</span><strong id="bc-price"></strong></div>
+                    <div style="display:flex; justify-content:space-between; color:var(--accent);"><span>Frais de validation (1%) :</span><strong id="bc-fee"></strong></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Frais de livraison :</span><strong id="bc-deliv"></strong></div>
+                    <hr style="border:none; border-top:1px solid #c4b5fd; margin:0.5rem 0;">
+                    <div style="display:flex; justify-content:space-between; font-size:1.15rem;"><strong>Total (Bloqué en Escrow) :</strong><strong id="bc-total" style="color:var(--accent);"></strong></div>
+                </div>
+                <button class="btn btn-block" onclick="submitBuyerOrder()">💳 Confirmer & Payer maintenant</button>
+            </div>
+        </div>
+
+        <!-- Acheteur : Messagerie -->
+        <div class="sub-view" id="b-chat">
+            <div class="card" style="max-width:740px; margin:0 auto;">
+                <h3 style="margin-top:0; color:var(--primary);">💬 Conversation avec Moussa Ndiaye (Vendeur)</h3>
+                <div id="buyer-chat-box" style="height:280px; overflow-y:auto; background:#faf5ff; padding:1rem; border-radius:10px; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.5rem;"></div>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="buyer-chat-inp" placeholder="Écrire au vendeur..." onkeydown="if(event.key==='Enter') sendChat('BUYER')">
+                    <button class="btn" onclick="sendChat('BUYER')">Envoyer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acheteur : Suivi de commande, Confirmation Réception & Avis -->
+        <div class="sub-view" id="b-orders">
+            <h2 style="margin-top:0; color:var(--primary);">📦 Suivi de mes commandes & Confirmation de réception</h2>
+            <div id="buyer-orders-box"></div>
+        </div>
+
+        <!-- Acheteur : Notifications -->
+        <div class="sub-view" id="b-notifs">
+            <div class="card">
+                <h2 style="margin-top:0; color:var(--primary);">🔔 Mes Notifications</h2>
+                <div id="buyer-notifs-box"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================================
+     INTERFACE 2 : ESPACE VENDEUR (MOUSSA NDIAYE)
+     ========================================================================= -->
+<div id="workspace-SELLER" style="display:none;">
+    <header class="top-bar">
+        <div class="top-bar-inner">
+            <div class="logo-row">
+                <div class="logo-box" style="background:#d97706;">RF</div>
+                <strong style="font-size:1.15rem; color:var(--primary);">ReVibe FliP</strong>
+                <span class="space-badge badge-seller">🏷️ Studio Vendeur</span>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="tab-link active" id="stab-ads" onclick="openSellerTab('s-ads', 'stab-ads')">🏷️ Mes Annonces & Publication</button>
+                <button class="tab-link" id="stab-orders" onclick="openSellerTab('s-orders', 'stab-orders')">🚚 Commandes à expédier</button>
+                <button class="tab-link" id="stab-chat" onclick="openSellerTab('s-chat', 'stab-chat')">💬 Messages Acheteurs</button>
+                <button class="tab-link" id="stab-wallet" onclick="openSellerTab('s-wallet', 'stab-wallet')">💰 Mes Ventes & Avis (⭐ 4.9)</button>
+            </nav>
+
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+                <span style="font-size:0.82rem; font-weight:700;">🇸🇳 Moussa Ndiaye</span>
+                <button class="btn btn-outline btn-sm" onclick="returnToLogin()">Changer de compte / Déconnexion</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-wrap">
+        <!-- Vendeur : Publier & Gérer ses annonces (Section 5) -->
+        <div class="sub-view active" id="s-ads">
+            <div class="grid-2">
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">➕ Publier une nouvelle annonce (Section 5.1)</h2>
+                    <div class="form-group"><label>Titre de l'article *</label><input type="text" id="s-title" value="Chemise Wax Kente Sur-Mesure"></div>
+                    <div class="grid-2" style="gap:0.6rem;">
+                        <div class="form-group">
+                            <label>Catégorie *</label>
+                            <select id="s-cat"><option>Vêtements</option><option>Chaussures</option><option>Accessoires</option></select>
+                        </div>
+                        <div class="form-group"><label>Prix (FCFA) *</label><input type="number" id="s-price" value="12000"></div>
+                    </div>
+                    <div class="grid-2" style="gap:0.6rem;">
+                        <div class="form-group">
+                            <label>État *</label>
+                            <select id="s-cond"><option>Comme neuf</option><option>Neuf avec étiquette</option><option>Très bon état</option></select>
+                        </div>
+                        <div class="form-group"><label>Taille & Localisation</label><input type="text" id="s-city" value="Dakar"></div>
+                    </div>
+                    <div class="form-group"><label>Description *</label><textarea id="s-desc" rows="2">Tissu authentique, coupé à Dakar.</textarea></div>
+                    <button class="btn btn-block" onclick="sellerPublishAd()">🚀 Publier l'annonce en ligne (ACTIVE)</button>
+                </div>
+
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">📋 Gestion de mes annonces (Section 5.2)</h2>
+                    <p style="font-size:0.82rem; color:var(--muted);">Statuts : ACTIVE, INACTIVE, DRAFT, SOLD</p>
+                    <div id="seller-ads-table"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendeur : Préparer et expédier les commandes (Section 11.2) -->
+        <div class="sub-view" id="s-orders">
+            <h2 style="margin-top:0; color:var(--primary);">🚚 Commandes reçues à préparer et expédier</h2>
+            <div id="seller-orders-box"></div>
+        </div>
+
+        <!-- Vendeur : Messagerie côté vendeur -->
+        <div class="sub-view" id="s-chat">
+            <div class="card" style="max-width:740px; margin:0 auto;">
+                <h3 style="margin-top:0; color:var(--primary);">💬 Messages de Awa Diop (Acheteuse)</h3>
+                <div id="seller-chat-box" style="height:280px; overflow-y:auto; background:#faf5ff; padding:1rem; border-radius:10px; margin-bottom:1rem; display:flex; flex-direction:column; gap:0.5rem;"></div>
+                <div style="display:flex; gap:0.5rem;">
+                    <input type="text" id="seller-chat-inp" placeholder="Répondre à l'acheteuse..." onkeydown="if(event.key==='Enter') sendChat('SELLER')">
+                    <button class="btn" onclick="sendChat('SELLER')">Répondre</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendeur : Transactions & Évaluations reçues -->
+        <div class="sub-view" id="s-wallet">
+            <div class="grid-2">
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">💰 Mes Transactions & Revenus Escrow</h2>
+                    <div id="seller-tx-box"></div>
+                </div>
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">⭐ Mes Évaluations reçues (4.9 / 5)</h2>
+                    <div id="seller-reviews-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- =========================================================================
+     INTERFACE 3 : BACK-OFFICE ADMINISTRATEUR (SIDEBAR PRO — SECTION 15)
+     ========================================================================= -->
+<div id="workspace-ADMIN" style="display:none;">
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <div>
+                <div style="display:flex; align-items:center; gap:0.65rem; margin-bottom:2rem; padding:0 0.5rem;">
+                    <div class="logo-box" style="background:#9333ea;">RF</div>
+                    <div>
+                        <strong style="display:block; font-size:1.05rem;">ReVibe Admin</strong>
+                        <span style="font-size:0.72rem; color:#c4b5fd;">ROLE_ADMIN • Sénégal</span>
+                    </div>
+                </div>
+
+                <button class="admin-menu-btn active" id="am-dash" onclick="openAdminTab('a-dash', 'am-dash')">📊 Dashboard & KPI</button>
+                <button class="admin-menu-btn" id="am-users" onclick="openAdminTab('a-users', 'am-users')">👥 Utilisateurs</button>
+                <button class="admin-menu-btn" id="am-ads" onclick="openAdminTab('a-ads', 'am-ads')">🏷️ Annonces & Catégories</button>
+                <button class="admin-menu-btn" id="am-orders" onclick="openAdminTab('a-orders', 'am-orders')">💳 Commandes & Paiements</button>
+                <button class="admin-menu-btn" id="am-reports" onclick="openAdminTab('a-reports', 'am-reports')">🚨 Signalements & Litiges</button>
+            </div>
+
+            <button class="btn btn-outline btn-block" style="background:rgba(255,255,255,0.1); color:white; border-color:rgba(255,255,255,0.25);" onclick="returnToLogin()">
+                🚪 Déconnexion Admin
+            </button>
+        </aside>
+
+        <main class="admin-main">
+            <!-- Admin 1 : Dashboard KPI -->
+            <div class="sub-view active" id="a-dash">
+                <h2 style="margin-top:0; color:var(--primary);">📊 Tableau de Bord Administrateur (Section 15)</h2>
+                <div class="grid-3">
+                    <div class="card"><span>👥 Nombre d'utilisateurs</span><strong style="display:block; font-size:1.8rem; color:var(--primary);">1 248</strong></div>
+                    <div class="card"><span>🏷️ Nombre d'annonces</span><strong style="display:block; font-size:1.8rem; color:var(--primary);" id="kpi-ads-val">4</strong></div>
+                    <div class="card"><span>📦 Nombre de commandes</span><strong style="display:block; font-size:1.8rem; color:var(--primary);" id="kpi-ord-val">319</strong></div>
+                    <div class="card"><span>💳 Nombre de transactions</span><strong style="display:block; font-size:1.8rem; color:var(--primary);">315</strong></div>
+                    <div class="card"><span>💰 Commissions perçues (1%)</span><strong style="display:block; font-size:1.8rem; color:var(--accent);">48 650 FCFA</strong></div>
+                    <div class="card"><span>🚨 Signalements en attente</span><strong style="display:block; font-size:1.8rem; color:var(--danger);" id="kpi-rep-val">2</strong></div>
+                </div>
+            </div>
+
+            <!-- Admin 2 : Utilisateurs -->
+            <div class="sub-view" id="a-users">
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">👥 Gestion des Utilisateurs (Suspension & Réactivation)</h2>
+                    <table class="pro-table">
+                        <thead><tr><th>Nom</th><th>Téléphone</th><th>Rôle</th><th>Statut</th><th>Action</th></tr></thead>
+                        <tbody id="admin-users-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin 3 : Annonces & Catégories -->
+            <div class="sub-view" id="a-ads">
+                <div class="grid-2">
+                    <div class="card">
+                        <h3 style="margin-top:0; color:var(--primary);">🏷️ Modération des Annonces</h3>
+                        <div id="admin-ads-list"></div>
+                    </div>
+                    <div class="card">
+                        <h3 style="margin-top:0; color:var(--primary);">📂 Gestion des Catégories (CRUD)</h3>
+                        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                            <input type="text" id="adm-new-cat" placeholder="Nouvelle catégorie...">
+                            <button class="btn btn-sm" onclick="addCat()">+ Créer</button>
+                        </div>
+                        <div id="admin-cats-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin 4 : Commandes & Paiements -->
+            <div class="sub-view" id="a-orders">
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">💳 Supervision des Commandes & Transactions Mobile Money</h2>
+                    <table class="pro-table">
+                        <thead><tr><th>N° Commande</th><th>Article</th><th>Prix + 1% + Livraison</th><th>Opérateur</th><th>Statut Escrow</th></tr></thead>
+                        <tbody id="admin-orders-list"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Admin 5 : Signalements & Litiges -->
+            <div class="sub-view" id="a-reports">
+                <div class="card">
+                    <h2 style="margin-top:0; color:var(--primary);">🚨 Traitement et Clôture des Signalements & Litiges</h2>
+                    <table class="pro-table">
+                        <thead><tr><th>Cible signalée</th><th>Motif (Section 13)</th><th>Statut</th><th>Décision Admin</th></tr></thead>
+                        <tbody id="admin-reports-list"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<div id="toast-box"></div>
+
+<script>
+    let selectedRole = 'BUYER';
+    const DELIV_STEPS = ['PENDING', 'PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED'];
+
+    let catalog = [
+        { id: 0, title: "Sneakers Nike Air Jordan 1 Low", cat: "Chaussures", price: 22000, cond: "Comme neuf", size: "42", city: "Dakar", seller: "Moussa Ndiaye", status: "ACTIVE", img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600", desc: "Authentiques Jordan 1 Low portées 3 fois à Dakar." },
+        { id: 1, title: "Veste en Jean Oversize Zara", cat: "Vêtements", price: 9500, cond: "Très bon état", size: "M", city: "Dakar", seller: "Fatou Sow", status: "ACTIVE", img: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600", desc: "Veste en jean coupe oversize impeccable." },
+        { id: 2, title: "Sac à Main Cuir Artisanal", cat: "Accessoires", price: 15000, cond: "Neuf avec étiquette", size: "Unique", city: "Thiès", seller: "Moussa Ndiaye", status: "ACTIVE", img: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=600", desc: "Sac en cuir véritable fait main." },
+        { id: 3, title: "Lunettes Ray-Ban Clubmaster", cat: "Accessoires", price: 18000, cond: "Comme neuf", size: "Unique", city: "Dakar", seller: "Ibrahima Fall", status: "ACTIVE", img: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=600", desc: "Monture originale avec étui." }
+    ];
+
+    let orders = [
+        { num: "RVF-2026-00104", itemIdx: 0, title: "Sneakers Nike Air Jordan 1 Low", price: 22000, fee: 220, deliv: 1500, total: 23720, pay: "Wave", step: 2, completed: false, reviewed: false }
+    ];
+
+    let chats = [
+        { sender: "SELLER", text: "Bonjour Awa ! La paire de Jordan 1 est disponible à Dakar.", time: "14:10" },
+        { sender: "BUYER", text: "Parfait Moussa, je passe commande via Wave !", time: "14:12" }
+    ];
+
+    let reviews = [
+        { author: "Cheikh Tidiane", stars: 5, text: "Vendeur très sérieux à Dakar, livraison rapide !" },
+        { author: "Mariama Ba", stars: 5, text: "Article 100% conforme aux photos." }
+    ];
+
+    let users = [
+        { name: "Awa Diop", phone: "+221 77 450 12 34", role: "ROLE_USER (Acheteur)", active: true },
+        { name: "Moussa Ndiaye", phone: "+221 77 812 99 00", role: "ROLE_USER (Vendeur)", active: true },
+        { name: "Compte Suspect", phone: "+221 76 000 11 22", role: "ROLE_USER", active: false }
+    ];
+
+    let reports = [
+        { target: "Annonce Sac Luxe", reason: "Contrefaçon présumée", pending: true },
+        { target: "Compte Suspect", reason: "Faux profil", pending: true }
+    ];
+
+    let cats = ["Chaussures", "Vêtements", "Accessoires", "Sacs & Maroquinerie"];
+    let chkProductIdx = 0;
+
+    function notify(msg) {
+        const box = document.getElementById('toast-box');
+        const t = document.createElement('div');
+        t.className = 'toast';
+        t.textContent = msg;
+        box.appendChild(t);
+        setTimeout(() => t.remove(), 3200);
+    }
+
+    function cfa(n) { return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " FCFA"; }
+
+    // ================= PORTAIL DE CONNEXION =================
+    function selectLoginRole(role) {
+        selectedRole = role;
+        ['BUYER', 'SELLER', 'ADMIN'].forEach(r => document.getElementById('rc-' + r).classList.toggle('active', r === role));
+        const btn = document.getElementById('btn-submit-login');
+        const phoneInp = document.getElementById('inp-login-phone');
+        const modeTabs = document.getElementById('auth-mode-tabs');
+
+        if (role === 'BUYER') {
+            phoneInp.value = "77 450 12 34";
+            btn.textContent = "🛒 Accéder à l'Interface Acheteur (Awa)";
+            modeTabs.style.display = 'grid';
+        } else if (role === 'SELLER') {
+            phoneInp.value = "77 812 99 00";
+            btn.textContent = "🏷️ Accéder au Studio Vendeur (Moussa)";
+            modeTabs.style.display = 'grid';
+        } else {
+            phoneInp.value = "78 000 00 01";
+            btn.textContent = "🛡️ Ouvrir le Back-Office Administrateur";
+            setAuthMode('LOGIN');
+            modeTabs.style.display = 'none';
+        }
+    }
+
+    function setAuthMode(mode) {
+        const isLogin = mode === 'LOGIN';
+        document.getElementById('mt-login').classList.toggle('active', isLogin);
+        document.getElementById('mt-register').classList.toggle('active', !isLogin);
+        document.getElementById('pane-login').style.display = isLogin ? 'block' : 'none';
+        document.getElementById('pane-register').style.display = isLogin ? 'none' : 'block';
+    }
+
+    function showOtpStep() {
+        document.getElementById('card-login').style.display = 'none';
+        document.getElementById('card-otp').style.display = 'block';
+        notify("📩 Code OTP envoyé par SMS !");
+    }
+
+    function backToCardLogin() {
+        document.getElementById('card-otp').style.display = 'none';
+        document.getElementById('card-login').style.display = 'block';
+    }
+
+    function enterWorkspace() {
+        document.getElementById('portal-auth').style.display = 'none';
+        ['BUYER', 'SELLER', 'ADMIN'].forEach(r => {
+            document.getElementById('workspace-' + r).style.display = (r === selectedRole) ? 'block' : 'none';
+        });
+        refreshAllViews();
+        notify("Session ouverte dans l'espace " + selectedRole);
+    }
+
+    function returnToLogin() {
+        ['BUYER', 'SELLER', 'ADMIN'].forEach(r => document.getElementById('workspace-' + r).style.display = 'none');
+        document.getElementById('portal-auth').style.display = 'flex';
+        backToCardLogin();
+    }
+
+    // ================= NAVIGATION PAR ESPACE =================
+    function openBuyerTab(viewId, tabId) {
+        document.querySelectorAll('#workspace-BUYER .sub-view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('#workspace-BUYER .tab-link').forEach(t => t.classList.remove('active'));
+        if (tabId) document.getElementById(tabId).classList.add('active');
+    }
+
+    function openSellerTab(viewId, tabId) {
+        document.querySelectorAll('#workspace-SELLER .sub-view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('#workspace-SELLER .tab-link').forEach(t => t.classList.remove('active'));
+        if (tabId) document.getElementById(tabId).classList.add('active');
+    }
+
+    function openAdminTab(viewId, btnId) {
+        document.querySelectorAll('#workspace-ADMIN .sub-view').forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        document.querySelectorAll('#workspace-ADMIN .admin-menu-btn').forEach(b => b.classList.remove('active'));
+        if (btnId) document.getElementById(btnId).classList.add('active');
+    }
+
+    // ================= LOGIQUE METIER PARTAGEE =================
+    function renderBuyerCatalog() {
+        const kw = document.getElementById('bf-kw').value.toLowerCase();
+        const cat = document.getElementById('bf-cat').value;
+        const size = document.getElementById('bf-size').value;
+        const cond = document.getElementById('bf-cond').value;
+        const city = document.getElementById('bf-city').value;
+
+        const filtered = catalog.filter(x => {
+            if (x.status !== 'ACTIVE') return false;
+            if (kw && !x.title.toLowerCase().includes(kw)) return false;
+            if (cat && x.cat !== cat) return false;
+            if (size && x.size !== size) return false;
+            if (cond && x.cond !== cond) return false;
+            if (city && x.city !== city) return false;
+            return true;
+        });
+
+        document.getElementById('buyer-grid').innerHTML = filtered.map(x => `
+            <div class="product-card" onclick="openBuyerProduct(${x.id})">
+                <div class="product-img" style="background-image:url('${x.img}')">
+                    <span class="tag-pill">${x.cond}</span>
+                </div>
+                <div style="padding:1rem;">
+                    <div style="font-size:1.15rem; font-weight:800; color:var(--accent);">${cfa(x.price)}</div>
+                    <div style="font-weight:700; margin:0.25rem 0; color:var(--primary);">${x.title}</div>
+                    <div style="font-size:0.78rem; color:var(--muted); display:flex; justify-content:space-between;">
+                        <span>Taille ${x.size} • 📍 ${x.city}</span>
+                        <span>👤 ${x.seller}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openBuyerProduct(id) {
+        const x = catalog.find(i => i.id === id);
+        document.getElementById('buyer-detail-box').innerHTML = `
+            <div class="card" style="padding:0; overflow:hidden;">
+                <img src="${x.img}" style="width:100%; height:360px; object-fit:cover; display:block;">
+            </div>
+            <div class="card">
+                <span style="font-size:0.78rem; font-weight:700; color:var(--accent);">${x.cat} • ${x.cond}</span>
+                <h2 style="margin:0.4rem 0; color:var(--primary);">${x.title}</h2>
+                <div style="font-size:1.5rem; font-weight:900; color:var(--accent); margin-bottom:0.8rem;">${cfa(x.price)}</div>
+                <p style="color:var(--muted);">${x.desc}</p>
+                <p style="font-size:0.86rem;"><strong>Taille :</strong> ${x.size} • <strong>Ville :</strong> 📍 ${x.city}</p>
+                <p style="font-size:0.86rem;"><strong>Vendeur :</strong> ${x.seller} (⭐ 4.9 / 5)</p>
+                <div style="display:flex; gap:0.6rem; margin-top:1.25rem;">
+                    <button class="btn" style="flex:2;" onclick="openBuyerCheckout(${x.id})">🛒 Commander cet article</button>
+                    <button class="btn btn-outline" style="flex:1;" onclick="openBuyerTab('b-chat', 'btab-chat')">💬 Discuter</button>
+                </div>
+            </div>
+        `;
+        openBuyerTab('b-detail');
+    }
+
+    function openBuyerCheckout(id) {
+        chkProductIdx = id;
+        const x = catalog.find(i => i.id === id) || catalog[0];
+        document.getElementById('buyer-chk-item').innerHTML = `<strong>${x.title}</strong> — <span style="color:var(--accent); font-weight:800;">${cfa(x.price)}</span>`;
+        updateBuyerCheckout();
+        openBuyerTab('b-checkout');
+    }
+
+    function updateBuyerCheckout() {
+        const x = catalog.find(i => i.id === chkProductIdx) || catalog[0];
+        const fee = Math.round(x.price * 0.01);
+        const deliv = document.getElementById('buyer-chk-mode').value === 'HOME' ? 1500 : 0;
+        document.getElementById('bc-price').textContent = cfa(x.price);
+        document.getElementById('bc-fee').textContent = cfa(fee);
+        document.getElementById('bc-deliv').textContent = cfa(deliv);
+        document.getElementById('bc-total').textContent = cfa(x.price + fee + deliv);
+    }
+
+    function submitBuyerOrder() {
+        const x = catalog.find(i => i.id === chkProductIdx) || catalog[0];
+        const fee = Math.round(x.price * 0.01);
+        const deliv = document.getElementById('buyer-chk-mode').value === 'HOME' ? 1500 : 0;
+        const pay = document.getElementById('buyer-chk-pay').value;
+        orders.unshift({
+            num: "RVF-2026-00" + (105 + orders.length),
+            itemIdx: x.id,
+            title: x.title,
+            price: x.price,
+            fee: fee,
+            deliv: deliv,
+            total: x.price + fee + deliv,
+            pay: pay,
+            step: 0,
+            completed: false,
+            reviewed: false
+        });
+        refreshAllViews();
+        notify(`✅ Commande payée via ${pay} ! Fonds bloqués en Escrow.`);
+        openBuyerTab('b-orders', 'btab-orders');
+    }
+
+    function sellerPublishAd() {
+        const t = document.getElementById('s-title').value;
+        const p = parseInt(document.getElementById('s-price').value) || 12000;
+        catalog.unshift({
+            id: Date.now(),
+            title: t,
+            cat: document.getElementById('s-cat').value,
+            price: p,
+            cond: document.getElementById('s-cond').value,
+            size: "M",
+            city: document.getElementById('s-city').value,
+            seller: "Moussa Ndiaye",
+            status: "ACTIVE",
+            img: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=600",
+            desc: document.getElementById('s-desc').value
+        });
+        refreshAllViews();
+        notify("🚀 Nouvelle annonce publiée en ligne !");
+    }
+
+    function sendChat(who) {
+        const inp = document.getElementById(who === 'BUYER' ? 'buyer-chat-inp' : 'seller-chat-inp');
+        if (!inp.value.trim()) return;
+        chats.push({ sender: who, text: inp.value, time: "Maintenant" });
+        inp.value = '';
+        refreshAllViews();
+    }
+
+    function advanceOrderStep(idx) {
+        if (orders[idx].step < 4) {
+            orders[idx].step++;
+            refreshAllViews();
+            notify("🚚 Statut de livraison mis à jour : " + DELIV_STEPS[orders[idx].step]);
+        }
+    }
+
+    function buyerConfirmReceipt(idx) {
+        orders[idx].completed = true;
+        refreshAllViews();
+        notify("🎉 Réception confirmée ! Le vendeur a reçu ses fonds.");
+    }
+
+    function buyerLeaveReview(idx) {
+        const txt = document.getElementById('rev-inp-' + idx).value;
+        orders[idx].reviewed = true;
+        reviews.unshift({ author: "Awa Diop", stars: 5, text: txt });
+        refreshAllViews();
+        notify("⭐ Avis publié sur le profil du vendeur !");
+    }
+
+    function addCat() {
+        const inp = document.getElementById('adm-new-cat');
+        if (!inp.value.trim()) return;
+        cats.push(inp.value.trim());
+        inp.value = '';
+        refreshAllViews();
+        notify("📂 Catégorie ajoutée !");
+    }
+
+    function refreshAllViews() {
+        renderBuyerCatalog();
+
+        // Chat boxes
+        const chatHtml = chats.map(c => `
+            <div style="align-self:${c.sender === selectedRole ? 'flex-end' : 'flex-start'}; background:${c.sender === selectedRole ? 'var(--accent)' : 'white'}; color:${c.sender === selectedRole ? 'white' : 'var(--text)'}; padding:0.6rem 0.95rem; border-radius:10px; border:1px solid var(--border); font-size:0.86rem;">
+                <strong>${c.sender === 'BUYER' ? 'Awa' : 'Moussa'} :</strong> ${c.text}
+            </div>
+        `).join('');
+        document.getElementById('buyer-chat-box').innerHTML = chatHtml;
+        document.getElementById('seller-chat-box').innerHTML = chatHtml;
+
+        // Buyer Orders
+        document.getElementById('buyer-orders-box').innerHTML = orders.map((o, idx) => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <strong>${o.num} — ${o.title}</strong>
+                    <strong style="color:var(--accent);">${cfa(o.total)} (${o.completed ? 'Libéré au vendeur ✓' : 'En Séquestre Escrow 🔒'})</strong>
+                </div>
+                <div class="stepper">
+                    ${DELIV_STEPS.map((st, sIdx) => `
+                        <div class="s-node ${sIdx < o.step ? 'done' : (sIdx === o.step ? 'active' : '')}">
+                            <div class="s-dot">${sIdx < o.step ? '✓' : (sIdx + 1)}</div>
+                            <div style="font-size:0.7rem; font-weight:700;">${st}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${o.step === 4 && !o.completed
+                    ? `<button class="btn btn-success" onclick="buyerConfirmReceipt(${idx})">✅ Confirmer la réception de l'article</button>`
+                    : (o.step < 4 ? `<span style="font-size:0.82rem; color:var(--muted);">En cours d'acheminement par le vendeur...</span>` : `<span style="color:var(--success); font-weight:700;">✓ Réception confirmée</span>`)
+                }
+                ${o.completed && !o.reviewed ? `
+                    <div style="display:flex; gap:0.5rem; margin-top:0.8rem;">
+                        <input type="text" id="rev-inp-${idx}" value="Super vendeur, livraison rapide !">
+                        <button class="btn btn-sm" onclick="buyerLeaveReview(${idx})">⭐ Noter 5/5</button>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+
+        // Seller Ads & Orders
+        document.getElementById('seller-ads-table').innerHTML = catalog.map((x, i) => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.86rem;">
+                <span><strong>${x.title}</strong> (${cfa(x.price)}) — <b>${x.status}</b></span>
+                <button class="btn btn-outline btn-sm" onclick="catalog[${i}].status = catalog[${i}].status==='ACTIVE'?'INACTIVE':'ACTIVE'; refreshAllViews();">
+                    ${x.status === 'ACTIVE' ? 'Désactiver' : 'Réactiver'}
+                </button>
+            </div>
+        `).join('');
+
+        document.getElementById('seller-orders-box').innerHTML = orders.map((o, idx) => `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <strong>Commande ${o.num} : ${o.title}</strong>
+                        <span style="display:block; font-size:0.82rem; color:var(--muted);">Statut actuel : <b>${DELIV_STEPS[o.step]}</b></span>
+                    </div>
+                    ${o.step < 4
+                        ? `<button class="btn" onclick="advanceOrderStep(${idx})">⏩ Passer au statut ${DELIV_STEPS[o.step + 1]}</button>`
+                        : `<span style="color:var(--success); font-weight:700;">📦 Livré à l'acheteur (DELIVERED)</span>`
+                    }
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('seller-tx-box').innerHTML = orders.map(o => `
+            <div style="padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.86rem;">
+                <strong>${o.num}</strong> : Revenu net <b>${cfa(o.price)}</b> — <span>${o.completed ? '✅ Versé sur Wave' : '🔒 En attente de confirmation acheteur'}</span>
+            </div>
+        `).join('');
+
+        document.getElementById('seller-reviews-box').innerHTML = reviews.map(r => `
+            <div style="padding:0.6rem 0; border-bottom:1px solid var(--border); font-size:0.86rem;">
+                <strong>${r.author}</strong> (⭐⭐⭐⭐⭐) : "${r.text}"
+            </div>
+        `).join('');
+
+        // Admin tables
+        document.getElementById('kpi-ads-val').textContent = catalog.length;
+        document.getElementById('kpi-rep-val').textContent = reports.filter(r => r.pending).length;
+
+        document.getElementById('admin-users-list').innerHTML = users.map((u, i) => `
+            <tr>
+                <td><strong>${u.name}</strong></td>
+                <td>${u.phone}</td>
+                <td>${u.role}</td>
+                <td><b style="color:${u.active ? 'var(--success)' : 'var(--danger)'}">${u.active ? 'ACTIVE' : 'SUSPENDED'}</b></td>
+                <td><button class="btn btn-outline btn-sm" onclick="users[${i}].active=!users[${i}].active; refreshAllViews();">${u.active ? 'Suspendre' : 'Réactiver'}</button></td>
+            </tr>
+        `).join('');
+
+        document.getElementById('admin-ads-list').innerHTML = catalog.map((x, i) => `
+            <div style="display:flex; justify-content:space-between; padding:0.55rem 0; border-bottom:1px solid var(--border); font-size:0.85rem;">
+                <span>${x.title} (${cfa(x.price)})</span>
+                <button class="btn btn-outline btn-sm" style="color:var(--danger);" onclick="catalog.splice(${i},1); refreshAllViews();">Supprimer</button>
+            </div>
+        `).join('');
+
+        document.getElementById('admin-cats-list').innerHTML = cats.map((c, i) => `
+            <span style="display:inline-block; background:#f3e8ff; padding:0.35rem 0.75rem; border-radius:99px; margin:0.25rem; font-size:0.82rem; font-weight:700;">
+                ${c} <b style="color:var(--danger); cursor:pointer;" onclick="cats.splice(${i},1); refreshAllViews();">×</b>
+            </span>
+        `).join('');
+
+        document.getElementById('admin-orders-list').innerHTML = orders.map(o => `
+            <tr>
+                <td><strong>${o.num}</strong></td>
+                <td>${o.title}</td>
+                <td>${cfa(o.total)} (dont 1% : ${cfa(o.fee)})</td>
+                <td>${o.pay}</td>
+                <td><b>${o.completed ? 'RELEASED_TO_SELLER' : 'AUTHORIZED_ESCROW'}</b></td>
+            </tr>
+        `).join('');
+
+        document.getElementById('admin-reports-list').innerHTML = reports.map((r, i) => `
+            <tr>
+                <td><strong>${r.target}</strong></td>
+                <td>${r.reason}</td>
+                <td><b style="color:${r.pending ? 'var(--danger)' : 'var(--success)'}">${r.pending ? 'PENDING' : 'RESOLVED'}</b></td>
+                <td>${r.pending ? `<button class="btn btn-sm" onclick="reports[${i}].pending=false; refreshAllViews();">Traiter & Clôturer</button>` : 'Clôturé ✓'}</td>
+            </tr>
+        `).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', refreshAllViews);
+</script>
+</body>
+</html>

@@ -20,6 +20,20 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+/**
+ * Service Métier : Gestion du cycle de vie des Commandes et du Séquestre (Escrow).
+ *
+ * <p>Responsabilités principales selon les principes de Clean Architecture :</p>
+ * <ul>
+ *   <li>Validation stricte des règles métier (compte non suspendu, article actif, anti-doublon d'achat).</li>
+ *   <li>Calcul dynamique des frais de protection sous séquestre (1%) et commissions plateforme.</li>
+ *   <li>Transition d'état sécurisée (PENDING_PAYMENT -> PAID_ESCROW_LOCKED -> SHIPPED -> DELIVERED -> COMPLETED).</li>
+ *   <li>Libération conditionnelle des fonds séquestrés vers le vendeur après confirmation acheteur.</li>
+ * </ul>
+ *
+ * @author Équipe Ingénierie ReVibe FliP
+ * @version 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -30,17 +44,26 @@ public class OrderService {
     private final DeliveryRepository deliveryRepository;
     private final PaymentRepository paymentRepository;
     private final NotificationService notificationService;
-
-    @Value("${revibeflip.fees.commission-rate:0.20}")
-    private double commissionRate;
-
-    @Value("${revibeflip.fees.validation-fee-rate:0.01}")
-    private double validationFeeRate;
+    private final PlatformSettingRepository platformSettingRepository;
+    private final CartRepository cartRepository;
 
     private final Random random = new Random();
 
+    /**
+     * Crée une nouvelle commande avec verrouillage des fonds sous séquestre.
+     *
+     * @param request Données de la commande (article, mode de livraison, coordonnées destinataire).
+     * @param buyer   Utilisateur acheteur authentifié.
+     * @return OrderDto DTO enrichi représentant la commande créée.
+     * @throws IllegalStateException Si l'acheteur est suspendu ou si l'article est indisponible.
+     * @throws IllegalArgumentException Si l'acheteur tente d'acheter son propre article.
+     */
     @Transactional
     public OrderDto createOrder(CreateOrderRequest request, User buyer) {
+        if (Boolean.TRUE.equals(buyer.getIsSuspended())) {
+            throw new IllegalStateException("Votre compte est actuellement suspendu. Vous ne pouvez pas passer de commande.");
+        }
+
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
 
@@ -48,13 +71,33 @@ public class OrderService {
             throw new IllegalStateException("Cet article n'est plus disponible à l'achat.");
         }
 
+        if (orderRepository.existsByProductIdAndStatusIn(product.getId(), List.of(
+                OrderStatus.PAID_ESCROW_LOCKED,
+                OrderStatus.SHIPPED,
+                OrderStatus.DELIVERED,
+                OrderStatus.COMPLETED
+        ))) {
+            throw new IllegalStateException("Cet article fait déjà l'objet d'une commande en cours ou est déjà vendu.");
+        }
+
         if (product.getSeller().getId().equals(buyer.getId())) {
             throw new IllegalArgumentException("Vous ne pouvez pas acheter votre propre article.");
         }
 
+        // Point 4 : Taux configurables lus depuis la base de données (PlatformSetting)
+        BigDecimal currentCommissionRate = platformSettingRepository.findFirstByOrderByIdAsc()
+                .map(PlatformSetting::getCommissionRate)
+                .orElse(BigDecimal.valueOf(20.0))
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
+        BigDecimal currentValidationFeeRate = platformSettingRepository.findFirstByOrderByIdAsc()
+                .map(PlatformSetting::getValidationFeeRate)
+                .orElse(BigDecimal.valueOf(1.0))
+                .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
+
         BigDecimal itemPrice = product.getPrice();
-        // 1% Validation Fee
-        BigDecimal validationFee = itemPrice.multiply(BigDecimal.valueOf(validationFeeRate)).setScale(0, RoundingMode.HALF_UP);
+        // Validation Fee (Escrow simulation interne)
+        BigDecimal validationFee = itemPrice.multiply(currentValidationFeeRate).setScale(0, RoundingMode.HALF_UP);
         // Delivery fee: 2000 FCFA for home delivery, 0 for in-person handover
         BigDecimal deliveryFee = DeliveryMode.HOME_DELIVERY.equals(request.getDeliveryMode())
                 ? BigDecimal.valueOf(2000)
@@ -62,8 +105,8 @@ public class OrderService {
 
         BigDecimal totalAmount = itemPrice.add(validationFee).add(deliveryFee);
 
-        // 20% platform commission on the product sale
-        BigDecimal platformCommission = itemPrice.multiply(BigDecimal.valueOf(commissionRate)).setScale(0, RoundingMode.HALF_UP);
+        // Platform commission on the product sale
+        BigDecimal platformCommission = itemPrice.multiply(currentCommissionRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal sellerPayout = itemPrice.subtract(platformCommission);
 
         String orderNumber = "RF-2026-" + String.format("%05d", 10000 + random.nextInt(90000));
@@ -73,6 +116,8 @@ public class OrderService {
                 .buyer(buyer)
                 .seller(product.getSeller())
                 .product(product)
+                .originalPrice(itemPrice)
+                .agreedPrice(itemPrice)
                 .itemPrice(itemPrice)
                 .validationFee(validationFee)
                 .deliveryFee(deliveryFee)
@@ -101,6 +146,21 @@ public class OrderService {
                 .build();
         deliveryRepository.save(delivery);
 
+        // Nettoyage automatique de l'article dans le panier de l'acheteur s'il y était
+        try {
+            cartRepository.findByBuyerId(buyer.getId()).ifPresent(cart -> {
+                boolean removed = cart.getItems().removeIf(item -> item.getProduct().getId().equals(product.getId()));
+                if (removed) {
+                    if (cart.getItems().isEmpty()) {
+                        cart.setSeller(null);
+                    }
+                    cartRepository.save(cart);
+                }
+            });
+        } catch (Exception e) {
+            log.warn("Impossible de nettoyer le panier de l'acheteur {} : {}", buyer.getId(), e.getMessage());
+        }
+
         // Notify seller of new pending order
         notificationService.createNotification(
                 product.getSeller(),
@@ -113,6 +173,14 @@ public class OrderService {
         return enrichOrderDto(savedOrder);
     }
 
+    /**
+     * Récupère une commande par son identifiant avec contrôle d'accès strict (RBAC).
+     *
+     * @param id          Identifiant unique de la commande.
+     * @param currentUser Utilisateur tentant d'accéder à la commande.
+     * @return OrderDto Détails complets de la commande avec livraison et paiement.
+     * @throws org.springframework.security.access.AccessDeniedException Si l'utilisateur n'est ni l'acheteur, ni le vendeur, ni un administrateur.
+     */
     public OrderDto getOrderById(Long id, User currentUser) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Commande non trouvée."));
@@ -135,6 +203,11 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    public org.springframework.data.domain.Page<OrderDto> getBuyerOrdersPaginated(Long buyerId, OrderStatus status, org.springframework.data.domain.Pageable pageable) {
+        return orderRepository.searchBuyerOrdersPage(buyerId, status, pageable)
+                .map(this::enrichOrderDto);
+    }
+
     public List<OrderDto> getUserOrdersAsSeller(Long sellerId) {
         return orderRepository.findBySellerIdOrderByCreatedAtDesc(sellerId)
                 .stream()
@@ -142,6 +215,21 @@ public class OrderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Confirme la réception conforme de l'article par l'acheteur et débloque le séquestre.
+     *
+     * <p>Conséquences métier :</p>
+     * <ul>
+     *   <li>Statut commande -> COMPLETED.</li>
+     *   <li>Statut livraison -> DELIVERED.</li>
+     *   <li>Statut séquestre paiement -> RELEASED_TO_SELLER (versement des gains au vendeur).</li>
+     *   <li>Notifications push/in-app envoyées au vendeur et invitation d'avis envoyée à l'acheteur.</li>
+     * </ul>
+     *
+     * @param orderId Identifiant de la commande à valider.
+     * @param buyer   Acheteur confirmant la commande.
+     * @return OrderDto Commande mise à jour.
+     */
     @Transactional
     public OrderDto confirmReceipt(Long orderId, User buyer) {
         Order order = orderRepository.findById(orderId)
@@ -149,6 +237,10 @@ public class OrderService {
 
         if (!order.getBuyer().getId().equals(buyer.getId()) && !"ROLE_ADMIN".equals(buyer.getRole().name())) {
             throw new org.springframework.security.access.AccessDeniedException("Seul l'acheteur peut confirmer la réception.");
+        }
+
+        if (order.getStatus() == OrderStatus.PENDING_PAYMENT || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Cette commande ne peut pas être confirmée dans son statut actuel (" + order.getStatus() + ").");
         }
 
         order.setStatus(OrderStatus.COMPLETED);

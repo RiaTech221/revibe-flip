@@ -14,10 +14,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByTargetUserIdOrderByCreatedAtDesc(Long targetUserId);
 
+    List<Review> findByReviewerIdOrderByCreatedAtDesc(Long reviewerId);
+
     Optional<Review> findByOrderId(Long orderId);
 
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.targetUser.id = :targetUserId")
     Double calculateAverageRating(@Param("targetUserId") Long targetUserId);
 
     long countByTargetUserId(Long targetUserId);
+
+    org.springframework.data.domain.Page<Review> findByTargetUserIdOrderByCreatedAtDesc(Long targetUserId, org.springframework.data.domain.Pageable pageable);
 }

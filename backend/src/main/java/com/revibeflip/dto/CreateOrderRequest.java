@@ -7,14 +7,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrderRequest {
 
-    @NotNull(message = "L'ID du produit est obligatoire")
+    // Pour achat direct d'un seul article
     private Long productId;
+
+    // Pour achat de plusieurs articles (depuis le panier)
+    private List<Long> productIds;
 
     @NotNull(message = "Le mode de livraison est obligatoire")
     private DeliveryMode deliveryMode;

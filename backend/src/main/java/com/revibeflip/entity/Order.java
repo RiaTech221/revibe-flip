@@ -1,6 +1,7 @@
 package com.revibeflip.entity;
 
 import com.revibeflip.entity.enums.DeliveryMode;
+import com.revibeflip.entity.enums.DeliveryStatus;
 import com.revibeflip.entity.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,10 +37,28 @@ public class Order {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<OrderItem> items = new java.util.ArrayList<>();
+
     // Price breakdown according to specifications:
     // Product Price
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal itemPrice;
+
+    // Prix initial affiché de l'article (avant négociation)
+    @Column(precision = 12, scale = 2)
+    private BigDecimal originalPrice;
+
+    // Prix convenu accepté lors de l'offre dans le chat
+    @Column(precision = 12, scale = 2)
+    private BigDecimal agreedPrice;
+
+    // Identifiant de l'offre de chat liée
+    private Long chatOfferId;
+
+    // Date/heure limite de réservation avant expiration de la commande
+    private LocalDateTime reservationExpiresAt;
 
     // 1% Transaction Validation / Escrow Fee (paid by buyer)
     @Column(nullable = false, precision = 12, scale = 2)
@@ -81,6 +100,11 @@ public class Order {
     @Column(nullable = false, length = 30)
     @Builder.Default
     private OrderStatus status = OrderStatus.PENDING_PAYMENT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private DeliveryStatus deliveryStatus = DeliveryStatus.PENDING;
 
     @Column(nullable = false, updatable = false)
     @Builder.Default

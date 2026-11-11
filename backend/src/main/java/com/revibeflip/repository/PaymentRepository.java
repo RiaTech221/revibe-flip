@@ -10,4 +10,25 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderId(Long orderId);
     Optional<Payment> findByTransactionReference(String transactionReference);
+    java.util.List<Payment> findAllByOrderByCreatedAtDesc();
+
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Payment p WHERE " +
+           "(:query IS NULL OR :query = '' OR LOWER(p.transactionReference) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.order.orderNumber) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.order.buyer.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.order.buyer.lastName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.order.seller.firstName) LIKE LOWER(CONCAT('%', :query, '%')) OR " +
+           "LOWER(p.order.seller.lastName) LIKE LOWER(CONCAT('%', :query, '%'))) AND " +
+           "(:method IS NULL OR p.paymentMethod = :method)")
+    org.springframework.data.domain.Page<Payment> searchPaymentsPage(
+            @org.springframework.data.repository.query.Param("query") String query,
+            @org.springframework.data.repository.query.Param("method") com.revibeflip.entity.enums.PaymentMethod method,
+            org.springframework.data.domain.Pageable pageable
+    );
+
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Payment p WHERE p.order.seller.id = :sellerId ORDER BY p.createdAt DESC")
+    org.springframework.data.domain.Page<Payment> findBySellerId(
+            @org.springframework.data.repository.query.Param("sellerId") Long sellerId,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -85,4 +85,11 @@ public class ReviewService {
                 .map(ReviewDto::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    public List<ReviewDto> getMyReviews(User reviewer) {
+        return reviewRepository.findByReviewerIdOrderByCreatedAtDesc(reviewer.getId())
+                .stream()
+                .map(ReviewDto::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

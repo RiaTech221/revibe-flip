@@ -1,34 +1,125 @@
-HELP.md
+# ==============================================================================
+# REVIBE FLIP — GITIGNORE
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Java / Spring Boot / Maven
+# ------------------------------------------------------------------------------
 target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+hs_err_pid*
+replay_pid*
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+HELP.md
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
+# ------------------------------------------------------------------------------
+# 2. Node.js / React / Vite / Frontend
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
+.vite/
+**/.vite/
+coverage/
+**/coverage/
+.turbo/
+.cache/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-### IntelliJ IDEA ###
-.idea
+# ------------------------------------------------------------------------------
+# 3. Mobile / React Native / Expo
+# ------------------------------------------------------------------------------
+.expo/
+**/.expo/
+.expo-shared/
+**/android/app/build/
+**/android/.gradle/
+**/ios/Pods/
+**/ios/build/
+
+# ------------------------------------------------------------------------------
+# 4. Environments & Secrets
+# ------------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# ------------------------------------------------------------------------------
+# 5. IDEs & Editors
+# ------------------------------------------------------------------------------
+.idea/
+**/.idea/
 *.iws
 *.iml
 *.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
 .vscode/
-uploads/*
+**/.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ------------------------------------------------------------------------------
+# 6. Operating System & Temporary Files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+*.bak
+*.tmp
+*.temp
+
+# ------------------------------------------------------------------------------
+# 7. Runtime Uploads & Media Assets
+# ------------------------------------------------------------------------------
+backend/uploads/**
+!backend/uploads/.gitkeep
+uploads/**
+!uploads/.gitkeep
+
+# ------------------------------------------------------------------------------
+# 8. Logs
+# ------------------------------------------------------------------------------
+*.log
+logs/
+**/logs/
