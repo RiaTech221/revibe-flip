@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerProductModal
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerProductModal).
+ */
+
 import React from 'react';
 import { X, Tag, Package, Sparkles } from 'lucide-react';
 import { Category, ProductCondition } from '../../types';

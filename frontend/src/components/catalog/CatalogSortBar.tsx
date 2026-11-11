@@ -1,3 +1,9 @@
+/**
+ * Composant de Navigation Catalogue : CatalogSortBar
+ * 
+ * Composant interactif pour le filtrage, tri ou affichage des annonces du catalogue (CatalogSortBar).
+ */
+
 import React from 'react';
 import { Filter, ChevronDown } from 'lucide-react';
 

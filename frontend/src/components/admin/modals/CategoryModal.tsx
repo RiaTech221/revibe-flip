@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : CategoryModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (CategoryModal).
+ */
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { Category } from '../../../types';

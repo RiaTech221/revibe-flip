@@ -1,3 +1,12 @@
+/**
+ * Page de Détail et Suivi de Commande ReVibe FliP
+ * 
+ * Affichage complet d'une commande passée ou reçue :
+ *  * - Frise chronologique interactive du statut de livraison et du séquestre
+ *  * - Récapitulatif des articles, adresse d'expédition et montant consigné sous séquestre
+ *  * - Actions selon le rôle : confirmer l'envoi (vendeur), valider la réception conforme (acheteur)
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { orderApi, reviewApi } from '../services/api';

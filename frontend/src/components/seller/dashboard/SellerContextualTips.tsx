@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerContextualTips
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerContextualTips).
+ */
+
 import React from 'react';
 import { Lightbulb, AlertTriangle, Info, ArrowRight } from 'lucide-react';
 import { SellerTip } from '../../../services/sellerService';

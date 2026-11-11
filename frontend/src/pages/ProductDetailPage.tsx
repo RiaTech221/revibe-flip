@@ -1,3 +1,12 @@
+/**
+ * Page Détail d'un Produit ReVibe FliP
+ * 
+ * Fiche descriptive complète d'une annonce d'article en vente :
+ *  * - Galerie photos haute résolution avec zoom
+ *  * - Caractéristiques techniques, état, taille, marque et localisation
+ *  * - Bloc d'achat direct avec protection séquestre, bouton de négociation/offre et chat
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productApi, chatApi, reportApi } from '../services/api';

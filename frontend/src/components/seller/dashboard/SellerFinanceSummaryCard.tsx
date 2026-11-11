@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerFinanceSummaryCard
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerFinanceSummaryCard).
+ */
+
 import React from 'react';
 import {
   DollarSign,

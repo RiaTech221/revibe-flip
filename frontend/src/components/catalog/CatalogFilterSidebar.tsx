@@ -1,3 +1,9 @@
+/**
+ * Composant de Navigation Catalogue : CatalogFilterSidebar
+ * 
+ * Composant interactif pour le filtrage, tri ou affichage des annonces du catalogue (CatalogFilterSidebar).
+ */
+
 import React from 'react';
 import { RotateCcw, X, Layers } from 'lucide-react';
 import { Category, ProductCondition } from '../../types';

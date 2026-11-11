@@ -1,3 +1,12 @@
+/**
+ * Page de Contact et Support Client ReVibe FliP
+ * 
+ * Permet aux utilisateurs de joindre l'équipe de support et assistance :
+ *  * - Formulaire de contact avec choix du motif (commande, paiement, litige, technique)
+ *  * - Coordonnées directes (WhatsApp, email, téléphone) par pays supporté
+ *  * - Horaires d'ouverture du service client
+ */
+
 import React, { useState, useEffect } from 'react';
 import { contentApi } from '../services/api';
 import { FooterConfig } from '../types';

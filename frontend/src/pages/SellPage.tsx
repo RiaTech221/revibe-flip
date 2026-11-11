@@ -1,3 +1,12 @@
+/**
+ * Page de Création d'Annonce (Vendre un Article) ReVibe FliP
+ * 
+ * Formulaire guidé étape par étape pour mettre en vente un article :
+ *  * - Téléversement de photos avec prévisualisation
+ *  * - Titre, description, catégorie, marque, taille et état de conservation
+ *  * - Fixation du prix de vente en FCFA et options de livraison acceptées
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productApi, categoryApi, uploadApi } from '../services/api';

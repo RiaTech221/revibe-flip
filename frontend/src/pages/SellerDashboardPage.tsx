@@ -1,3 +1,12 @@
+/**
+ * Page Tableau de Bord Vendeur ReVibe FliP
+ * 
+ * Centre de pilotage complet pour les vendeurs de la marketplace :
+ *  * - Vue d'ensemble avec carte financière unifiée (solde séquestre, solde disponible, total)
+ *  * - Bandeau compact des actions prioritaires à traiter immédiatement
+ *  * - Onglets spécialisés : Annonces en vente, Commandes reçues, Finances/Retraits, Avis, Profil
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

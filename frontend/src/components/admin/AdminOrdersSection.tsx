@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminOrdersSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminOrdersSection).
+ */
+
 import React from 'react';
 import { Truck, Search } from 'lucide-react';
 import { Order, DeliveryStatus } from '../../types';

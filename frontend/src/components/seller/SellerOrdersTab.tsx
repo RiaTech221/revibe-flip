@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerOrdersTab
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerOrdersTab).
+ */
+
 import React from 'react';
 import { Package, Truck, Phone, CheckCircle2 } from 'lucide-react';
 import { Order } from '../../types';

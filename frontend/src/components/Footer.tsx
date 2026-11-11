@@ -1,3 +1,12 @@
+/**
+ * Pied de Page Principal ReVibe FliP
+ * 
+ * Composant de pied de page présent sur toutes les vues de l'application :
+ *  * - Liens de navigation (Catalogue, Vendre, À propos, Comment ça marche)
+ *  * - Liens d'assistance (FAQ, Contact, Résolution de litiges, Signalement)
+ *  * - Réseaux sociaux, pays acceptés et mentions légales
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentApi, categoryApi } from '../services/api';

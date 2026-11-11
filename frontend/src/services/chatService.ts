@@ -1,3 +1,12 @@
+/**
+ * Service de Messagerie et Négociation d'Offres ReVibe FliP
+ * 
+ * Gère les communications directes acheteur-vendeur et le protocole de négociation :
+ *  * - Récupération des conversations et messages en temps réel
+ *  * - Envoi de messages texte et propositions d'offres directes de prix
+ *  * - Acceptation, rejet et paiement d'une offre sous protection séquestre
+ */
+
 import api from './httpClient';
 import { Conversation, Message, ChatOffer } from '../types';
 

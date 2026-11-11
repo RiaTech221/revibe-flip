@@ -1,3 +1,12 @@
+/**
+ * Page de Validation de Commande et Paiement Séquestre ReVibe FliP
+ * 
+ * Tunnel d'achat sécurisé ReVibe FliP :
+ *  * - Récapitulatif détaillé des articles, frais de livraison et frais de protection séquestre
+ *  * - Saisie des coordonnées de livraison (adresse à domicile ou point relais)
+ *  * - Sélection du moyen de paiement Mobile Money et initiation de la transaction sous séquestre
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productApi, orderApi, paymentApi } from '../services/api';

@@ -1,3 +1,9 @@
+/**
+ * Composant de Navigation Catalogue : CatalogActiveFilters
+ * 
+ * Composant interactif pour le filtrage, tri ou affichage des annonces du catalogue (CatalogActiveFilters).
+ */
+
 import React from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import { Category } from '../../types';

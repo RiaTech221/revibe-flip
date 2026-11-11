@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : MetricCard
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (MetricCard).
+ */
+
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 

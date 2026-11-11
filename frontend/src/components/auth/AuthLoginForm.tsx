@@ -1,3 +1,9 @@
+/**
+ * Composant d'Authentification : AuthLoginForm
+ * 
+ * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthLoginForm).
+ */
+
 import React, { useState } from 'react';
 import { Lock, Phone } from 'lucide-react';
 

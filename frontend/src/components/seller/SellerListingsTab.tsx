@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerListingsTab
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerListingsTab).
+ */
+
 import React from 'react';
 import { Search, PlusCircle, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Product } from '../../types';

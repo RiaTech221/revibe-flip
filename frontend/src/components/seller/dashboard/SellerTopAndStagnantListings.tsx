@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerTopAndStagnantListings
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerTopAndStagnantListings).
+ */
+
 import React, { useState } from 'react';
 import { Tag, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
 import { SellerTopProduct, SellerStagnantProduct } from '../../../services/sellerService';

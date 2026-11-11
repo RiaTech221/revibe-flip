@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : RecentListsSection
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (RecentListsSection).
+ */
+
 import React from 'react';
 import { ShoppingBag, AlertCircle, History, ArrowRight } from 'lucide-react';
 import {

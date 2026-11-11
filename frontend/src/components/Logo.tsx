@@ -1,3 +1,9 @@
+/**
+ * Composant Logo de la Marque ReVibe FliP
+ * 
+ * Rendu graphique SVG et vectoriel du logo ReVibe FliP avec déclinaisons de taille et thème.
+ */
+
 import React from 'react';
 
 interface LogoProps {

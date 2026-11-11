@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminSettingsSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminSettingsSection).
+ */
+
 import React from 'react';
 import { Check, History } from 'lucide-react';
 import { PlatformSettings, AdminActionLog } from '../../types';

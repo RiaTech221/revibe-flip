@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : ChatOfferCard
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (ChatOfferCard).
+ */
+
 import React from 'react';
 import { ChatOffer } from '../../types';
 import { Tag, Truck, Handshake, Check, X, CreditCard } from 'lucide-react';

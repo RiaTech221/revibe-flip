@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminPaymentsSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminPaymentsSection).
+ */
+
 import React from 'react';
 import { Search } from 'lucide-react';
 import { AdminPayment } from '../../types';

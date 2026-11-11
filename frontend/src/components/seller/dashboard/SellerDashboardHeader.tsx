@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerDashboardHeader
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerDashboardHeader).
+ */
+
 import React from 'react';
 import { RefreshCw, Calendar, Clock, AlertTriangle } from 'lucide-react';
 import { User } from '../../../types';

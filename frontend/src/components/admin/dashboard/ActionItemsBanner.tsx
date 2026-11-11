@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : ActionItemsBanner
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (ActionItemsBanner).
+ */
+
 import React from 'react';
 import {
   AlertCircle,

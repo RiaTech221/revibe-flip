@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : ReportResolutionModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (ReportResolutionModal).
+ */
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { ReportStatus } from '../../../types';

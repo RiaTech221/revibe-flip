@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : DemoModeBanner
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (DemoModeBanner).
+ */
+
 import React from 'react';
 import { Info } from 'lucide-react';
 

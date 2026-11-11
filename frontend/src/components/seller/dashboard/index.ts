@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : index
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (index).
+ */
+
 export * from './SellerDashboardHeader';
 export * from './SellerSuspendedBanner';
 export * from './SellerActionItemsBanner';

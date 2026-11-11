@@ -1,3 +1,9 @@
+/**
+ * Composant Carte Réutilisable : ProductCard
+ * 
+ * Élément graphique d'affichage de données sous forme de carte interactive (ProductCard).
+ */
+
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../../types';

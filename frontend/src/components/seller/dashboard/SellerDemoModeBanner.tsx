@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerDemoModeBanner
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerDemoModeBanner).
+ */
+
 import React from 'react';
 import { Info } from 'lucide-react';
 

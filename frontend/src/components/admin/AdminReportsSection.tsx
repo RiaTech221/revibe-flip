@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminReportsSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminReportsSection).
+ */
+
 import React from 'react';
 interface AdminReportsSectionProps {
   reports: any[];

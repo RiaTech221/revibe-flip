@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : MakeOfferModal
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (MakeOfferModal).
+ */
+
 import React from 'react';
 import { Tag, X, Truck, Handshake } from 'lucide-react';
 import { DeliveryMode } from '../../types';

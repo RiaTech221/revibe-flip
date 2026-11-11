@@ -1,3 +1,12 @@
+/**
+ * Page d'Inscription Utilisateur ReVibe FliP
+ * 
+ * Formulaire d'ouverture de compte sur la marketplace :
+ *  * - Sélection du pays d'Afrique de l'Ouest/Centrale avec indicatif téléphonique
+ *  * - Saisie des informations de base et mot de passe sécurisé
+ *  * - Étape de vérification par code OTP (SMS)
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

@@ -1,3 +1,9 @@
+/**
+ * Section Page d'Accueil : HomeShowcaseSection
+ * 
+ * Composant visuel et interactif de la page d'accueil ReVibe FliP (HomeShowcaseSection).
+ */
+
 import React from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Product } from '../../types';

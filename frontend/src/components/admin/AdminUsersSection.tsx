@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminUsersSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminUsersSection).
+ */
+
 import React from 'react';
 import { Search, Ban, CheckCircle, ShieldCheck } from 'lucide-react';
 import { User, AdminUserDetail } from '../../types';

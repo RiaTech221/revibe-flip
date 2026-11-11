@@ -1,3 +1,9 @@
+/**
+ * Composant Carte Réutilisable : EscrowShieldCard
+ * 
+ * Élément graphique d'affichage de données sous forme de carte interactive (EscrowShieldCard).
+ */
+
 import React from 'react';
 import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
 

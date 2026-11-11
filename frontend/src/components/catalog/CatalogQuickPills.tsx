@@ -1,3 +1,9 @@
+/**
+ * Composant de Navigation Catalogue : CatalogQuickPills
+ * 
+ * Composant interactif pour le filtrage, tri ou affichage des annonces du catalogue (CatalogQuickPills).
+ */
+
 import React from 'react';
 import { Zap, MapPin, Sparkles } from 'lucide-react';
 

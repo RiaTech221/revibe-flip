@@ -1,3 +1,12 @@
+/**
+ * Page d'Affichage de Contenu Statique CMS ReVibe FliP
+ * 
+ * Affiche dynamiquement les pages institutionnelles ou d'information légale :
+ *  * - Conditions Générales d'Utilisation (CGU)
+ *  * - Politique de Confidentialité et Sécurité des Données
+ *  * - Mentions Légales et Fonctionnement du Séquestre Garanti
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { contentApi } from '../services/api';

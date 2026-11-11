@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminKpiSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminKpiSection).
+ */
+
 import React from 'react';
 import {
   DollarSign,

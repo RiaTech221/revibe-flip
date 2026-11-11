@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminContentManager
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminContentManager).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminCmsApi } from '../../services/api';

@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerRatingBreakdown
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerRatingBreakdown).
+ */
+
 import React from 'react';
 import { Star } from 'lucide-react';
 import { SellerRating } from '../../../services/sellerService';

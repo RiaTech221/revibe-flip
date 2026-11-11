@@ -1,3 +1,13 @@
+/**
+ * Service d'Authentification et de Gestion des Utilisateurs ReVibe FliP
+ * 
+ * Gère le cycle de vie de la session utilisateur :
+ *  * - Connexion par identifiant/mot de passe et échange de JWT token
+ *  * - Inscription avec sélection du pays et devise d'Afrique de l'Ouest / Centrale
+ *  * - Vérification OTP (SMS / Code de validation)
+ *  * - Récupération et mise à jour du profil utilisateur connecté
+ */
+
 import api from './httpClient';
 import { User } from '../types';
 

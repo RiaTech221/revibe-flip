@@ -1,3 +1,13 @@
+/**
+ * Service API Administration et Modération ReVibe FliP
+ * 
+ * Expose l'ensemble des opérations réservées aux administrateurs :
+ *  * - Métriques KPI globales de la plateforme (ventes, utilisateurs, séquestre)
+ *  * - Modération des annonces et résolutions de signalements de produits/utilisateurs
+ *  * - Gestion des catégories et configuration des frais de service et de livraison
+ *  * - Audit des conversations et historique des transactions sous séquestre
+ */
+
 import api from './httpClient';
 import {
   AdminDashboard,

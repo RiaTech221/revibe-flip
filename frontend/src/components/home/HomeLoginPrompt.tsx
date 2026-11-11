@@ -1,3 +1,9 @@
+/**
+ * Section Page d'Accueil : HomeLoginPrompt
+ * 
+ * Composant visuel et interactif de la page d'accueil ReVibe FliP (HomeLoginPrompt).
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';

@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerSalesChart
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerSalesChart).
+ */
+
 import React, { useState } from 'react';
 import { SellerSalesTrendPoint } from '../../../services/sellerService';
 

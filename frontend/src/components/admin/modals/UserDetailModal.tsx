@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : UserDetailModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (UserDetailModal).
+ */
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { AdminUserDetail } from '../../../types';

@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerActionItemsBanner
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerActionItemsBanner).
+ */
+
 import React, { useState } from 'react';
 import {
   ShoppingBag,

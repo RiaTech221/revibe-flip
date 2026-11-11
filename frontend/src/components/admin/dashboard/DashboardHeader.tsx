@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : DashboardHeader
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (DashboardHeader).
+ */
+
 import React from 'react';
 import { RefreshCw, Zap, Calendar } from 'lucide-react';
 import { User } from '../../../types';

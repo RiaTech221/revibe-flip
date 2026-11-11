@@ -1,3 +1,12 @@
+/**
+ * Client HTTP Axios Central ReVibe FliP
+ * 
+ * Configure l'instance Axios principale avec :
+ *  * - URL de base pointant vers l'API Gateway Spring Boot
+ *  * - Intercepteur de requête pour l'injection automatique du Bearer JWT Token
+ *  * - Intercepteur de réponse pour la gestion standardisée des erreurs (401, 403, 500)
+ */
+
 import axios from 'axios';
 
 /**

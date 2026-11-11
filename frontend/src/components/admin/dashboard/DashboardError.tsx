@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : DashboardError
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (DashboardError).
+ */
+
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 

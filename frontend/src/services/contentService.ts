@@ -1,3 +1,13 @@
+/**
+ * Service de Gestion des Contenus, Avis et Médias ReVibe FliP
+ * 
+ * Fournit les fonctionnalités de contenu dynamique et communautaire :
+ *  * - Pages CMS et articles d'aide (FAQ, CGU, Comment ça marche)
+ *  * - Dépôt et consultation des avis et évaluations vérifiées
+ *  * - Signalement d'annonces frauduleuses ou d'utilisateurs suspects
+ *  * - Téléversement d'images produits vers le stockage de la plateforme
+ */
+
 import api from './httpClient';
 import {
   FooterConfig,

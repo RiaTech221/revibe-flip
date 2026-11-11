@@ -1,3 +1,12 @@
+/**
+ * Page de Messagerie Instantanée et Négociations ReVibe FliP
+ * 
+ * Espace de discussion sécurisé entre acheteurs et vendeurs :
+ *  * - Barre latérale des conversations avec badge des messages non lus
+ *  * - Fenêtre de chat en temps réel avec cartes interactives d'offres de prix
+ *  * - Bouton de retour direct vers le tableau de bord vendeur pour une navigation fluide
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { chatApi, chatOfferApi, paymentApi, uploadApi } from '../services/api';

@@ -1,3 +1,9 @@
+/**
+ * Composant d'Authentification : AuthOtpForm
+ * 
+ * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthOtpForm).
+ */
+
 import React, { useState } from 'react';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { authApi } from '../../services/authService';

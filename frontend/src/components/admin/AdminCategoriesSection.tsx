@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminCategoriesSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminCategoriesSection).
+ */
+
 import React from 'react';
 import { PlusCircle, Edit2, Trash2 } from 'lucide-react';
 import { Category } from '../../types';

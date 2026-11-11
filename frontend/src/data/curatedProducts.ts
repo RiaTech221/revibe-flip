@@ -1,3 +1,11 @@
+/**
+ * Jeu de Données Produits Recommandés (Curated Showcase) ReVibe FliP
+ * 
+ * Fournit une liste d'annonces de haute qualité utilisées comme fallback ou démonstration :
+ *  * - Exemples de pièces mode africaine (Wax, Bazin, tenues traditionnelles et contemporaines)
+ *  * - Vendeurs certifiés, notes, badges et prix pré-formatés en FCFA
+ */
+
 import { Product } from '../types';
 
 export const curatedSellers = {

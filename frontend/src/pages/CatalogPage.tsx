@@ -1,3 +1,12 @@
+/**
+ * Page Catalogue et Recherche de Produits ReVibe FliP
+ * 
+ * Interface principale d'exploration des articles en vente :
+ *  * - Grille de produits responsive avec pagination
+ *  * - Filtres latéraux par catégorie, prix, état, pays et options de livraison
+ *  * - Barre de tri dynamique (prix croissant/décroissant, nouveautés, popularité)
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productApi, categoryApi } from '../services/api';

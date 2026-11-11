@@ -1,3 +1,12 @@
+/**
+ * Page Explicative 'Comment ça Marche' ReVibe FliP
+ * 
+ * Guide pédagogique illustré expliquant le fonctionnement de la marketplace :
+ *  * - Étapes pour acheter en toute sécurité avec le séquestre ReVibe Shield
+ *  * - Étapes pour vendre, expédier et recevoir ses gains Mobile Money instantanément
+ *  * - Foire aux questions rapides pour rassurer les nouveaux utilisateurs
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentApi } from '../services/api';

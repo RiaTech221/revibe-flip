@@ -1,3 +1,12 @@
+/**
+ * Contexte d'Authentification Global ReVibe FliP
+ * 
+ * Fournit l'état d'authentification à l'ensemble de l'arborescence React :
+ *  * - Utilisateur actuellement connecté (User) et son statut (rôles, vérification, pays)
+ *  * - Fonctions de login, logout, rechargement du profil et modal de connexion
+ *  * - Persistance du token JWT dans le stockage local (localStorage)
+ */
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authApi } from '../services/api';

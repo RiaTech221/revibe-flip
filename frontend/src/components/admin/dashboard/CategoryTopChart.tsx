@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : CategoryTopChart
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (CategoryTopChart).
+ */
+
 import React, { useState } from 'react';
 
 interface CategoryTopPoint {

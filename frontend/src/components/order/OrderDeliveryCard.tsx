@@ -1,3 +1,9 @@
+/**
+ * Composant Suivi de Commande : OrderDeliveryCard
+ * 
+ * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderDeliveryCard).
+ */
+
 import React from 'react';
 import { Truck, MapPin, Phone, Copy, Check } from 'lucide-react';
 import { Order } from '../../types';

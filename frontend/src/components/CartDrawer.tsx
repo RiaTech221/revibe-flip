@@ -1,3 +1,12 @@
+/**
+ * Tiroir Latéral du Panier d'Achat ReVibe FliP
+ * 
+ * Affiche le contenu du panier dans un volet latéral coulissant :
+ *  * - Liste des articles avec miniature, prix et quantité modifiable
+ *  * - Calcul en direct du total et des frais de séquestre
+ *  * - Bouton de passage direct vers la validation de commande (Checkout)
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';

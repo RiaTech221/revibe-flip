@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminSidebar
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminSidebar).
+ */
+
 import React from 'react';
 import {
   LayoutDashboard,

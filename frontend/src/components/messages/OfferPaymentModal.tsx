@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : OfferPaymentModal
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (OfferPaymentModal).
+ */
+
 import React from 'react';
 import { CreditCard, X, ShieldCheck, Phone, CheckCircle2 } from 'lucide-react';
 import { ChatOffer, PaymentMethod } from '../../types';

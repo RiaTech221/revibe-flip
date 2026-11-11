@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerProfileTab
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerProfileTab).
+ */
+
 import React from 'react';
 
 interface SellerProfileTabProps {

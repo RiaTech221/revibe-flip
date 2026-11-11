@@ -1,3 +1,13 @@
+/**
+ * Service de Gestion des Commandes et Expéditions ReVibe FliP
+ * 
+ * Pilote le cycle de commande e-commerce sécurisé :
+ *  * - Création de commande depuis le panier ou une offre négociée
+ *  * - Suivi du cycle de vie de la commande (PENDING, PAID, SHIPPED, DELIVERED, COMPLETED)
+ *  * - Confirmation de réception par l'acheteur et déblocage du séquestre
+ *  * - Ouverture et traitement des litiges (DISPUTED)
+ */
+
 import api from './httpClient';
 import { Order, Delivery } from '../types';
 

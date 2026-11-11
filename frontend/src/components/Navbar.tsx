@@ -1,3 +1,13 @@
+/**
+ * Barre de Navigation Principale ReVibe FliP
+ * 
+ * Composant de navigation supérieur de l'application :
+ *  * - Logo ReVibe FliP avec redirection vers l'accueil
+ *  * - Barre de recherche globale d'articles avec auto-complétion
+ *  * - Accès rapide au catalogue, bouton 'Vendre un article' et panier d'achat
+ *  * - Menu déroulant utilisateur : Profil, Mes Commandes, Tableau de bord vendeur, Admin, Déconnexion
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

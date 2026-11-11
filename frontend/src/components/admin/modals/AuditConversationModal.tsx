@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : AuditConversationModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (AuditConversationModal).
+ */
+
 import React from 'react';
 import { X, History, ShieldCheck } from 'lucide-react';
 

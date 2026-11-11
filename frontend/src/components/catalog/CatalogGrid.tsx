@@ -1,3 +1,9 @@
+/**
+ * Composant de Navigation Catalogue : CatalogGrid
+ * 
+ * Composant interactif pour le filtrage, tri ou affichage des annonces du catalogue (CatalogGrid).
+ */
+
 import React from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { Product } from '../../types';

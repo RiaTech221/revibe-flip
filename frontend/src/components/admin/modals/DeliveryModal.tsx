@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : DeliveryModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (DeliveryModal).
+ */
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { Order, DeliveryStatus } from '../../../types';

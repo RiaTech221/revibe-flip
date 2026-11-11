@@ -1,3 +1,13 @@
+/**
+ * Service Tableau de Bord et Finances Vendeur ReVibe FliP
+ * 
+ * Fournit toutes les données et actions requises pour l'espace vendeur :
+ *  * - Indicateurs de performance (KPIs unifiés, chiffre d'affaires, solde sous séquestre, solde disponible)
+ *  * - Bandeau compact des actions prioritaires (commandes à expédier, offres en attente, litiges)
+ *  * - Gestion des annonces actives, vendues ou désactivées par la modération
+ *  * - Demande de retrait des fonds disponibles vers son compte Mobile Money
+ */
+
 import api from './httpClient';
 import { Product, Order, Review, PageResponse } from '../types';
 

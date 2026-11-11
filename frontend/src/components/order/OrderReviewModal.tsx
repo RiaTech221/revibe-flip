@@ -1,3 +1,9 @@
+/**
+ * Composant Suivi de Commande : OrderReviewModal
+ * 
+ * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderReviewModal).
+ */
+
 import React from 'react';
 import { Star, X, CheckCircle2 } from 'lucide-react';
 

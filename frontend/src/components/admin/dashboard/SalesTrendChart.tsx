@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : SalesTrendChart
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (SalesTrendChart).
+ */
+
 import React, { useState } from 'react';
 import { ShoppingBag } from 'lucide-react';
 

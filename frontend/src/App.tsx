@@ -1,3 +1,12 @@
+/**
+ * Composant Racine de l'Application ReVibe FliP
+ * 
+ * Point d'orchestration principal de l'application frontend :
+ *  * - Configuration des fournisseurs de contexte (AuthProvider, CartProvider)
+ *  * - Définition de l'ensemble des routes React Router (publiques, authentifiées, vendeur, admin)
+ *  * - Affichage persistant de la Navbar, du tiroir panier et du Footer
+ */
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';

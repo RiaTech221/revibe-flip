@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : ConversationSidebar
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (ConversationSidebar).
+ */
+
 import React from 'react';
 import { Conversation, User } from '../../types';
 import { RefreshCw } from 'lucide-react';

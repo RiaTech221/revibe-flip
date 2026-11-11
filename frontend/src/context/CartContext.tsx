@@ -1,3 +1,12 @@
+/**
+ * Contexte du Panier d'Achat ReVibe FliP
+ * 
+ * Gère l'état réactif du panier d'achat dans l'application :
+ *  * - Liste des articles sélectionnés avec validation de disponibilité
+ *  * - Fonctions d'ajout, retrait, vidage et calcul des sous-totaux
+ *  * - Contrôle d'ouverture/fermeture du tiroir latéral panier (CartDrawer)
+ */
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Product } from '../types';
 import { useAuth } from './AuthContext';

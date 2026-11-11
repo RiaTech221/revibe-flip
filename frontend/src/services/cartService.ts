@@ -1,3 +1,12 @@
+/**
+ * Service de Gestion du Panier d'Achat ReVibe FliP
+ * 
+ * Gère la persistance et les opérations du panier côté client :
+ *  * - Ajout, suppression et mise à jour des quantités d'articles
+ *  * - Synchronisation avec le stockage local (localStorage)
+ *  * - Calculs prévisionnels des totaux, frais de protection séquestre et livraison
+ */
+
 import api from './httpClient';
 import { Conversation } from '../types';
 

@@ -1,3 +1,9 @@
+/**
+ * Composant d'Authentification : AuthSplitHero
+ * 
+ * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthSplitHero).
+ */
+
 import React from 'react';
 import { Logo } from '../Logo';
 

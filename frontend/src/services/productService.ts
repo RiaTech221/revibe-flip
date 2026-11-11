@@ -1,3 +1,12 @@
+/**
+ * Service Catalogue Produits et Catégories ReVibe FliP
+ * 
+ * Gère la recherche, la consultation et la publication des annonces :
+ *  * - Recherche multi-critères (mots-clés, catégories, filtres de prix, état, pays)
+ *  * - Consultation des détails complets d'un article et profil du vendeur
+ *  * - Publication et modification d'annonces avec photos et caractéristiques
+ */
+
 import api from './httpClient';
 import { Product, Category, Country } from '../types';
 

@@ -1,3 +1,12 @@
+/**
+ * Page de Gestion du Profil Utilisateur ReVibe FliP
+ * 
+ * Permet à l'utilisateur connecté de consulter et modifier ses informations personnelles :
+ *  * - Coordonnées, photo de profil, adresse de livraison et pays de résidence
+ *  * - Badge de confiance (Trust Score), niveau de vérification et avis reçus
+ *  * - Paramètres de notification et sécurité du compte
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

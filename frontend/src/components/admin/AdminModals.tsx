@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminModals
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminModals).
+ */
+
 import React from 'react';
 import {
   AdminUserDetail,

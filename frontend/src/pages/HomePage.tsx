@@ -1,3 +1,12 @@
+/**
+ * Page d'Accueil Principale ReVibe FliP
+ * 
+ * Vitrine principale de la marketplace ReVibe FliP :
+ *  * - Carrousel promotionnel interactif mettant en avant la protection séquestre et offres phares
+ *  * - Défilement horizontal des catégories tendances et culturelles (Wax, Bazin, etc.)
+ *  * - Sections vitrines (Nouveautés, Bonnes affaires, Tendances) avec cartes produits interactives
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { productApi, categoryApi } from '../services/api';

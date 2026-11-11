@@ -1,3 +1,9 @@
+/**
+ * Section Page d'Accueil : HomeCategoryScroll
+ * 
+ * Composant visuel et interactif de la page d'accueil ReVibe FliP (HomeCategoryScroll).
+ */
+
 import React, { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';

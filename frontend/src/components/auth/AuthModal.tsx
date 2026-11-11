@@ -1,3 +1,9 @@
+/**
+ * Composant d'Authentification : AuthModal
+ * 
+ * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthModal).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/authService';

@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : ChatMessageItem
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (ChatMessageItem).
+ */
+
 import React from 'react';
 import { Message } from '../../types';
 

@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerSuspendedBanner
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerSuspendedBanner).
+ */
+
 import React from 'react';
 import { AlertOctagon, HelpCircle } from 'lucide-react';
 

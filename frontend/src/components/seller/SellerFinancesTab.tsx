@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerFinancesTab
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerFinancesTab).
+ */
+
 import React from 'react';
 import { DollarSign } from 'lucide-react';
 import { SellerDashboard, SellerTransaction } from '../../services/api';

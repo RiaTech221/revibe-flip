@@ -1,3 +1,12 @@
+/**
+ * Page d'Administration et Modération ReVibe FliP
+ * 
+ * Tableau de bord de gestion pour les administrateurs de la plateforme :
+ *  * - Supervision globale de l'activité (KPIs en temps réel, volumes d'échanges)
+ *  * - Modération des annonces signalées et gestion des comptes utilisateurs
+ *  * - Gestion des catégories, paramètres de séquestre et litiges ouverts
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { adminApi, categoryApi } from '../services/api';

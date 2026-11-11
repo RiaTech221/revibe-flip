@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : index
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (index).
+ */
+
 export * from './DashboardHeader';
 export * from './DemoModeBanner';
 export * from './ActionItemsBanner';

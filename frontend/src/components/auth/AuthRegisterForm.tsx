@@ -1,3 +1,9 @@
+/**
+ * Composant d'Authentification : AuthRegisterForm
+ * 
+ * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthRegisterForm).
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Country } from '../../types';
 import { countryApi } from '../../services/productService';

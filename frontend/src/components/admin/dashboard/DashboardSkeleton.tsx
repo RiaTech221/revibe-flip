@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : DashboardSkeleton
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (DashboardSkeleton).
+ */
+
 import React from 'react';
 
 export const DashboardSkeleton: React.FC = () => {

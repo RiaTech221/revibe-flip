@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerOrderFunnelChart
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerOrderFunnelChart).
+ */
+
 import React from 'react';
 
 interface OrderFunnelStep {

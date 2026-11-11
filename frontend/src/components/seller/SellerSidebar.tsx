@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerSidebar
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerSidebar).
+ */
+
 import React from 'react';
 import {
   LayoutDashboard,

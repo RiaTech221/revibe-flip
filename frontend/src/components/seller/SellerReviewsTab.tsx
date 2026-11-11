@@ -1,3 +1,9 @@
+/**
+ * Onglet / Vue Vendeur : SellerReviewsTab
+ * 
+ * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerReviewsTab).
+ */
+
 import React from 'react';
 import { Star, AlertTriangle } from 'lucide-react';
 import { Review } from '../../types';

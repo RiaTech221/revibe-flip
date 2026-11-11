@@ -1,3 +1,9 @@
+/**
+ * Section de Gestion Admin : AdminProductsSection
+ * 
+ * Module de gestion dédié du back-office ReVibe FliP (AdminProductsSection).
+ */
+
 import React from 'react';
 import { Search, Eye, Trash2 } from 'lucide-react';
 import { Product } from '../../types';

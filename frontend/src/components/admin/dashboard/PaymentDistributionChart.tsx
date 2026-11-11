@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : PaymentDistributionChart
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (PaymentDistributionChart).
+ */
+
 import React from 'react';
 
 interface PaymentDistributionPoint {

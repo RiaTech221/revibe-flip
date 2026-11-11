@@ -1,3 +1,9 @@
+/**
+ * Modale d'Action Administration : ProductDetailModal
+ * 
+ * Permet aux modérateurs et administrateurs d'exécuter des actions ciblées (ProductDetailModal).
+ */
+
 import React from 'react';
 import { X } from 'lucide-react';
 import { Product } from '../../../types';

@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : UserRegistrationChart
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (UserRegistrationChart).
+ */
+
 import React, { useState } from 'react';
 
 interface UserTrendPoint {

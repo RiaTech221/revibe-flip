@@ -1,3 +1,12 @@
+/**
+ * Page Foire Aux Questions (FAQ) ReVibe FliP
+ * 
+ * Répertoire structuré des questions fréquemment posées :
+ *  * - Questions sur le séquestre bancaire et la protection des fonds acheteurs
+ *  * - Questions sur les retraits Mobile Money et délais pour les vendeurs
+ *  * - Questions sur les livraisons, retours et résolution des litiges
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentApi } from '../services/api';

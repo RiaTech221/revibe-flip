@@ -1,3 +1,9 @@
+/**
+ * Composant Suivi de Commande : OrderSummaryCard
+ * 
+ * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderSummaryCard).
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, MessageSquare, ExternalLink } from 'lucide-react';

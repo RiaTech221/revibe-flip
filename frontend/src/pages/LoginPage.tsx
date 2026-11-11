@@ -1,3 +1,12 @@
+/**
+ * Page de Connexion ReVibe FliP
+ * 
+ * Interface d'accès sécurisée à l'application :
+ *  * - Formulaire de connexion par numéro de téléphone ou adresse email
+ *  * - Redirection automatique selon le rôle (Admin vers /admin, Vendeur vers /seller, etc.)
+ *  * - Lien direct vers la création de compte pour les nouveaux utilisateurs
+ */
+
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

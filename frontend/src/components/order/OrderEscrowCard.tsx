@@ -1,3 +1,9 @@
+/**
+ * Composant Suivi de Commande : OrderEscrowCard
+ * 
+ * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderEscrowCard).
+ */
+
 import React from 'react';
 import { ShieldCheck, CheckCircle2, Lock } from 'lucide-react';
 import { Order } from '../../types';

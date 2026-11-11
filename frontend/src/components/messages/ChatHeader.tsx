@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : ChatHeader
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (ChatHeader).
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Conversation, User, ChatOffer } from '../../types';

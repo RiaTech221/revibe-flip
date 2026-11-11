@@ -1,3 +1,9 @@
+/**
+ * Composant Messagerie & Négociation : ChatInputBar
+ * 
+ * Gère les échanges de chat, propositions d'offres et modales associées (ChatInputBar).
+ */
+
 import React, { useRef } from 'react';
 import { Camera, Send } from 'lucide-react';
 

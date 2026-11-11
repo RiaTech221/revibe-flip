@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerMetricCard
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerMetricCard).
+ */
+
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 

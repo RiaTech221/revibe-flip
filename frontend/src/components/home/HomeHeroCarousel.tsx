@@ -1,3 +1,9 @@
+/**
+ * Section Page d'Accueil : HomeHeroCarousel
+ * 
+ * Composant visuel et interactif de la page d'accueil ReVibe FliP (HomeHeroCarousel).
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';

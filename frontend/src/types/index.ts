@@ -1,3 +1,12 @@
+/**
+ * Définitions des Types et Interfaces TypeScript ReVibe FliP
+ * 
+ * Modèle de données centralisé de l'application frontend :
+ *  * - Entités métier : User, Product, Category, Order, EscrowTransaction, Review, Conversation
+ *  * - Énumérations de statuts : OrderStatus, ProductStatus, EscrowStatus, PaymentProvider
+ *  * - DTOs de pagination, requêtes et réponses de filtrage
+ */
+
 export interface PageResponse<T> {
   content: T[];
   pageNumber: number;

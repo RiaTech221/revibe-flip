@@ -1,3 +1,11 @@
+/**
+ * Bandeau d'Annonces Global ReVibe FliP
+ * 
+ * Affiche un ruban supérieur d'information générale :
+ *  * - Alertes promotionnelles, informations sur le séquestre ou maintenance
+ *  * - Option de fermeture persistante pour la session utilisateur
+ */
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentApi } from '../services/api';

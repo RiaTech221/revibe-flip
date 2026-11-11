@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Admin : OrderFunnelChart
+ * 
+ * Affiche et gère les indicateurs et visualisations pour les administrateurs ReVibe FliP (OrderFunnelChart).
+ */
+
 import React from 'react';
 import { OrderFunnelStep } from '../../../types';
 

@@ -1,3 +1,9 @@
+/**
+ * Composant Suivi de Commande : OrderStatusTimeline
+ * 
+ * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderStatusTimeline).
+ */
+
 import React from 'react';
 import { CheckCircle2, Clock, Truck, Package } from 'lucide-react';
 import { Order } from '../../types';

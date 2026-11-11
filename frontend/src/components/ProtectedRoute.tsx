@@ -1,3 +1,11 @@
+/**
+ * Composant de Protection des Routes ReVibe FliP
+ * 
+ * Garde de navigation React Router assurant la sécurité des accès :
+ *  * - Redirige les utilisateurs non connectés vers la page de login
+ *  * - Vérifie les rôles requis (ex: ROLE_ADMIN pour les pages du back-office)
+ */
+
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';

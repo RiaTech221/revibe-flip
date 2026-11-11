@@ -1,3 +1,9 @@
+/**
+ * Composant Tableau de Bord Vendeur : SellerQuickLists
+ * 
+ * Module d'affichage de performance financière, KPIs ou actions vendeur (SellerQuickLists).
+ */
+
 import React from 'react';
 import { ShoppingBag, Clock, Star, Bell, ArrowRight, Check } from 'lucide-react';
 import { Order, Review } from '../../../types';
