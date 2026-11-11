@@ -9,10 +9,12 @@ services:
     container_name: revibeflip-mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: revibeflip
-      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-revibeflip}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_USER: ${MYSQL_USER:-revibeflip_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-VotreMotDePasseSecurise123!}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -33,13 +35,14 @@ services:
     container_name: revibeflip-backend
     restart: unless-stopped
     environment:
-      SPRING_PROFILES_ACTIVE: mysql
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/revibeflip?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: rootpassword
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-mysql}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/revibeflip?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-rootpassword}
+      REVIBE_JWT_SECRET: ${REVIBE_JWT_SECRET:-9a3f2c5d8e1b4a7f0c3e6b9d2a5f8e1b4a7f0c3e6b9d2a5f8e1b4a7f0c3e6b9d}
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       mysql:
         condition: service_healthy
@@ -56,8 +59,8 @@ services:
     container_name: revibeflip-frontend
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "5173:80"
+      - "${FRONTEND_PORT:-80}:80"
+      - "${FRONTEND_DEV_PORT:-5173}:80"
     depends_on:
       - backend
     networks:

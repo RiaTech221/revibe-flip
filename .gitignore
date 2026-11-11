@@ -61,11 +61,15 @@ lerna-debug.log*
 # 4. Environments & Secrets
 # ------------------------------------------------------------------------------
 .env
+**/.env
 .env.local
+**/.env.local
 .env.development.local
 .env.test.local
 .env.production.local
 *.env.local
+!.env.example
+!**/.env.example
 
 # ------------------------------------------------------------------------------
 # 5. IDEs & Editors
