@@ -1,7 +1,9 @@
 version: '3.8'
 
 services:
-  # MySQL Database 8.0 for ReVibe FliP
+  # ============================================================================
+  # 1. BASE DE DONNÉES - MySQL 8.0
+  # ============================================================================
   mysql:
     image: mysql:8.0
     container_name: revibeflip-mysql
@@ -13,21 +15,72 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - revibeflip-network
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Database Web Manager (Adminer) accessible on http://localhost:8081
+  # ============================================================================
+  # 2. BACKEND - Spring Boot 3 / Java 21
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: revibeflip-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: mysql
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/revibeflip?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: rootpassword
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - revibeflip-network
+
+  # ============================================================================
+  # 3. FRONTEND - React 18 / Vite / Nginx SPA
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: revibeflip-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - revibeflip-network
+
+  # ============================================================================
+  # 4. GESTIONNAIRE DE BDD (Adminer) - Accessible sur http://localhost:8081
+  # ============================================================================
   adminer:
-    image: adminer
+    image: adminer:latest
     container_name: revibeflip-adminer
     restart: unless-stopped
     ports:
       - "8081:8080"
     depends_on:
       - mysql
+    networks:
+      - revibeflip-network
 
 volumes:
   mysql_data:
+    driver: local
+
+networks:
+  revibeflip-network:
+    driver: bridge

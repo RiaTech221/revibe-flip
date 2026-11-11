@@ -134,7 +134,31 @@ git push -u origin feature/nom-de-la-tache
 
 ---
 
-## 🛡️ 4. Règles d'or de l'équipe
+## 🐳 5. Environnement Conteneurisé Docker (Bonnes Pratiques)
+
+Le projet intègre une architecture Docker complète et conteneurisée selon les standards industriels :
+
+* **`backend/Dockerfile`** : Build multi-stage optimisé (Maven/Temurin JDK 21 -> Runtime Temurin JRE 21 non-root).
+* **`frontend/Dockerfile` & `frontend/nginx.conf`** : Build multi-stage (Node 20 -> Nginx Alpine ultra-léger avec routage SPA et proxy API/WebSocket).
+* **`docker-compose.yml`** : Orchestrateur complet reliant MySQL 8.0, le Backend Spring Boot, le Frontend Nginx et l'interface Adminer.
+
+### Lancer tout l'environnement en une seule commande :
+```bash
+docker compose up -d --build
+```
+* **Frontend Web** : `http://localhost` (ou `http://localhost:5173`)
+* **Backend API** : `http://localhost:8080/api`
+* **Base de données MySQL** : `localhost:3306`
+* **Adminer (Web UI BDD)** : `http://localhost:8081`
+
+### Arrêter les conteneurs :
+```bash
+docker compose down
+```
+
+---
+
+## 🛡️ 6. Règles d'or de l'équipe
 
 1. **Aucun commit direct sur `main` ou `develop`** : tout passe par une PR avec relecture.
 2. **Ne jamais casser le build** : ne soumettez jamais une PR qui ne compile pas localement.
