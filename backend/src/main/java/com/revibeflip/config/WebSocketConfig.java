@@ -9,6 +9,17 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
+/**
+ * Configuration des WebSockets et du protocole STOMP pour ReVibe FliP.
+ * <p>
+ * Permet la communication bidirectionnelle en temps réel :
+ * <ul>
+ *   <li>Messagerie instantanée entre acheteur et vendeur pour la négociation d'articles.</li>
+ *   <li>Notifications d'offres de prix et de paiement sous séquestre.</li>
+ *   <li>Sécurisation des canaux STOMP par jeton JWT via {@link WebSocketAuthInterceptor}.</li>
+ * </ul>
+ * </p>
+ */
 @Configuration
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor

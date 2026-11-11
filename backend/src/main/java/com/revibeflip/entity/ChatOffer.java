@@ -8,6 +8,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une offre de prix directe formulée dans une discussion.
+ */
 @Entity
 @Table(name = "chat_offers")
 @Getter

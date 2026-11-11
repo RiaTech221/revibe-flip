@@ -21,6 +21,9 @@ import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.List;
 
+/**
+ * Contrôleur REST public pour la consultation des pages légales, FAQ et paramètres de la plateforme.
+ */
 @RestController
 @RequiredArgsConstructor
 @Slf4j

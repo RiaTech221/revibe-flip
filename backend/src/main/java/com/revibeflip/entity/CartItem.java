@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 @Table(name = "cart_items", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"cart_id", "product_id"})
 })
+/**
+ * Entité JPA représentant une ligne d'article dans le panier.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

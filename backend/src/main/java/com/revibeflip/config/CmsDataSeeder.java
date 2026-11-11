@@ -19,6 +19,17 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Seeder de contenu CMS pour ReVibe FliP.
+ * <p>
+ * Initialise :
+ * <ul>
+ *   <li>Les paramètres par défaut de la plateforme (taux de commission 20%, frais de validation 1%).</li>
+ *   <li>Les 4 pages légales et informatives obligatoires (CGU, Confidentialité, Comment ça marche, Séquestre).</li>
+ *   <li>Les 12 questions fréquentes (FAQ) triées par catégories.</li>
+ * </ul>
+ * </p>
+ */
 @Component
 @Order(10)
 @RequiredArgsConstructor

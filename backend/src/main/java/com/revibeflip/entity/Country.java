@@ -3,6 +3,9 @@ package com.revibeflip.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Entité JPA représentant un pays africain pris en charge avec sa devise et son préfixe téléphonique.
+ */
 @Entity
 @Table(name = "countries")
 @Getter

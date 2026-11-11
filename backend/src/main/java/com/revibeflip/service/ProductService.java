@@ -24,6 +24,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service métier de gestion du catalogue d'annonces, modération, recherche et filtres de pertinence.
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductService {

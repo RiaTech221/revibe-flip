@@ -9,6 +9,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une commande d'article avec séquestre, frais de validation et commission.
+ */
 @Entity
 @Table(name = "orders")
 @Getter

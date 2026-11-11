@@ -1,5 +1,8 @@
 package com.revibeflip.entity.enums;
 
+/**
+ * Énumération des prestataires de paiement mobile supportés (Wave, Orange Money, Free Money).
+ */
 public enum PaymentMethod {
     WAVE("Wave"),
     ORANGE_MONEY("Orange Money"),

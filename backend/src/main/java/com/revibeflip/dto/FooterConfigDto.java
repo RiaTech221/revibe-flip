@@ -5,6 +5,9 @@ import lombok.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Objet de transfert de données (DTO) pour FooterConfigDto dans l'écosystème ReVibe FliP.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

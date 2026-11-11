@@ -8,6 +8,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Interface Spring Data JPA pour la journalisation et l'audit des actions administratives.
+ */
 @Repository
 public interface AdminActionLogRepository extends JpaRepository<AdminActionLog, Long> {
     List<AdminActionLog> findTop20ByOrderByCreatedAtDesc();

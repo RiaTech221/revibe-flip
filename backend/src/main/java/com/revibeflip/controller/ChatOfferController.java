@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST des offres d'achat directes dans le chat.
+ * Permet la négociation de prix avec durée de validité (24h) et réservation temporaire sous séquestre.
+ */
 @RestController
 @RequestMapping("/api/chat-offers")
 @RequiredArgsConstructor

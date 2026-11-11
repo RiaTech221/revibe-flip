@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service métier du panier d'achat mono-vendeur avec détection et prévention des conflits multi-vendeurs.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

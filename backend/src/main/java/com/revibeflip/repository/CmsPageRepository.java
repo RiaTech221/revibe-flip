@@ -11,6 +11,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour les pages éditoriales CMS.
+ */
 @Repository
 public interface CmsPageRepository extends JpaRepository<CmsPage, Long> {
 

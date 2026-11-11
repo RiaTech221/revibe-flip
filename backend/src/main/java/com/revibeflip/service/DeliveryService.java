@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Service métier de gestion logistique, suivi de livraison et assignation des transporteurs/coursiers.
+ */
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {

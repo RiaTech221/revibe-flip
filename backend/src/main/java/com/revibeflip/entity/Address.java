@@ -6,6 +6,12 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une adresse de livraison enregistrée dans le carnet d'un utilisateur.
+ * <p>
+ * Utilisée lors du checkout pour la livraison à domicile (coursier moto urbain à Dakar).
+ * </p>
+ */
 @Entity
 @Table(name = "addresses")
 @Getter

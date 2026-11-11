@@ -28,6 +28,9 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion de contenu pour les pages institutionnelles avec historique de versionnement.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

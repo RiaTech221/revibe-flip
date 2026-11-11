@@ -19,6 +19,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST de gestion du profil personnel et des adresses de livraison.
+ */
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

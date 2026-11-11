@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service métier de messagerie instantanée en temps réel et archivage des conversations.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

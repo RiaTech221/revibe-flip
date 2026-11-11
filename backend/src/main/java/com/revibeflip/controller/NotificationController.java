@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST des notifications utilisateurs.
+ * Permet la lecture et l'acquittement des alertes d'activité (commandes, offres, avis, messages).
+ */
 @RestController
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor

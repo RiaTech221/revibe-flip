@@ -7,6 +7,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant un avis et une notation attribués à un vendeur suite à une commande livrée.
+ */
 @Entity
 @Table(name = "reviews")
 @Getter

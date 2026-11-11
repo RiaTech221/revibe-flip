@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/deliveries")
 @RequiredArgsConstructor
 @Tag(name = "Livraison & Suivi de Colis", description = "Suivi pas à pas de l'acheminement des colis (Jumia style)")
+/**
+ * Contrôleur REST de suivi logistique des livraisons.
+ * Permet le suivi pas à pas des colis (préparation, coursier, transit, livraison confirmée).
+ */
 public class DeliveryController {
 
     private final DeliveryService deliveryService;

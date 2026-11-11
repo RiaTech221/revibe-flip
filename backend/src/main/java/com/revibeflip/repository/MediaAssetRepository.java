@@ -8,6 +8,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour les ressources multimédias.
+ */
 @Repository
 public interface MediaAssetRepository extends JpaRepository<MediaAsset, Long> {
 

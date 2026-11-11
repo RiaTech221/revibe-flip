@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Service de configuration des paramètres de contenu et bannières promotionnelles.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

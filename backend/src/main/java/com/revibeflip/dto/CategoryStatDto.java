@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Objet de transfert de données (DTO) pour CategoryStatDto dans l'écosystème ReVibe FliP.
+ */
 @Data
 @Builder
 @NoArgsConstructor

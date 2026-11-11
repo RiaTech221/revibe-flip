@@ -3,6 +3,9 @@ package com.revibeflip.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Entité JPA représentant une catégorie ou rayon du catalogue.
+ */
 @Entity
 @Table(name = "categories")
 @Getter

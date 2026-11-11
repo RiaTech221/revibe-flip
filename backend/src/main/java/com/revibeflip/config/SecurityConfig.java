@@ -27,6 +27,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Configuration de la sécurité Spring Security 6 pour ReVibe FliP.
+ * <p>
+ * Définit :
+ * <ul>
+ *   <li>L'authentification sans état (Stateless) basée sur jetons JWT.</li>
+ *   <li>La politique CORS autorisant le frontend web local et mobile.</li>
+ *   <li>Le filtre d'interception JWT avant {@link UsernamePasswordAuthenticationFilter}.</li>
+ *   <li>Le contrôle d'accès basé sur les rôles (RBAC) : ROLE_ADMIN et ROLE_USER.</li>
+ *   <li>L'encodage des mots de passe avec {@link BCryptPasswordEncoder}.</li>
+ * </ul>
+ * </p>
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity

@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion de la foire aux questions (FAQ) dynamique par catégorie.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

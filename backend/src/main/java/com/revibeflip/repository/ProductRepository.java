@@ -13,6 +13,9 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Interface Spring Data JPA pour les annonces du catalogue, recherches et modération.
+ */
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 

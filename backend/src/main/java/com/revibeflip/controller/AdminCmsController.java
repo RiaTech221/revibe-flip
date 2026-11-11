@@ -26,6 +26,10 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/cms")
 @PreAuthorize("hasRole('ADMIN')")
+/**
+ * Contrôleur d'administration pour la gestion des contenus CMS de ReVibe FliP.
+ * Permet la création, l'édition, le versionnement et la publication des pages légales, de la FAQ et des bannières.
+ */
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Administration - Contenus & Pages", description = "Gestion éditoriale du site : Pages, FAQ, Footer, Réseaux Sociaux, Bandeaux et Médias")

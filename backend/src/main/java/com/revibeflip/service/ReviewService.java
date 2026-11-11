@@ -19,6 +19,9 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service de gestion des avis clients vérifiés et calcul automatique de la note moyenne vendeur.
+ */
 @Service
 @RequiredArgsConstructor
 public class ReviewService {

@@ -23,6 +23,14 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Intercepteur de sécurité des canaux STOMP WebSocket.
+ * <p>
+ * Valide le jeton JWT envoyé dans l'en-tête {@code Authorization} ou {@code passcode}
+ * lors de la commande STOMP CONNECT, et restreint les abonnements aux sujets de conversation
+ * ({@code /topic/conversations/{id}}) uniquement à l'acheteur, au vendeur ou à un administrateur.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

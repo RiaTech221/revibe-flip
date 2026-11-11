@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
+/**
+ * DTO de requête pour l'opération CreateOrderRequest.
+ */
 @Data
 @Builder
 @NoArgsConstructor

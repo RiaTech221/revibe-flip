@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour la gestion des utilisateurs, authentification et rôles.
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 

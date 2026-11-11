@@ -8,6 +8,9 @@ import org.springframework.data.domain.Page;
 
 import java.util.List;
 
+/**
+ * Objet de transfert de données (DTO) pour PageResponseDto dans l'écosystème ReVibe FliP.
+ */
 @Data
 @Builder
 @NoArgsConstructor

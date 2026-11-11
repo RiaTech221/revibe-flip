@@ -1,5 +1,8 @@
 package com.revibeflip.entity.enums;
 
+/**
+ * Énumération des types de notifications envoyées aux utilisateurs.
+ */
 public enum NotificationType {
     OTP,
     NEW_MESSAGE,

@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+/**
+ * Entité JPA représentant un article commandé.
+ */
 @Entity
 @Table(name = "order_items")
 @Getter

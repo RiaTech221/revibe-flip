@@ -6,6 +6,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une demande de contact soumise par un visiteur.
+ */
 @Entity
 @Table(name = "contact_messages")
 @Getter

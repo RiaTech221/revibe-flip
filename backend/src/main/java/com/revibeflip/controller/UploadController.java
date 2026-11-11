@@ -21,6 +21,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+/**
+ * Contrôleur REST d'upload sécurisé des photos d'annonces et photos de profil.
+ */
 @RestController
 @RequestMapping("/api/uploads")
 @Slf4j

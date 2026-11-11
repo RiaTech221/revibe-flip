@@ -11,6 +11,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour les commandes d'articles, calculs financiers et statistiques vendeur/admin.
+ */
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 

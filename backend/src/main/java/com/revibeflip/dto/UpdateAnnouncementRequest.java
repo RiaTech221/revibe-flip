@@ -4,6 +4,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO de requête pour l'opération UpdateAnnouncementRequest.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

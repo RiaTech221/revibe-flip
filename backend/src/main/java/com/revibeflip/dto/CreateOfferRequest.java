@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * DTO de requête pour l'opération CreateOfferRequest.
+ */
 @Data
 @Builder
 @NoArgsConstructor

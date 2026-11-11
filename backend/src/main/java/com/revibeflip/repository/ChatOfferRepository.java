@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour la gestion des offres de négociation de prix en discussion.
+ */
 public interface ChatOfferRepository extends JpaRepository<ChatOffer, Long> {
 
     List<ChatOffer> findByConversationIdOrderByCreatedAtDesc(Long conversationId);

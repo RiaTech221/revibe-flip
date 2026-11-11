@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Contrôleur REST pour le signalement d'annonces ou d'utilisateurs suspects auprès de la modération.
+ */
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor

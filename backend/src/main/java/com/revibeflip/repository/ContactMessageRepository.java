@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 
+/**
+ * Interface Spring Data JPA pour les messages du formulaire de contact.
+ */
 @Repository
 public interface ContactMessageRepository extends JpaRepository<ContactMessage, Long> {
 

@@ -18,6 +18,18 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Initialisateur principal des données de démarrage de l'application ReVibe FliP.
+ * <p>
+ * S'exécute à chaque démarrage via {@link CommandLineRunner} pour initialiser de façon idempotente :
+ * <ul>
+ *   <li>Les pays africains gérés (Sénégal SN +221, Côte d'Ivoire, Mali, etc.).</li>
+ *   <li>Les catégories et sous-catégories du catalogue (Mode femme, homme, tenues traditionnelles Wax, etc.).</li>
+ *   <li>Les 4 utilisateurs de démonstration (Super Admin, Aminata Diallo, Moussa Ndiaye, Fatou Sow).</li>
+ *   <li>Le catalogue initial d'annonces avec prix en FCFA, états d'usure et photos.</li>
+ * </ul>
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

@@ -2,6 +2,9 @@ package com.revibeflip.exception;
 
 import lombok.Getter;
 
+/**
+ * Exception levée lors d'une tentative d'ajout au panier d'un article provenant d'un vendeur différent du panier en cours (règle mono-vendeur).
+ */
 @Getter
 public class SellerConflictException extends RuntimeException {
     private final Long existingSellerId;

@@ -14,6 +14,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * Utilitaire cryptographique pour la génération, la signature et la validation des jetons JWT (JSON Web Tokens).
+ * <p>
+ * Utilise l'algorithme HMAC-SHA avec clé secrète configurable et durée de validité par défaut de 24 heures.
+ * </p>
+ */
 @Component
 public class JwtUtil {
 

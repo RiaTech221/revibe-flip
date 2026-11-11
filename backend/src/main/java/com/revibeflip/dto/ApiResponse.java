@@ -7,6 +7,9 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO de réponse encapsulant les données de ApiResponse.
+ */
 @Data
 @Builder
 @NoArgsConstructor

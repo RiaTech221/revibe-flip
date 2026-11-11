@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST des avis et évaluations de confiance post-livraison.
+ */
 @RestController
 @RequestMapping("/api/reviews")
 @RequiredArgsConstructor

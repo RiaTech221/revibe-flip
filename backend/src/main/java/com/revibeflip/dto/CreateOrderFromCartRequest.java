@@ -7,6 +7,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * DTO de requête pour l'opération CreateOrderFromCartRequest.
+ */
 @Data
 @Builder
 @NoArgsConstructor

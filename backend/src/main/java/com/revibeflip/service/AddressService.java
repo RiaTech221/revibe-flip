@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service métier de gestion des adresses postales et points de livraison des utilisateurs.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

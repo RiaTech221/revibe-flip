@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Objet de transfert de données (DTO) pour SellerProfileDto dans l'écosystème ReVibe FliP.
+ */
 @Data
 @Builder
 @NoArgsConstructor

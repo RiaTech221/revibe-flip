@@ -12,6 +12,9 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+/**
+ * Objet de transfert de données (DTO) pour ChatOfferDto dans l'écosystème ReVibe FliP.
+ */
 @Data
 @Builder
 @NoArgsConstructor

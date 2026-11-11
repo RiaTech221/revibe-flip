@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST du catalogue de catégories et rayons.
+ * Expose les catégories disponibles et permet l'administration des rayons de seconde main.
+ */
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor

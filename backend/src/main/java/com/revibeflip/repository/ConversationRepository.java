@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour les fils de discussion de la messagerie instantanée.
+ */
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
 

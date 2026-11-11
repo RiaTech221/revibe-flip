@@ -7,6 +7,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant un signalement de produit ou d'utilisateur pour la modération.
+ */
 @Entity
 @Table(name = "reports")
 @Getter

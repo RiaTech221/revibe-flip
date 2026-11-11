@@ -4,6 +4,9 @@ import com.revibeflip.entity.enums.ContactMessageStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
+/**
+ * DTO de requête pour l'opération UpdateContactMessageStatusRequest.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

@@ -14,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service d'envoi et de gestion des notifications multi-canaux (in-app, push, WebSocket).
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

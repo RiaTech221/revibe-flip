@@ -20,6 +20,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service métier de négociation de prix et gestion du cycle de vie des offres d'achat (acceptation, refus, expiration 24h).
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

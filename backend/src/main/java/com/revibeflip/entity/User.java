@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Entité JPA représentant un utilisateur inscrit (acheteur, vendeur, administrateur).
+ */
 @Entity
 @Table(name = "users")
 @Getter

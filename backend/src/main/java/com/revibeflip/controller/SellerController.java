@@ -46,6 +46,10 @@ import java.util.List;
 @Tag(name = "Espace Vendeur", description = "Endpoints réservés aux membres vendeurs pour gérer leurs annonces, commandes, transactions, avis et messagerie")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("isAuthenticated()")
+/**
+ * Contrôleur central de l'Espace Vendeur ReVibe FliP.
+ * Fournit le tableau de bord agrégé, les KPIs financiers, le dressing et le suivi des expéditions.
+ */
 public class SellerController {
 
     private final SellerService sellerService;

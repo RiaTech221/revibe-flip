@@ -6,6 +6,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant un instantané versionné d'une page CMS.
+ */
 @Entity
 @Table(name = "cms_page_versions")
 @Getter

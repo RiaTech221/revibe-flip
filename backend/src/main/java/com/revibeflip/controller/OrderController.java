@@ -25,6 +25,10 @@ import java.util.List;
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
 @Tag(name = "Commandes", description = "Gestion des commandes, livraisons et confirmation de réception (Escrow)")
+/**
+ * Contrôleur REST de gestion des commandes.
+ * Orchestre la création de commande avec calcul des frais de validation (1%), livraison et commission (20%).
+ */
 public class OrderController {
 
     private final OrderService orderService;

@@ -6,6 +6,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Objet de transfert de données (DTO) pour CmsPageDto dans l'écosystème ReVibe FliP.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

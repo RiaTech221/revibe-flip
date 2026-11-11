@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Entité JPA représentant une photo associée à une annonce.
+ */
 @Entity
 @Table(name = "product_images")
 @Getter

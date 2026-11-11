@@ -1,5 +1,8 @@
 package com.revibeflip.entity.enums;
 
+/**
+ * Énumération des états du séquestre bancaire (fonds bloqués LOCKED, libérés au vendeur RELEASED, remboursés à l'acheteur REFUNDED).
+ */
 public enum EscrowStatus {
     LOCKED("Fonds bloqués en séquestre"),
     RELEASED_TO_SELLER("Fonds libérés au vendeur"),

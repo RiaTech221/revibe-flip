@@ -1,5 +1,8 @@
 package com.revibeflip.entity.enums;
 
+/**
+ * Énumération des motifs de signalement d'une annonce ou d'un utilisateur.
+ */
 public enum ReportReason {
     MISLEADING_LISTING("Annonce trompeuse"),
     COUNTERFEIT("Contrefaçon présumée"),

@@ -13,6 +13,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * DTO de requête pour l'opération SellerProductRequest.
+ */
 @Data
 @Builder
 @NoArgsConstructor

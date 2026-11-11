@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * DTO de requête pour l'opération UpdatePlatformSettingsRequest.
+ */
 @Data
 @Builder
 @NoArgsConstructor

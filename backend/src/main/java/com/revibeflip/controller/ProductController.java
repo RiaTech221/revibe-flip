@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Contrôleur REST du catalogue public d'articles d'occasion.
+ * Gère la recherche plein texte, les filtres avancés (prix, état, catégorie, ville) et la consultation.
+ */
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor

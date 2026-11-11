@@ -8,6 +8,13 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service de chargement des utilisateurs pour Spring Security.
+ * <p>
+ * Permet l'authentification soit par numéro de téléphone (au format international E.164, ex: +221771112233),
+ * soit par adresse e-mail.
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {

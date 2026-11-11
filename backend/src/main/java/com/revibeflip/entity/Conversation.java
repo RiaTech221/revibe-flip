@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entité JPA représentant un fil de discussion entre acheteur et vendeur pour un produit.
+ */
 @Entity
 @Table(name = "conversations")
 @Getter

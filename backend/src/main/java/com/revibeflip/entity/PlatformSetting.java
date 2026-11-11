@@ -6,6 +6,9 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA stockant les paramètres dynamiques globaux (taux de commission, frais de validation).
+ */
 @Entity
 @Table(name = "platform_settings")
 @Getter

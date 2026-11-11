@@ -7,6 +7,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour l'historique des versions de pages CMS.
+ */
 @Repository
 public interface PageVersionRepository extends JpaRepository<PageVersion, Long> {
 

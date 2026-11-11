@@ -10,6 +10,13 @@ import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration OpenAPI 3 / Swagger pour la documentation interactive de l'API.
+ * <p>
+ * Configure le schéma de sécurité Bearer JWT et les métadonnées de l'API ReVibe FliP.
+ * Accessible via {@code /swagger-ui.html}.
+ * </p>
+ */
 @Configuration
 public class OpenApiConfig {
 

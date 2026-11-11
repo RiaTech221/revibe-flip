@@ -16,6 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Service de traitement des messages de contact et formulaires d'assistance utilisateurs.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

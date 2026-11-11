@@ -13,6 +13,19 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Gestionnaire global des exceptions pour l'ensemble des contrôleurs REST.
+ * <p>
+ * Intercepte et unifie les réponses d'erreur au format standard {@link ApiResponse} :
+ * <ul>
+ *   <li>401 Unauthorized : Identifiants invalides (BadCredentialsException).</li>
+ *   <li>403 Forbidden : Accès refusé (AccessDeniedException).</li>
+ *   <li>400 Bad Request : Arguments invalides ou erreurs de validation Bean Validation.</li>
+ *   <li>409 Conflict : États incohérents ou conflits de panier multi-vendeurs (SellerConflictException).</li>
+ *   <li>500 Internal Server Error : Erreurs inattendues.</li>
+ * </ul>
+ * </p>
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

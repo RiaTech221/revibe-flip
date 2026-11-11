@@ -4,6 +4,9 @@ import lombok.*;
 
 import java.util.Map;
 
+/**
+ * DTO de requête pour l'opération UpdateFooterConfigRequest.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

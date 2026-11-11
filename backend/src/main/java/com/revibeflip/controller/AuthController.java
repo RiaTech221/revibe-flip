@@ -11,6 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Contrôleur REST dédié à l'authentification et à la sécurité des comptes.
+ * Gère l'inscription avec génération de code OTP par SMS, la validation et la connexion par JWT.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entité JPA représentant le panier d'achat d'un utilisateur.
+ */
 @Entity
 @Table(name = "carts")
 @Getter

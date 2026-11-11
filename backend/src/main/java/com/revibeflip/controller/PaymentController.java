@@ -19,6 +19,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
 @Tag(name = "Paiements Mobiles & Escrow", description = "Paiements par Wave, Orange Money, Free Money avec séquestre (Escrow)")
+/**
+ * Contrôleur REST des paiements mobiles (Wave, Orange Money, Free Money).
+ * Gère le séquestre bancaire (Escrow) avec blocage des fonds jusqu'à livraison conforme.
+ */
 public class PaymentController {
 
     private final PaymentService paymentService;

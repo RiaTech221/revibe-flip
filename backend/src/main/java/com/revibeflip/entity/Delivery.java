@@ -7,6 +7,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant le suivi logistique d'une commande.
+ */
 @Entity
 @Table(name = "deliveries")
 @Getter

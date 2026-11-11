@@ -1,5 +1,8 @@
 package com.revibeflip.entity.enums;
 
+/**
+ * Énumération des statuts du cycle logistique d'une commande (en attente, expédié, en transit, livré, annulé).
+ */
 public enum DeliveryStatus {
     PENDING("En attente de prise en charge"),
     PICKED_UP("Pris en charge"),

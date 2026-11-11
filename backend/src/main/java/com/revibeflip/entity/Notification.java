@@ -6,6 +6,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une notification d'activité destinée à un utilisateur.
+ */
 @Entity
 @Table(name = "notifications")
 @Getter

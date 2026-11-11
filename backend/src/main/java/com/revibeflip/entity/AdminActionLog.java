@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une entrée du journal d'audit des actions administratives.
+ */
 @Entity
 @Table(name = "admin_action_logs")
 @Getter

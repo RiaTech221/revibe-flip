@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant une question/réponse fréquente du centre d'aide.
+ */
 @Entity
 @Table(name = "faq_items")
 @Getter

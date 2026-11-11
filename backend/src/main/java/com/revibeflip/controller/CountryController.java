@@ -13,6 +13,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST des pays africains desservis.
+ * Indique les indicatifs téléphoniques (+221, etc.) et devises supportées (FCFA).
+ */
 @RestController
 @RequestMapping("/api/countries")
 @RequiredArgsConstructor

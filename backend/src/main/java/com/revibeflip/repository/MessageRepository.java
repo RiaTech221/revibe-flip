@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Interface Spring Data JPA pour les messages individuels des conversations.
+ */
 @Repository
 public interface MessageRepository extends JpaRepository<Message, Long> {
 

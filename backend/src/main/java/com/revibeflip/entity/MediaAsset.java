@@ -5,6 +5,9 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entité JPA représentant un fichier média stocké sur la plateforme.
+ */
 @Entity
 @Table(name = "media_assets")
 @Getter

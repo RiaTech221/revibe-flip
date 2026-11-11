@@ -15,6 +15,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Contrôleur REST de la messagerie instantanée.
+ * Gère la création des discussions rattachées aux annonces et l'historique des messages.
+ */
 @RestController
 @RequestMapping("/api/messages")
 @RequiredArgsConstructor

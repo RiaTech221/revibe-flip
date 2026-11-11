@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entité JPA représentant une annonce d'article d'occasion mise en vente.
+ */
 @Entity
 @Table(name = "products")
 @Getter

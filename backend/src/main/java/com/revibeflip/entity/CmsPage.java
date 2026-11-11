@@ -13,6 +13,9 @@ import java.util.List;
 @Table(name = "cms_pages", indexes = {
         @Index(name = "idx_cms_pages_slug", columnList = "slug", unique = true)
 })
+/**
+ * Entité JPA représentant une page de contenu éditorial ou légal.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

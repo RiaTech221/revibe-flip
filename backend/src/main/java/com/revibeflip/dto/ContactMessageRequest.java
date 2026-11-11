@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
+/**
+ * DTO de requête pour l'opération ContactMessageRequest.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

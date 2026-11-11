@@ -9,6 +9,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Interface Spring Data JPA pour les évaluations vérifiées et avis acheteurs.
+ */
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
 

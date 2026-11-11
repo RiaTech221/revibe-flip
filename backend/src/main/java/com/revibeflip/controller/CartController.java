@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
 @Tag(name = "Panier (Mono-Vendeur)", description = "Gestion du panier d'achat mono-vendeur avec articles uniques de seconde main")
+/**
+ * Contrôleur REST du panier d'achat ReVibe FliP.
+ * Gère la consultation, l'ajout et le vidage en appliquant la règle stricte du panier mono-vendeur.
+ */
 public class CartController {
 
     private final CartService cartService;

@@ -6,6 +6,9 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Interface Spring Data JPA pour la foire aux questions dynamique.
+ */
 @Repository
 public interface FaqItemRepository extends JpaRepository<FaqItem, Long> {
 

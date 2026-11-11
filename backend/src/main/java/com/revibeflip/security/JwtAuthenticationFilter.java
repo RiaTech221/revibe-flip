@@ -15,6 +15,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Filtre de sécurité interceptant chaque requête HTTP pour valider le jeton JWT.
+ * <p>
+ * Extrait le Bearer token de l'en-tête {@code Authorization}, vérifie sa signature et sa date d'expiration,
+ * puis renseigne le {@link SecurityContextHolder} avec les autorités de l'utilisateur authentifié.
+ * </p>
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j

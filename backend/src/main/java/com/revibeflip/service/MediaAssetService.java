@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Service de gestion et référencement des ressources multimédias de la plateforme.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j

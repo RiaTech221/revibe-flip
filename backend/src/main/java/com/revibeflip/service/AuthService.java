@@ -22,6 +22,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Random;
 
+/**
+ * Service métier d'authentification, inscription, validation OTP par SMS et génération de jetons JWT.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
