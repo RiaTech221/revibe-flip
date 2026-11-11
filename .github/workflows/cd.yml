@@ -1,0 +1,88 @@
+name: CD - ReVibe FliP Deployment
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: 'Environnement cible'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  # ============================================================================
+  # 1. BUILD DES ARTEFACTS DE PRODUCTION
+  # ============================================================================
+  build-and-package:
+    name: Build & Package Production Artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      # Configuration Java 21 & Build JAR Spring Boot
+      - name: Configuration de Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build Backend Executable JAR (Spring Boot)
+        working-directory: backend
+        run: |
+          chmod +x mvnw
+          ./mvnw clean package -DskipTests
+
+      - name: Archivage de l'artefact JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: revibeflip-backend-jar
+          path: backend/target/*.jar
+          retention-days: 7
+
+      # Configuration Node.js 20 & Build SPA Web
+      - name: Configuration de Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build Frontend Web (Vite Production)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Archivage de l'artefact Frontend SPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: revibeflip-frontend-dist
+          path: frontend/dist/
+          retention-days: 7
+
+  # ============================================================================
+  # 2. DÉPLOIEMENT CLOUD / SERVEURS
+  # ============================================================================
+  deploy:
+    name: Déploiement Cloud
+    needs: build-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Téléchargement des artefacts de production
+        uses: actions/download-artifact@v4
+
+      - name: Déploiement vers l'infrastructure
+        run: |
+          echo "✅ Artefacts de production prêts pour le déploiement Cloud (Docker / VPS / PaaS)."
+          echo "Environnement cible : ${{ github.event.inputs.target_env || 'production' }}"
+          ls -la revibeflip-backend-jar/
+          ls -la revibeflip-frontend-dist/
