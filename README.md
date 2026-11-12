@@ -28,6 +28,7 @@
 - 📖 **Documentation Technique Exhaustive (Fichier par fichier)** : [`DOCUMENTATION_COMPLETE_REVIBE_FLIP.md`](DOCUMENTATION_COMPLETE_REVIBE_FLIP.md)
 - 🧪 **Plan de Tests & Cahier de Recette E2E (13 Classes JUnit 5 & Scénarios UAT)** : [`PLAN_DE_TESTS_ET_RECETTE.md`](PLAN_DE_TESTS_ET_RECETTE.md)
 - 🌳 **Guide de Contribution & Git Workflow Professionnel** : [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- 🚀 **Guide de Déploiement en Production (VPS Hostinger & Docker)** : [`DEPLOYMENT.md`](DEPLOYMENT.md)
 - ⚙️ **Pipelines CI/CD (GitHub Actions)** : [`.github/workflows/ci.yml`](.github/workflows/ci.yml) & [`.github/workflows/cd.yml`](.github/workflows/cd.yml)
 
 ---
