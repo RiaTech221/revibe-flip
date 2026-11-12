@@ -11,10 +11,12 @@ import axios from 'axios';
 
 /**
  * URL de base de l'API REST Backend Spring Boot.
- * Configurable via la variable d'environnement VITE_API_URL.
+ * Configurable via VITE_API_URL ou VITE_API_BASE_URL (ex: '/api' en production Nginx ou 'http://localhost:8080/api' en dev local).
  */
 export const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_URL || 'http://localhost:8080/api';
+  (import.meta as any).env?.VITE_API_URL ||
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  'http://localhost:8080/api';
 
 /**
  * Client HTTP Axios centralisé pour la plateforme ReVibe FliP.

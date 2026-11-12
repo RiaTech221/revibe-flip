@@ -5,6 +5,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Argument de build permettant d'utiliser le reverse-proxy Nginx (/api) sur un VPS
+ARG VITE_API_URL=/api
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_API_BASE_URL=$VITE_API_URL
+
 # Copie des manifests de packages pour le cache
 COPY package.json package-lock.json ./
 RUN npm ci

@@ -40,9 +40,12 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-rootpassword}
       REVIBE_JWT_SECRET: ${REVIBE_JWT_SECRET:-9a3f2c5d8e1b4a7f0c3e6b9d2a5f8e1b4a7f0c3e6b9d2a5f8e1b4a7f0c3e6b9d}
+      UPLOAD_DIR: /app/uploads/
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:+UseG1GC"
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -56,6 +59,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api}
     container_name: revibeflip-frontend
     restart: unless-stopped
     ports:
@@ -82,6 +87,8 @@ services:
 
 volumes:
   mysql_data:
+    driver: local
+  uploads_data:
     driver: local
 
 networks:

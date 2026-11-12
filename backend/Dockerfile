@@ -21,8 +21,10 @@ FROM eclipse-temurin:21-jre-jammy AS runner
 
 WORKDIR /app
 
-# Création d'un utilisateur non-root pour la sécurité en production
-RUN groupadd -r spring && useradd -r -g spring spring
+# Création d'un utilisateur non-root et du répertoire persistant d'uploads
+RUN groupadd -r spring && useradd -r -g spring spring \
+    && mkdir -p /app/uploads && chown -R spring:spring /app/uploads
+
 USER spring:spring
 
 # Copie du JAR depuis le stage de compilation
@@ -30,7 +32,10 @@ COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
 
 # Variables d'environnement par défaut
 ENV SPRING_PROFILES_ACTIVE=mysql \
+    UPLOAD_DIR=/app/uploads/ \
     JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+
+VOLUME ["/app/uploads"]
 
 EXPOSE 8080
 
