@@ -22,6 +22,8 @@ export const authApi = {
   forgotPassword: (phone: string) => api.post('/auth/forgot-password', { phone }),
   resetPassword: (data: { phone: string; otpCode: string; newPassword: string }) =>
     api.post('/auth/reset-password', data),
+  refresh: () => api.post('/auth/refresh', {}),
+  logout: () => api.post('/auth/logout', {}),
   getMe: () => api.get<{ success: boolean; data: User }>('/auth/me'),
 };
 

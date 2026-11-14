@@ -7,6 +7,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminCmsApi } from '../../services/api';
+import { sanitizeHtml } from '../../utils/sanitizeHtml';
 import {
   CmsPage,
   PageVersion,
@@ -1443,7 +1444,7 @@ export const AdminContentManager: React.FC = () => {
               </div>
             ) : (
               <div className="border border-gray-200 rounded-2xl p-6 max-h-[400px] overflow-y-auto bg-slate-50 text-xs sm:text-sm text-gray-700 leading-relaxed">
-                <div dangerouslySetInnerHTML={{ __html: pageForm.content }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(pageForm.content) }} />
               </div>
             )}
 
