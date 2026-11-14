@@ -35,11 +35,11 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Build Backend Executable JAR (Spring Boot)
+      - name: Build Backend Executable JAR (Spring Boot - Profil Prod)
         working-directory: backend
         run: |
           chmod +x mvnw
-          ./mvnw clean package -DskipTests
+          ./mvnw clean package -Pprod -DskipTests
 
       - name: Archivage de l'artefact JAR
         uses: actions/upload-artifact@v4
