@@ -34,6 +34,7 @@ import { AdminOrdersSection } from '../components/admin/AdminOrdersSection';
 import { AdminPaymentsSection } from '../components/admin/AdminPaymentsSection';
 import { AdminReportsSection } from '../components/admin/AdminReportsSection';
 import { AdminSettingsSection } from '../components/admin/AdminSettingsSection';
+import { AdminAuditSection } from '../components/admin/AdminAuditSection';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
 import { AdminModals } from '../components/admin/AdminModals';
 
@@ -338,8 +339,8 @@ export const AdminPage: React.FC = () => {
   }, [reportPage, reportFilter]);
 
   useEffect(() => {
-    if (activeTab === 'settings') fetchSettingsAndAudit();
-  }, [auditPage]);
+    if (activeTab === 'audit' || activeTab === 'settings') fetchSettingsAndAudit();
+  }, [auditPage, activeTab]);
 
   const handleRefreshAll = async () => {
     setRefreshing(true);
@@ -354,19 +355,6 @@ export const AdminPage: React.FC = () => {
       fetchSettingsAndAudit(),
     ]);
     setRefreshing(false);
-  };
-
-  const handleReseedDev = async () => {
-    try {
-      setRefreshing(true);
-      await adminApi.reseedDevData(true);
-      await fetchDashboard(period, customFrom, customTo);
-      await Promise.all([fetchOrders(), fetchPayments(), fetchReports()]);
-    } catch (e) {
-      console.error('Error reseeding dev data', e);
-    } finally {
-      setRefreshing(false);
-    }
   };
 
   // Action handlers
@@ -665,7 +653,6 @@ export const AdminPage: React.FC = () => {
             onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
             onNavigateTab={handleNavigateTab}
             formatPrice={formatPrice}
-            onReseedData={handleReseedDev}
           />
         )}
 
@@ -751,6 +738,18 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
+        {activeTab === 'audit' && (
+          <AdminAuditSection
+            auditLogs={auditLogs}
+            auditPage={auditPage}
+            auditTotalPages={auditTotalPages}
+            auditTotalElements={auditTotalElements}
+            setAuditPage={setAuditPage}
+            formatDate={formatDate}
+            renderPagination={renderPagination}
+          />
+        )}
+
         {activeTab === 'settings' && (
           <AdminSettingsSection
             platformSettings={platformSettings}
@@ -773,13 +772,6 @@ export const AdminPage: React.FC = () => {
             settingsSavedMessage={settingsSavedMessage}
             actionLoading={actionLoading}
             onSaveSettings={handleSaveSettings}
-            auditLogs={auditLogs}
-            auditPage={auditPage}
-            auditTotalPages={auditTotalPages}
-            auditTotalElements={auditTotalElements}
-            setAuditPage={setAuditPage}
-            formatDate={formatDate}
-            renderPagination={renderPagination}
           />
         )}
 

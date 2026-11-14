@@ -47,7 +47,6 @@ interface AdminKpiSectionProps {
   onToggleAutoRefresh: () => void;
   onNavigateTab: (tab: string, filter?: string) => void;
   formatPrice: (price?: number | null) => string;
-  onReseedData?: () => void;
 }
 
 export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
@@ -67,7 +66,6 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
   onToggleAutoRefresh,
   onNavigateTab,
   formatPrice,
-  onReseedData,
 }) => {
   if (error && !dashboard) {
     return <DashboardError message={error} onRetry={onRefresh} />;
@@ -110,7 +108,6 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
         lastUpdated={dashboard.lastUpdated}
         autoRefresh={autoRefresh}
         onToggleAutoRefresh={onToggleAutoRefresh}
-        onReseedData={onReseedData}
       />
 
       {/* 2. Bandeau « À traiter » en haut */}
@@ -142,9 +139,9 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
           onClick={() => onNavigateTab('orders', 'COMPLETED')}
         />
 
-        {/* Fonds sous séquestre */}
+        {/* Fonds conservés */}
         <MetricCard
-          title="Fonds séquestrés"
+          title="Fonds conservés"
           value={formatPrice(dashboard.escrowLockedFunds?.value ?? 0)}
           icon={<ShieldCheck className="w-4 h-4 text-emerald-600" />}
           iconBgColor="bg-emerald-50 text-emerald-600"
