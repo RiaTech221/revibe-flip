@@ -58,7 +58,7 @@ Ce cahier détaille les scénarios de test fonctionnels à exécuter manuellemen
 - **Prérequis** : Aucun compte existant avec le numéro `+221779998877`.
 - **Étapes** :
   1. Envoyer une requête `POST /api/auth/register` avec prénom, nom, téléphone, mot de passe.
-  2. Vérifier que la réponse renvoie un code de démonstration OTP à 6 chiffres et `isVerified = false`.
+  2. Vérifier que l'OTP à 6 chiffres est généré via `SecureRandom`, haché en base et envoyé via `SmsProvider` (jamais exposé dans la réponse API), avec `isVerified = false`.
   3. Envoyer une requête `POST /api/auth/verify-otp` avec le code reçu.
 - **Résultat Attendu** : Le compte passe à `isVerified = true`, un token JWT valide est émis, l'utilisateur peut se connecter.
 - **Vérification Code** : Couvert par `RevibeFlipIntegrationTests#testEndToEndV1Flow` (lignes 50-76).
