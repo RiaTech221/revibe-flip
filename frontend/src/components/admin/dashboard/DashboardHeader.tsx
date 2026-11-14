@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { RefreshCw, Zap, Calendar } from 'lucide-react';
+import { RefreshCw, Calendar } from 'lucide-react';
 import { User } from '../../../types';
 
 interface DashboardHeaderProps {
@@ -22,7 +22,6 @@ interface DashboardHeaderProps {
   lastUpdated?: string;
   autoRefresh: boolean;
   onToggleAutoRefresh: () => void;
-  onReseedData?: () => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -39,7 +38,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   lastUpdated,
   autoRefresh,
   onToggleAutoRefresh,
-  onReseedData,
 }) => {
   const firstName =
     currentUser?.firstName ||
@@ -54,12 +52,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     { id: 'custom', label: 'Personnalisé' },
   ];
 
-  const formattedTime = lastUpdated
-    ? new Date(lastUpdated).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : null;
+  const formattedTime = (() => {
+    if (!lastUpdated) return null;
+    const parsed = new Date(lastUpdated);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+    return /^\d{1,2}:\d{2}(:\d{2})?$/.test(lastUpdated.trim()) ? lastUpdated.trim().slice(0, 5) : null;
+  })();
 
   return (
     <div className="space-y-3">
@@ -79,18 +79,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
         {/* Right actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          {onReseedData && (
-            <button
-              type="button"
-              onClick={onReseedData}
-              title="Générer 15 commandes et données dev"
-              className="px-2.5 py-1.5 rounded-xl text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/60 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-            >
-              <Zap className="w-3.5 h-3.5 text-purple-600" />
-              <span>Données démo</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={onToggleAutoRefresh}

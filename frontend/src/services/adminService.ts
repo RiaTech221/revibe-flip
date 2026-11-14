@@ -37,8 +37,6 @@ import {
 export const adminApi = {
   getDashboard: (params?: { period?: string; from?: string; to?: string }) =>
     api.get<{ success: boolean; data: AdminDashboard }>('/admin/dashboard', { params }),
-  reseedDevData: (forceReset = true) =>
-    api.post<{ success: boolean; data: string }>(`/admin/dev/reseed?forceReset=${forceReset}`),
   getUsers: (params?: { query?: string; role?: string; isSuspended?: boolean; page?: number; size?: number }) =>
     api.get<{ success: boolean; data: PageResponse<User> }>('/admin/users', { params }),
   getUserDetails: (id: number) =>
