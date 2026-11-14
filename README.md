@@ -10,13 +10,15 @@
 
 **ReVibe FliP** est une plateforme web et mobile de revente d'articles de seconde main (vêtements, chaussures, accessoires, tenues traditionnelles et Wax), conçue pour les réalités sénégalaises et africaines.
 
-### Fonctionnalités principales :
-- **Paiements Mobiles Locaux (PayTech)** : Intégration serveur PayTech (`https://doc.paytech.sn`) pour **Wave**, **Orange Money** et **Free Money**, avec vérification IPN SHA-256, contrôle de statut serveur et grand livre immuable (`ledger_entries`).
-- **Conservation des Fonds jusqu'à Réception** : Le paiement de l'acheteur est conservé par ReVibe FliP jusqu'à la confirmation de réception (ou auto-confirmation après le délai paramétré, hors litige ouvert).
+### Fonctionnalités principales (100% réelles, zéro simulation) :
+- **Paiements Mobiles Locaux (PayTech)** : Intégration serveur PayTech (`https://doc.paytech.sn`) pour **Wave**, **Orange Money** et **Free Money** (aucun paiement simulé), avec vérification IPN SHA-256, contrôle de statut serveur, versements vendeurs et grand livre immuable (`ledger_entries`).
+- **Authentification & OTP SMS Réel** : Inscription et réinitialisation de mot de passe par code OTP à 6 chiffres (`SecureRandom` haché en base) envoyé via `SmsProvider` (`ConfigurableHttpSmsProvider`), avec rate limiting et rotation de Refresh Token en cookie `HttpOnly` (JWT d'accès 15 min).
+- **Conservation des Fonds jusqu'à Réception** : Le paiement de l'acheteur est conservé par ReVibe FliP jusqu'à la confirmation de réception (ou auto-confirmation planifiée par `OrderAutoConfirmScheduler` après le délai paramétré, hors litige ouvert).
 - **Frais de Validation (1%) & Commission (20%)** : Recalculés exclusivement côté serveur depuis la base de données.
 - **Livraison Adaptée** : Choix entre **Livraison à domicile** et **Remise en main propre**, avec suivi pas à pas (`PENDING` $\rightarrow$ `PICKED_UP` $\rightarrow$ `IN_TRANSIT` $\rightarrow$ `OUT_FOR_DELIVERY` $\rightarrow$ `DELIVERED`).
-- **Messagerie Acheteur-Vendeur** : Discussion instantanée liée à l'annonce via WebSocket STOMP authentifié par JWT.
+- **Messagerie Acheteur-Vendeur** : Discussion instantanée réelle liée à l'annonce via WebSocket STOMP authentifié par JWT (aucune réponse vendeur simulée).
 - **Système de Confiance & Avis** : Évaluation 1 à 5 étoiles, score de confiance et signalements.
+- **Sécurité & Conformité RGPD** : Validation stricte des images uploadées (magic bytes + suppression EXIF), assainissement HTML anti-XSS (`HtmlSanitizerService`), blocage immédiat des comptes suspendus, CSP/CORS stricts et endpoints RGPD (export/suppression).
 - **Back-Office Administrateur** : KPIs financiers, gestion et suspension des utilisateurs, modération des annonces, suivi des paiements/versements, litiges, CMS et **Journal d'Audit** dédié.
 
 ---
@@ -36,10 +38,10 @@
 
 - **Backend** : Java 21, Spring Boot 3.4.3, Spring Security 6 (JWT 15 min + Refresh Token rotatif en cookie `HttpOnly`), Spring Data JPA / Hibernate, Flyway (MySQL 8 en prod), WebSocket STOMP.
 - **Base de données** :
-  - **Développement (`dev`)** : H2 en mémoire (`jdbc:h2:mem:revibeflip_db`).
-  - **Production (`prod`)** : MySQL 8.0 avec migrations Flyway (`ddl-auto=validate`).
-- **Frontend Web** : React 18, TypeScript, Tailwind CSS, Vite, Lucide Icons, Axios, STOMP.
-- **Application Mobile** : React Native / Expo (TypeScript) dans `mobile/`.
+  - **Développement (`dev`)** : H2 en mémoire (`jdbc:h2:mem:revibeflip_db`) ou **MySQL 8.0** local.
+  - **Production (`prod`)** : **MySQL 8.0** avec migrations **Flyway** (`ddl-auto=validate`).
+- **Frontend Web** : React 18, TypeScript, Tailwind CSS, Vite, Lucide Icons, Axios (token d'accès en mémoire + refresh cookie `HttpOnly`, sans sourcemaps en prod), STOMP.
+- **Application Mobile** : React Native / Expo (TypeScript) dans `mobile/` (HTTPS imposé en prod, rotation du refresh token, validation des deep-links PayTech).
 
 ---
 
