@@ -46,7 +46,6 @@ public class ContentSettingService {
                 .supportPhone(s.getSupportPhone())
                 .supportAddress(s.getSupportAddress())
                 .supportHours(s.getSupportHours())
-                .demoMode(s.getDemoMode())
                 .logoDarkBgUrl(s.getLogoDarkBgUrl())
                 .logoLightBgUrl(s.getLogoLightBgUrl())
                 .socialLinks(socials)
@@ -65,7 +64,6 @@ public class ContentSettingService {
         if (request.getSupportPhone() != null) s.setSupportPhone(request.getSupportPhone().trim());
         if (request.getSupportAddress() != null) s.setSupportAddress(request.getSupportAddress().trim());
         if (request.getSupportHours() != null) s.setSupportHours(request.getSupportHours().trim());
-        if (request.getDemoMode() != null) s.setDemoMode(request.getDemoMode());
         if (request.getLogoDarkBgUrl() != null) s.setLogoDarkBgUrl(request.getLogoDarkBgUrl().trim());
         if (request.getLogoLightBgUrl() != null) s.setLogoLightBgUrl(request.getLogoLightBgUrl().trim());
 

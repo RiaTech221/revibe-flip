@@ -18,6 +18,18 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # 0. CONTRÔLE PROPRETÉ PRODUCTION (Zéro simulation / mock / résidu)
+  # ============================================================================
+  production-hygiene:
+    name: Production Hygiene Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+      - name: Vérification des mots interdits en production
+        run: bash scripts/check-forbidden-words.sh
+
+  # ============================================================================
   # 1. BACKEND - Java 21 / Spring Boot 3 / Maven
   # ============================================================================
   backend-ci:
@@ -68,6 +80,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Audit de sécurité npm
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
   # ============================================================================
   # 3. MOBILE - React Native / Expo / TypeScript
   # ============================================================================
@@ -93,3 +109,7 @@ jobs:
       - name: Vérification TypeScript (noEmit)
         working-directory: mobile
         run: npx tsc --noEmit
+
+      - name: Audit de sécurité npm
+        working-directory: mobile
+        run: npm audit --audit-level=high

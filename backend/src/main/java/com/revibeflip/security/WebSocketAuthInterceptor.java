@@ -19,7 +19,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Principal;
-import java.util.Optional;
+import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,6 +46,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final ConversationRepository conversationRepository;
 
     private static final Pattern CONVERSATION_TOPIC_PATTERN = Pattern.compile("^/topic/conversations/(\\d+)$");
+    private final Map<String, Deque<Instant>> sendBuckets = new ConcurrentHashMap<>();
 
     @Override
     public Message<?> preSend(Message<?> message, MessageChannel channel) {
@@ -50,7 +55,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
         StompCommand command = accessor.getCommand();
 
-        // 1. Authentification lors du handshake STOMP CONNECT
+        // 1. Authentification obligatoire lors du handshake STOMP CONNECT
         if (StompCommand.CONNECT.equals(command)) {
             String authHeader = accessor.getFirstNativeHeader("Authorization");
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -60,22 +65,48 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 }
             }
 
-            if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                String token = authHeader.substring(7);
-                try {
-                    String username = jwtUtil.extractUsername(token);
-                    if (username != null) {
-                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                        if (jwtUtil.validateToken(token, userDetails)) {
-                            UsernamePasswordAuthenticationToken auth =
-                                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                            accessor.setUser(auth);
-                            log.debug("WebSocket authentifié pour l'utilisateur: {}", username);
-                        }
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                throw new AccessDeniedException("Jeton JWT requis pour la connexion WebSocket.");
+            }
+            String token = authHeader.substring(7);
+            try {
+                String username = jwtUtil.extractUsername(token);
+                if (username != null) {
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    if (userDetails instanceof User u && Boolean.TRUE.equals(u.getIsSuspended())) {
+                        throw new AccessDeniedException("Compte suspendu.");
                     }
-                } catch (Exception e) {
-                    log.warn("Échec validation JWT WebSocket: {}", e.getMessage());
+                    if (jwtUtil.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken auth =
+                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                        accessor.setUser(auth);
+                    } else {
+                        throw new AccessDeniedException("Jeton JWT invalide.");
+                    }
                 }
+            } catch (AccessDeniedException ex) {
+                throw ex;
+            } catch (Exception e) {
+                throw new AccessDeniedException("Authentification WebSocket invalide.");
+            }
+        }
+
+        if (StompCommand.SEND.equals(command)) {
+            Principal principal = accessor.getUser();
+            if (principal == null) {
+                throw new AccessDeniedException("Authentification requise.");
+            }
+            String key = accessor.getSessionId() != null ? accessor.getSessionId() : principal.getName();
+            Instant now = Instant.now();
+            Deque<Instant> deque = sendBuckets.computeIfAbsent(key, k -> new ArrayDeque<>());
+            synchronized (deque) {
+                while (!deque.isEmpty() && deque.peekFirst().isBefore(now.minusSeconds(60))) {
+                    deque.pollFirst();
+                }
+                if (deque.size() >= 30) {
+                    throw new AccessDeniedException("Débit de messages WebSocket dépassé.");
+                }
+                deque.addLast(now);
             }
         }
 

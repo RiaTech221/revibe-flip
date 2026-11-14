@@ -24,7 +24,6 @@ import {
   SellerRatingBreakdown,
   SellerQuickLists,
   SellerContextualTips,
-  SellerDemoModeBanner,
 } from './dashboard';
 
 interface SellerOverviewTabProps {
@@ -94,10 +93,7 @@ export const SellerOverviewTab: React.FC<SellerOverviewTabProps> = ({
       {/* 2. Alerte compte suspendu si actif */}
       <SellerSuspendedBanner isSuspended={isSuspended} />
 
-      {/* 3. Bannière discrète mode démo si actif */}
-      <SellerDemoModeBanner demoMode={dashboard?.demoMode} />
-
-      {/* 4. Bandeau « À faire » non tronqué et focalisé sur l'action */}
+      {/* 3. Bandeau « À faire » non tronqué et focalisé sur l'action */}
       <SellerActionItemsBanner
         actionItems={dashboard?.actionItems}
         onNavigateTab={onNavigateTab}

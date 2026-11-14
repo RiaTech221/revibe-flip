@@ -20,7 +20,6 @@ import {
   DashboardHeader,
   DashboardSkeleton,
   DashboardError,
-  DemoModeBanner,
   ActionItemsBanner,
   MetricCard,
   SalesTrendChart,
@@ -114,10 +113,7 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
         onReseedData={onReseedData}
       />
 
-      {/* 2. Bannière discrète mode démo */}
-      <DemoModeBanner demoMode={dashboard.demoMode} />
-
-      {/* 3. Bandeau « À traiter » en haut */}
+      {/* 2. Bandeau « À traiter » en haut */}
       <ActionItemsBanner
         actionItems={dashboard.actionItems}
         onNavigateTab={onNavigateTab}
@@ -152,7 +148,7 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
           value={formatPrice(dashboard.escrowLockedFunds?.value ?? 0)}
           icon={<ShieldCheck className="w-4 h-4 text-emerald-600" />}
           iconBgColor="bg-emerald-50 text-emerald-600"
-          tooltipText="Montant payé par les acheteurs et conservé jusqu’à la confirmation de réception. Simulation interne : le blocage réel des fonds nécessite l’intégration du prestataire de paiement et la validation du cadre juridique."
+          tooltipText="Montant payé par les acheteurs et conservé par ReVibe FliP jusqu’à la confirmation de réception."
           onClick={() => onNavigateTab('payments', 'LOCKED')}
         />
 

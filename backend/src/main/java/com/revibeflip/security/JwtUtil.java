@@ -3,6 +3,7 @@ package com.revibeflip.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
@@ -15,10 +16,8 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Utilitaire cryptographique pour la génération, la signature et la validation des jetons JWT (JSON Web Tokens).
- * <p>
- * Utilise l'algorithme HMAC-SHA avec clé secrète configurable et durée de validité par défaut de 24 heures.
- * </p>
+ * Utilitaire cryptographique pour la génération, la signature et la validation des jetons JWT.
+ * Utilise explicitement HS256 avec clé >= 256 bits issue de l'environnement et durée de vie courte (15 min).
  */
 @Component
 public class JwtUtil {
@@ -26,8 +25,15 @@ public class JwtUtil {
     @Value("${revibeflip.jwt.secret}")
     private String secret;
 
-    @Value("${revibeflip.jwt.expiration-ms:86400000}")
+    @Value("${revibeflip.jwt.expiration-ms:900000}")
     private long jwtExpirationMs;
+
+    @PostConstruct
+    void validateSecret() {
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("REVIBE_JWT_SECRET doit contenir au moins 32 octets (256 bits).");
+        }
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
@@ -73,7 +79,7 @@ public class JwtUtil {
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(getSigningKey())
+                .signWith(getSigningKey(), Jwts.SIG.HS256)
                 .compact();
     }
 

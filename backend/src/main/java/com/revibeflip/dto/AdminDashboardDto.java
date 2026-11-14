@@ -26,7 +26,6 @@ public class AdminDashboardDto {
     private String startDate;
     private String endDate;
     private String lastUpdated;
-    private boolean demoMode;
     private String currency; // FCFA
     private BigDecimal commissionRate; // ex: 20.0 %
     private BigDecimal validationFeeRate; // ex: 1.0 %

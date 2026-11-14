@@ -5,7 +5,6 @@
  */
 
 export * from './DashboardHeader';
-export * from './DemoModeBanner';
 export * from './ActionItemsBanner';
 export * from './MetricCard';
 export * from './SalesTrendChart';

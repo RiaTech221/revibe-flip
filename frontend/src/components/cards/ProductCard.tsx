@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Composant Carte Réutilisable : ProductCard
  * 
  * Élément graphique d'affichage de données sous forme de carte interactive (ProductCard).
@@ -30,7 +30,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     product.primaryImage ||
     (product.images && product.images.length > 0
       ? product.images[0]
-      : 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80');
+      : '/placeholder-product.svg');
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();

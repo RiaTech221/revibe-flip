@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Page Détail d'un Produit ReVibe FliP
  * 
  * Fiche descriptive complète d'une annonce d'article en vente :
@@ -14,7 +14,6 @@ import { Product, ReportReason } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { EscrowShield } from '../components/EscrowShield';
-import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import {
   ShieldCheck,
   MapPin,
@@ -57,25 +56,17 @@ export const ProductDetailPage: React.FC = () => {
     setLoading(true);
 
     const numId = Number(id);
-    const fallback = CURATED_PRODUCTS.find((p) => p.id === numId);
 
     productApi.getById(numId)
       .then((res) => {
         if (res.data && res.data.data) {
           setProduct(res.data.data);
-        } else if (fallback) {
-          setProduct(fallback);
         } else {
           setError('Article introuvable ou indisponible.');
         }
       })
-      .catch((err) => {
-        if (fallback) {
-          setProduct(fallback);
-        } else {
-          setError('Article introuvable ou indisponible.');
-          console.error(err);
-        }
+      .catch(() => {
+        setError('Article introuvable ou indisponible.');
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -168,7 +159,7 @@ export const ProductDetailPage: React.FC = () => {
   const isOwner = user?.id === product.seller?.id;
   const isSold = product.status === 'SOLD';
   const validationFee = Math.round(product.price * 0.01);
-  const images = product.images && product.images.length > 0 ? product.images : ['https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80'];
+  const images = product.images && product.images.length > 0 ? product.images : ['/placeholder-product.svg'];
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

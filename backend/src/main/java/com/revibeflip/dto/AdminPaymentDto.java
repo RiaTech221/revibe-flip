@@ -11,10 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * DTO de transaction financière pour la console administrateur.
- *
- * NOTE SUR LE SÉQUESTRE :
- * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
- * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
  */
 @Data
 @Builder

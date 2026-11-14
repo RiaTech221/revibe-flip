@@ -346,7 +346,6 @@ export interface AdminDashboard {
   startDate?: string;
   endDate?: string;
   lastUpdated?: string;
-  demoMode?: boolean;
   currency?: string;
   commissionRate?: number;
   validationFeeRate?: number;
@@ -442,7 +441,6 @@ export interface PlatformSettings {
   currency: string;
   offerValidityHours?: number;
   reservationDurationHours?: number;
-  demoMode?: boolean;
   updatedBy: string;
   updatedAt: string;
 }
@@ -529,7 +527,6 @@ export interface FooterConfig {
   supportPhone: string;
   supportAddress: string;
   supportHours: string;
-  demoMode: boolean;
   logoDarkBgUrl?: string;
   logoLightBgUrl?: string;
   socialLinks: Record<string, string>;

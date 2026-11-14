@@ -1,10 +1,5 @@
 /**
- * Service de Paiement Mobile Money et Séquestre Mobile ReVibe FliP
- * 
- * Intègre les paiements Mobile Money sous séquestre garanti ReVibe Shield :
- *  * - initiatePayment : initialisation de la transaction Mobile Money (Wave, Orange Money, MTN MoMo, Moov)
- *  * - getEscrowStatus : consultation en temps réel de la consignation des fonds sous séquestre
- *  * - confirmPayment : confirmation de capture des fonds par l'opérateur
+ * Service de paiement PayTech Mobile — ReVibe FliP
  */
 
 import api from '../api';
@@ -14,24 +9,31 @@ export interface PaymentInitializationPayload {
   orderId: number;
   paymentMethod: PaymentMethod;
   phoneNumber?: string;
-  returnUrl?: string;
 }
 
-export interface PaymentResponse {
-  paymentId: number;
-  status: string;
-  transactionRef: string;
-  paymentUrl?: string;
+export interface PaymentInitiationResponse {
+  orderId: number;
+  orderNumber: string;
+  reference: string;
+  token: string;
+  redirectUrl: string;
+  amount: number;
+  currency: string;
 }
 
 export const paymentService = {
-  initializePayment: async (payload: PaymentInitializationPayload): Promise<PaymentResponse> => {
-    const res = await api.post('/payments/initialize', payload);
+  initializePayment: async (payload: PaymentInitializationPayload): Promise<PaymentInitiationResponse> => {
+    const res = await api.post('/payments/initiate', payload);
     return res.data?.data;
   },
 
-  getPaymentStatus: async (orderId: number): Promise<PaymentResponse> => {
-    const res = await api.get(`/payments/order/${orderId}/status`);
+  verifyPaymentStatus: async (orderId: number) => {
+    const res = await api.get(`/payments/order/${orderId}/verify`);
+    return res.data?.data;
+  },
+
+  getPaymentStatus: async (orderId: number) => {
+    const res = await api.get(`/payments/order/${orderId}`);
     return res.data?.data;
   },
 };

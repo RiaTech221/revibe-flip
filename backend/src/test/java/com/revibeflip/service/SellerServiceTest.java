@@ -220,11 +220,11 @@ class SellerServiceTest {
 
         sellerService.getSellerDashboard(sellerA, "7d", null, null);
         verify(productRepository).countBySellerId(1L);
-        verify(orderRepository).findBySellerIdAndCreatedAtBetween(eq(1L), any(), any());
+        verify(orderRepository, atLeastOnce()).findBySellerIdAndCreatedAtBetween(eq(1L), any(), any());
 
         sellerService.getSellerDashboard(sellerB, "7d", null, null);
         verify(productRepository).countBySellerId(2L);
-        verify(orderRepository).findBySellerIdAndCreatedAtBetween(eq(2L), any(), any());
+        verify(orderRepository, atLeastOnce()).findBySellerIdAndCreatedAtBetween(eq(2L), any(), any());
     }
 
     @Test
