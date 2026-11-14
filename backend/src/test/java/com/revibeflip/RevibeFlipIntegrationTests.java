@@ -11,7 +11,9 @@ import com.revibeflip.payment.PayTechProperties;
 import com.revibeflip.payment.PaymentGateway;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.service.*;
+import com.revibeflip.sms.SmsProvider;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -21,9 +23,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -46,6 +52,9 @@ class RevibeFlipIntegrationTests {
 
     @MockitoBean
     private PaymentGateway paymentGateway;
+
+    @MockitoBean
+    private SmsProvider smsProvider;
 
     @Autowired
     private PaymentService paymentService;
@@ -72,17 +81,24 @@ class RevibeFlipIntegrationTests {
                 .countryCode("SN")
                 .build();
 
-        AuthResponse regResponse = authService.register(registerReq);
+        AuthResponse regResponse = authService.register(registerReq, "127.0.0.1");
         assertNotNull(regResponse);
         assertFalse(regResponse.getUser().getIsVerified(), "Le compte n'est pas encore vérifié");
 
         var registeredUser = userRepository.findByPhone(registerReq.getPhone()).orElseThrow();
-        assertNotNull(registeredUser.getOtpCode(), "Le code OTP doit être généré");
+        assertNotNull(registeredUser.getOtpCode(), "Le code OTP doit être généré et haché");
+
+        ArgumentCaptor<String> smsCaptor = ArgumentCaptor.forClass(String.class);
+        verify(smsProvider).sendSms(eq(registerReq.getPhone()), smsCaptor.capture());
+        Matcher matcher = Pattern.compile("(\\d{6})").matcher(smsCaptor.getValue());
+        assertTrue(matcher.find(), "Le SMS doit contenir un code à 6 chiffres");
+        String rawOtp = matcher.group(1);
+        assertNotEquals(rawOtp, registeredUser.getOtpCode(), "L'OTP doit être haché en base");
 
         // 2. Validation OTP
         VerifyOtpRequest verifyReq = VerifyOtpRequest.builder()
                 .phone(registerReq.getPhone())
-                .otpCode(registeredUser.getOtpCode())
+                .otpCode(rawOtp)
                 .build();
 
         AuthResponse authResponse = authService.verifyOtp(verifyReq);

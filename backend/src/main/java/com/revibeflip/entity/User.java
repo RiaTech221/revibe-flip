@@ -58,11 +58,34 @@ public class User implements UserDetails {
     private Boolean isVerified = false;
 
     @JsonIgnore
-    @Column(length = 10)
+    @Column(length = 120)
     private String otpCode;
 
     @JsonIgnore
     private LocalDateTime otpExpiresAt;
+
+    @JsonIgnore
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer otpAttempts = 0;
+
+    @JsonIgnore
+    private LocalDateTime otpLastSentAt;
+
+    @JsonIgnore
+    @Column(length = 120)
+    private String resetOtpCode;
+
+    @JsonIgnore
+    private LocalDateTime resetOtpExpiresAt;
+
+    @JsonIgnore
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer resetOtpAttempts = 0;
+
+    @JsonIgnore
+    private LocalDateTime resetOtpLastSentAt;
 
     @Column(length = 255)
     private String profilePicture;

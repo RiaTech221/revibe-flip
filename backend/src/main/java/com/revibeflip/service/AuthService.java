@@ -1,10 +1,6 @@
 package com.revibeflip.service;
 
-import com.revibeflip.dto.AuthResponse;
-import com.revibeflip.dto.LoginRequest;
-import com.revibeflip.dto.RegisterRequest;
-import com.revibeflip.dto.UserDto;
-import com.revibeflip.dto.VerifyOtpRequest;
+import com.revibeflip.dto.*;
 import com.revibeflip.entity.Country;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.NotificationType;
@@ -12,6 +8,8 @@ import com.revibeflip.entity.enums.Role;
 import com.revibeflip.repository.CountryRepository;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.security.JwtUtil;
+import com.revibeflip.sms.OtpRateLimiter;
+import com.revibeflip.sms.SmsProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -19,28 +17,34 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Random;
 
 /**
- * Service métier d'authentification, inscription, validation OTP par SMS et génération de jetons JWT.
+ * Service métier d'authentification, inscription, validation OTP par SMS et réinitialisation de mot de passe.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuthService {
 
+    private static final int OTP_TTL_MINUTES = 10;
+    private static final int MAX_OTP_ATTEMPTS = 5;
+
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final NotificationService notificationService;
+    private final SmsProvider smsProvider;
+    private final OtpRateLimiter otpRateLimiter;
 
-    private final Random random = new Random();
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, String clientIp) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
+        validatePasswordStrength(request.getPassword());
 
         if (userRepository.existsByPhone(cleanPhone)) {
             throw new IllegalArgumentException("Ce numéro de téléphone est déjà utilisé.");
@@ -52,6 +56,8 @@ public class AuthService {
             }
         }
 
+        otpRateLimiter.checkAndRecordSend(cleanPhone, clientIp);
+
         String countryCode = request.getCountryCode() != null && !request.getCountryCode().isBlank()
                 ? request.getCountryCode().toUpperCase()
                 : "SN";
@@ -59,7 +65,7 @@ public class AuthService {
         Country country = countryRepository.findByCode(countryCode)
                 .orElseGet(() -> countryRepository.findByCode("SN").orElse(null));
 
-        String otp = String.format("%06d", 100000 + random.nextInt(900000));
+        String rawOtp = generateOtp();
 
         User user = User.builder()
                 .firstName(request.getFirstName().trim())
@@ -70,8 +76,10 @@ public class AuthService {
                 .role(Role.ROLE_USER)
                 .country(country)
                 .isVerified(false)
-                .otpCode(otp)
-                .otpExpiresAt(LocalDateTime.now().plusMinutes(15))
+                .otpCode(passwordEncoder.encode(rawOtp))
+                .otpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES))
+                .otpAttempts(0)
+                .otpLastSentAt(LocalDateTime.now())
                 .city(country != null && "SN".equalsIgnoreCase(country.getCode()) ? "Dakar" : "")
                 .trustScore(100.0)
                 .rating(5.0)
@@ -80,6 +88,7 @@ public class AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+        smsProvider.sendSms(cleanPhone, "Votre code de vérification ReVibe FliP est : " + rawOtp + ". Valable 10 minutes.");
 
         return AuthResponse.builder()
                 .token(null)
@@ -88,24 +97,42 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
     public AuthResponse verifyOtp(VerifyOtpRequest request) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
 
         User user = userRepository.findByPhone(cleanPhone)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé avec ce numéro de téléphone."));
+                .orElseThrow(() -> new IllegalArgumentException("Code OTP invalide ou expiré."));
 
-        if (user.getOtpCode() == null || !user.getOtpCode().equals(request.getOtpCode().trim())) {
-            throw new IllegalArgumentException("Code OTP invalide.");
+        if (user.getOtpCode() == null || user.getOtpExpiresAt() == null) {
+            throw new IllegalArgumentException("Aucun code OTP actif. Veuillez en demander un nouveau.");
         }
 
-        if (user.getOtpExpiresAt() != null && user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
+        if (user.getOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            clearVerificationOtp(user);
+            userRepository.save(user);
             throw new IllegalArgumentException("Le code OTP a expiré. Veuillez en demander un nouveau.");
         }
 
+        int attempts = user.getOtpAttempts() != null ? user.getOtpAttempts() : 0;
+        if (attempts >= MAX_OTP_ATTEMPTS) {
+            clearVerificationOtp(user);
+            userRepository.save(user);
+            throw new IllegalArgumentException("Nombre maximal de tentatives atteint. Veuillez demander un nouveau code.");
+        }
+
+        String candidate = request.getOtpCode() != null ? request.getOtpCode().trim() : "";
+        if (!passwordEncoder.matches(candidate, user.getOtpCode())) {
+            user.setOtpAttempts(attempts + 1);
+            if (user.getOtpAttempts() >= MAX_OTP_ATTEMPTS) {
+                clearVerificationOtp(user);
+            }
+            userRepository.save(user);
+            throw new IllegalArgumentException("Code OTP invalide ou expiré.");
+        }
+
         user.setIsVerified(true);
-        user.setOtpCode(null);
-        user.setOtpExpiresAt(null);
+        clearVerificationOtp(user);
         User verifiedUser = userRepository.save(user);
 
         notificationService.createNotification(
@@ -125,15 +152,93 @@ public class AuthService {
                 .build();
     }
 
+    /**
+     * Réponse identique que le numéro existe ou non (anti-énumération).
+     */
     @Transactional
-    public void resendOtp(String phone) {
+    public void resendOtp(String phone, String clientIp) {
         String cleanPhone = cleanPhoneNumber(phone);
-        User user = userRepository.findByPhone(cleanPhone)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé."));
+        otpRateLimiter.checkAndRecordSend(cleanPhone, clientIp);
 
-        String newOtp = String.format("%06d", 100000 + random.nextInt(900000));
-        user.setOtpCode(newOtp);
-        user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
+        userRepository.findByPhone(cleanPhone).ifPresent(user -> {
+            if (Boolean.TRUE.equals(user.getIsVerified())) {
+                return;
+            }
+            String rawOtp = generateOtp();
+            user.setOtpCode(passwordEncoder.encode(rawOtp));
+            user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
+            user.setOtpAttempts(0);
+            user.setOtpLastSentAt(LocalDateTime.now());
+            userRepository.save(user);
+
+            smsProvider.sendSms(cleanPhone, "Votre nouveau code de vérification ReVibe FliP est : " + rawOtp + ". Valable 10 minutes.");
+        });
+    }
+
+    /**
+     * Mot de passe oublié : envoie un OTP à 6 chiffres par SMS, réponse identique que le numéro existe ou non.
+     */
+    @Transactional
+    public void forgotPassword(String phone, String clientIp) {
+        String cleanPhone = cleanPhoneNumber(phone);
+        otpRateLimiter.checkAndRecordSend(cleanPhone, clientIp);
+
+        userRepository.findByPhone(cleanPhone).ifPresent(user -> {
+            if (Boolean.TRUE.equals(user.getIsSuspended())) {
+                return;
+            }
+            String rawOtp = generateOtp();
+            user.setResetOtpCode(passwordEncoder.encode(rawOtp));
+            user.setResetOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
+            user.setResetOtpAttempts(0);
+            user.setResetOtpLastSentAt(LocalDateTime.now());
+            userRepository.save(user);
+
+            smsProvider.sendSms(cleanPhone, "Code de réinitialisation ReVibe FliP : " + rawOtp + ". Valable 10 minutes.");
+        });
+    }
+
+    /**
+     * Réinitialisation du mot de passe via OTP SMS (usage unique, max 5 tentatives, 10 min).
+     */
+    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    public void resetPassword(ResetPasswordRequest request) {
+        String cleanPhone = cleanPhoneNumber(request.getPhone());
+        validatePasswordStrength(request.getNewPassword());
+
+        User user = userRepository.findByPhone(cleanPhone)
+                .orElseThrow(() -> new IllegalArgumentException("Code OTP invalide ou expiré."));
+
+        if (user.getResetOtpCode() == null || user.getResetOtpExpiresAt() == null) {
+            throw new IllegalArgumentException("Aucune demande de réinitialisation active.");
+        }
+
+        if (user.getResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+            clearResetOtp(user);
+            userRepository.save(user);
+            throw new IllegalArgumentException("Le code OTP a expiré. Veuillez en demander un nouveau.");
+        }
+
+        int attempts = user.getResetOtpAttempts() != null ? user.getResetOtpAttempts() : 0;
+        if (attempts >= MAX_OTP_ATTEMPTS) {
+            clearResetOtp(user);
+            userRepository.save(user);
+            throw new IllegalArgumentException("Nombre maximal de tentatives atteint. Demandez un nouveau code.");
+        }
+
+        String candidate = request.getOtpCode() != null ? request.getOtpCode().trim() : "";
+        if (!passwordEncoder.matches(candidate, user.getResetOtpCode())) {
+            user.setResetOtpAttempts(attempts + 1);
+            if (user.getResetOtpAttempts() >= MAX_OTP_ATTEMPTS) {
+                clearResetOtp(user);
+            }
+            userRepository.save(user);
+            throw new IllegalArgumentException("Code OTP invalide ou expiré.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setMustChangePassword(false);
+        clearResetOtp(user);
         userRepository.save(user);
     }
 
@@ -154,10 +259,14 @@ public class AuthService {
         }
 
         if (!Boolean.TRUE.equals(user.getIsVerified())) {
-            String otp = String.format("%06d", 100000 + random.nextInt(900000));
-            user.setOtpCode(otp);
-            user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
+            String rawOtp = generateOtp();
+            user.setOtpCode(passwordEncoder.encode(rawOtp));
+            user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
+            user.setOtpAttempts(0);
+            user.setOtpLastSentAt(LocalDateTime.now());
             userRepository.save(user);
+
+            smsProvider.sendSms(user.getPhone(), "Votre code de vérification ReVibe FliP est : " + rawOtp + ". Valable 10 minutes.");
 
             return AuthResponse.builder()
                     .token(null)
@@ -172,6 +281,33 @@ public class AuthService {
                 .tokenType("Bearer")
                 .user(UserDto.fromEntity(user))
                 .build();
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", 100000 + secureRandom.nextInt(900000));
+    }
+
+    private void clearVerificationOtp(User user) {
+        user.setOtpCode(null);
+        user.setOtpExpiresAt(null);
+        user.setOtpAttempts(0);
+    }
+
+    private void clearResetOtp(User user) {
+        user.setResetOtpCode(null);
+        user.setResetOtpExpiresAt(null);
+        user.setResetOtpAttempts(0);
+    }
+
+    private void validatePasswordStrength(String password) {
+        if (password == null || password.length() < 8
+                || !password.matches(".*[A-Z].*")
+                || !password.matches(".*[a-z].*")
+                || !password.matches(".*\\d.*")) {
+            throw new IllegalArgumentException(
+                    "Le mot de passe doit contenir au moins 8 caractères, dont une majuscule, une minuscule et un chiffre."
+            );
+        }
     }
 
     private String cleanPhoneNumber(String phone) {
