@@ -1,7 +1,7 @@
 # Documentation Complète de Bout en Bout — ReVibe FliP
 
 > **Plateforme sénégalaise et sous-régionale de seconde main & mode circulaire**
-> *Stack technique : Spring Boot 3 (Java 21) • MySQL 8.0 • React 18 (TypeScript, Vite, Tailwind CSS) • WebSocket • Séquestre Mobile Money (Wave, Orange Money)*
+> *Stack technique : Spring Boot 3 (Java 17) • PostgreSQL • React 18 (TypeScript, Vite, Tailwind CSS) • WebSocket • Séquestre Mobile Money (Wave, Orange Money)*
 
 ---
 
@@ -46,10 +46,10 @@ flowchart LR
     end
 
     subgraph Database ["Base de Données"]
-        DB[("MySQL 8.0")]
+        PG[("PostgreSQL")]
     end
 
-    UI --> Context --> Axios --> SecFilter --> Controllers --> Services --> Repos --> DB
+    UI --> Context --> Axios --> SecFilter --> Controllers --> Services --> Repos --> PG
     UI --> WSClient --> WSHandler --> Services
 ```
 
@@ -114,7 +114,7 @@ Toutes les entités se trouvent dans `backend/src/main/java/com/revibeflip/entit
   - Intercepteur HTTP `OncePerRequestFilter`.
   - Extrait le header `Authorization: Bearer <token>`, valide la signature et peuple le `SecurityContextHolder`.
 - [`CustomUserDetailsService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/security/CustomUserDetailsService.java) :
-  - Charge l'utilisateur depuis MySQL par son identifiant unique (téléphone ou email).
+  - Charge l'utilisateur depuis PostgreSQL par son identifiant unique (téléphone ou email).
 - [`WebSocketAuthInterceptor.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/security/WebSocketAuthInterceptor.java) :
   - Intercepteur de handshake WebSocket pour authentifier les sessions STOMP via token JWT.
 
@@ -256,10 +256,10 @@ flowchart TD
 
 ## 11. Configuration, DevOps & Conception UML
 
-- [`docker-compose.yml`](file:///c:/Users/falla/Desktop/revibe-flip/docker-compose.yml) : Déploiement multi-conteneurs (MySQL 8.0, Backend Spring Boot, Frontend Nginx).
+- [`docker-compose.yml`](file:///c:/Users/falla/Desktop/revibe-flip/docker-compose.yml) : Déploiement multi-conteneurs (PostgreSQL 16, Backend Spring Boot, Frontend Nginx).
 - [`.gitignore`](file:///c:/Users/falla/Desktop/revibe-flip/.gitignore) : Configuration d'exclusion Git complète, organisée par modules (Maven/Java, React/Vite/Node, IDEs, OS, Uploads, Logs).
-- [`backend/pom.xml`](file:///c:/Users/falla/Desktop/revibe-flip/backend/pom.xml) : Dépendances Maven (Spring Boot Starter Web, Data JPA, Security, Validation, WebSocket, JJWT, MySQL Connector/J, Lombok, Springdoc OpenAPI Swagger).
-- [`backend/src/main/resources/application.properties`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/resources/application.properties) : Paramètres de connexion MySQL (`jdbc:mysql://localhost:3306/revibeflip`), clé secrète JWT, port serveur 8080, configuration des téléversements (max 10MB).
+- [`backend/pom.xml`](file:///c:/Users/falla/Desktop/revibe-flip/backend/pom.xml) : Dépendances Maven (Spring Boot Starter Web, Data JPA, Security, Validation, WebSocket, JJWT, PostgreSQL Driver, Lombok, Springdoc OpenAPI Swagger).
+- [`backend/src/main/resources/application.properties`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/resources/application.properties) : Paramètres de connexion PostgreSQL (`jdbc:postgresql://localhost:5432/revibeflip`), clé secrète JWT, port serveur 8080, configuration des téléversements (max 10MB).
 - [`conception-uml/`](file:///c:/Users/falla/Desktop/revibe-flip/conception-uml/) :
   - `DOSSIER_COMPLET_UML_REVIBE_FLIP_V1.html` : Diagrammes de cas d'utilisation, de classes, de séquence (achat sous séquestre, négociation in-chat).
   - `DESCRIPTIONS_TEXTUELLES_USE_CASES_V1.md` : Spécifications textuelles détaillées de chaque use case.
@@ -326,7 +326,7 @@ Avant de commencer, vérifiez que vous avez ces outils installés en ouvrant un 
 | **Git** | 2.x+ | `git --version` | [Git-scm.com](https://git-scm.com/) |
 
 > [!TIP]
-> **Bonne nouvelle :** Vous pouvez utiliser votre instance **MySQL 8.0** locale (profil par défaut / `mysql`) ou démarrer sans installation manuelle grâce au profil H2 intégré avec données sénégalaises pré-remplies (`DataInitializer`), prêt à l'emploi dès la première seconde.
+> **Bonne nouvelle :** Vous n'avez **pas besoin** d'installer PostgreSQL manuellement pour démarrer ! Le backend intègre une base H2 automatisée avec données sénégalaises pré-remplies (`DataInitializer`), prête à l'emploi dès la première seconde.
 
 ---
 
