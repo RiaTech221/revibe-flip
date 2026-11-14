@@ -142,7 +142,6 @@ class AdminServiceTest {
         when(productRepository.countByStatus(ProductStatus.DRAFT)).thenReturn(1L);
         when(productRepository.countByCreatedAtBetween(any(), any())).thenReturn(4L, 2L);
 
-        when(orderRepository.countByCreatedAtBetween(any(), any())).thenReturn(8L, 4L);
         when(paymentRepository.countByStatusAndCreatedAtBetween(eq(PaymentStatus.SUCCESS), any(), any())).thenReturn(6L, 3L);
 
         when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(
@@ -176,7 +175,6 @@ class AdminServiceTest {
         when(paymentRepository.findByEscrowStatus(EscrowStatus.LOCKED)).thenReturn(List.of(paymentLocked));
 
         when(reportRepository.countByCreatedAtBetween(any(), any())).thenReturn(3L, 1L);
-        when(reportRepository.countByStatusAndCreatedAtBetween(eq(ReportStatus.PENDING), any(), any())).thenReturn(1L);
         when(reportRepository.countByStatusAndCreatedAtBetween(eq(ReportStatus.RESOLVED), any(), any())).thenReturn(2L);
 
         when(categoryRepository.findAll()).thenReturn(List.of(testCategory));
