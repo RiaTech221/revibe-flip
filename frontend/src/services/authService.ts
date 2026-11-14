@@ -19,6 +19,11 @@ export const authApi = {
   verifyOtp: (data: { phone: string; otpCode: string }) => api.post('/auth/verify-otp', data),
   resendOtp: (phone: string) => api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`),
   login: (data: any) => api.post('/auth/login', data),
+  forgotPassword: (phone: string) => api.post('/auth/forgot-password', { phone }),
+  resetPassword: (data: { phone: string; otpCode: string; newPassword: string }) =>
+    api.post('/auth/reset-password', data),
+  refresh: () => api.post('/auth/refresh', {}),
+  logout: () => api.post('/auth/logout', {}),
   getMe: () => api.get<{ success: boolean; data: User }>('/auth/me'),
 };
 

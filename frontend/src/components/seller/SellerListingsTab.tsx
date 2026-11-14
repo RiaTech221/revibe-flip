@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Onglet / Vue Vendeur : SellerListingsTab
  * 
  * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerListingsTab).
@@ -130,7 +130,7 @@ export const SellerListingsTab: React.FC<SellerListingsTabProps> = ({
                           src={
                             p.primaryImage ||
                             (p.images && p.images[0]) ||
-                            'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=100&q=80'
+                            '/placeholder-product.svg'
                           }
                           alt={p.title}
                           className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200"

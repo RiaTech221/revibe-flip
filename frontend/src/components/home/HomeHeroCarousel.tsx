@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Section Page d'Accueil : HomeHeroCarousel
  * 
  * Composant visuel et interactif de la page d'accueil ReVibe FliP (HomeHeroCarousel).
@@ -50,7 +50,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Mode Féminine"
               className="absolute inset-0 w-full h-full object-cover object-top opacity-65 transition-transform duration-500 group-hover:scale-105"
             />
@@ -68,7 +68,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Style Homme"
               className="absolute inset-0 w-full h-full object-cover object-center opacity-65 transition-transform duration-500 group-hover:scale-105"
             />
@@ -86,7 +86,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Artisanat de Ngaye"
               className="absolute inset-0 w-full h-full object-cover object-center opacity-65 transition-transform duration-500 group-hover:scale-105"
             />
@@ -208,7 +208,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Créateurs Wax"
               className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
             />
@@ -226,7 +226,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Sneakers DKR"
               className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
             />
@@ -244,7 +244,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
             className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
           >
             <img
-              src="https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=500&q=80"
+              src="/placeholder-product.svg"
               alt="Moins de 15 000 FCFA"
               className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
             />

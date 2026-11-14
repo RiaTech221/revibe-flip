@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Page d'Accueil Principale ReVibe FliP
  * 
  * Vitrine principale de la marketplace ReVibe FliP :
@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { productApi, categoryApi } from '../services/api';
 import { Product, Category } from '../types';
-import { initialCuratedProducts } from '../data/curatedProducts';
 import { HomeHeroCarousel, HeroSlide } from '../components/home/HomeHeroCarousel';
 import { HomeCategoryScroll, VisualCategory } from '../components/home/HomeCategoryScroll';
 import { HomeShowcaseSection, ShowcaseTab } from '../components/home/HomeShowcaseSection';
@@ -21,38 +20,38 @@ export const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(true);
 
-  const [products, setProducts] = useState<Product[]>(initialCuratedProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [activeShowcaseTab, setActiveShowcaseTab] = useState<string>('all');
 
   const visualCategoriesRow1: VisualCategory[] = [
-    { id: 'all', name: 'Tout voir', link: '/catalog', visual: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=240&q=80', isSpecial: true },
-    { id: '1', name: 'Femmes', link: '/catalog?categoryId=1', visual: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=240&q=80' },
-    { id: '2', name: 'Hommes', link: '/catalog?categoryId=2', visual: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=240&q=80' },
-    { id: '3', name: 'Wax & Bazin', link: '/catalog?categoryId=3', visual: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=240&q=80' },
-    { id: '4', name: 'Chaussures', link: '/catalog?categoryId=4', visual: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=240&q=80' },
-    { id: '5', name: 'Sacs & Cuir', link: '/catalog?categoryId=5', visual: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=240&q=80' },
-    { id: '6', name: 'Enfants', link: '/catalog?categoryId=6', visual: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?auto=format&fit=crop&w=240&q=80' },
-    { id: '7', name: 'Bijoux', link: '/catalog?query=bijoux', visual: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?auto=format&fit=crop&w=240&q=80' },
-    { id: '8', name: 'Robes Soirée', link: '/catalog?query=robe', visual: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?auto=format&fit=crop&w=240&q=80' },
-    { id: '9', name: 'Tops & Blouses', link: '/catalog?query=top', visual: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=240&q=80' },
-    { id: '10', name: 'Lingerie', link: '/catalog?query=lingerie', visual: 'https://images.unsplash.com/photo-1583846783214-7229a91b20ed?auto=format&fit=crop&w=240&q=80' },
+    { id: 'all', name: 'Tout voir', link: '/catalog', visual: '/placeholder-product.svg', isSpecial: true },
+    { id: '1', name: 'Femmes', link: '/catalog?categoryId=1', visual: '/placeholder-product.svg' },
+    { id: '2', name: 'Hommes', link: '/catalog?categoryId=2', visual: '/placeholder-product.svg' },
+    { id: '3', name: 'Wax & Bazin', link: '/catalog?categoryId=3', visual: '/placeholder-product.svg' },
+    { id: '4', name: 'Chaussures', link: '/catalog?categoryId=4', visual: '/placeholder-product.svg' },
+    { id: '5', name: 'Sacs & Cuir', link: '/catalog?categoryId=5', visual: '/placeholder-product.svg' },
+    { id: '6', name: 'Enfants', link: '/catalog?categoryId=6', visual: '/placeholder-product.svg' },
+    { id: '7', name: 'Bijoux', link: '/catalog?query=bijoux', visual: '/placeholder-product.svg' },
+    { id: '8', name: 'Robes Soirée', link: '/catalog?query=robe', visual: '/placeholder-product.svg' },
+    { id: '9', name: 'Tops & Blouses', link: '/catalog?query=top', visual: '/placeholder-product.svg' },
+    { id: '10', name: 'Lingerie', link: '/catalog?query=lingerie', visual: '/placeholder-product.svg' },
   ];
 
   const visualCategoriesRow2: VisualCategory[] = [
-    { id: '11', name: 'Jeans & Denim', link: '/catalog?query=jean', visual: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=240&q=80' },
-    { id: '12', name: 'Vestes', link: '/catalog?query=veste', visual: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?auto=format&fit=crop&w=240&q=80' },
-    { id: '13', name: 'Mode Curvy', link: '/catalog?query=curvy', visual: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=240&q=80' },
-    { id: '14', name: 'Maison & Déco', link: '/catalog?categoryId=8', visual: 'https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?auto=format&fit=crop&w=240&q=80' },
-    { id: '15', name: 'Beauté & Soins', link: '/catalog?query=beaute', visual: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=240&q=80' },
-    { id: '16', name: 'Accs Téléphone', link: '/catalog?query=accessoires', visual: 'https://images.unsplash.com/photo-1586953208448-b95a79798f07?auto=format&fit=crop&w=240&q=80' },
-    { id: '17', name: 'Sandales', link: '/catalog?query=sandale', visual: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=240&q=80' },
-    { id: '18', name: 'Bébés', link: '/catalog?query=bebe', visual: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=240&q=80' },
-    { id: '19', name: 'Sportswear', link: '/catalog?query=sport', visual: 'https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=240&q=80' },
-    { id: '20', name: '< 10 000 FCFA', link: '/catalog?maxPrice=10000', visual: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=240&q=80' },
-    { id: '21', name: 'Créateurs Dakar', link: '/catalog?query=artisanat', visual: 'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=240&q=80' },
+    { id: '11', name: 'Jeans & Denim', link: '/catalog?query=jean', visual: '/placeholder-product.svg' },
+    { id: '12', name: 'Vestes', link: '/catalog?query=veste', visual: '/placeholder-product.svg' },
+    { id: '13', name: 'Mode Curvy', link: '/catalog?query=curvy', visual: '/placeholder-product.svg' },
+    { id: '14', name: 'Maison & Déco', link: '/catalog?categoryId=8', visual: '/placeholder-product.svg' },
+    { id: '15', name: 'Beauté & Soins', link: '/catalog?query=beaute', visual: '/placeholder-product.svg' },
+    { id: '16', name: 'Accs Téléphone', link: '/catalog?query=accessoires', visual: '/placeholder-product.svg' },
+    { id: '17', name: 'Sandales', link: '/catalog?query=sandale', visual: '/placeholder-product.svg' },
+    { id: '18', name: 'Bébés', link: '/catalog?query=bebe', visual: '/placeholder-product.svg' },
+    { id: '19', name: 'Sportswear', link: '/catalog?query=sport', visual: '/placeholder-product.svg' },
+    { id: '20', name: '< 10 000 FCFA', link: '/catalog?maxPrice=10000', visual: '/placeholder-product.svg' },
+    { id: '21', name: 'Créateurs Dakar', link: '/catalog?query=artisanat', visual: '/placeholder-product.svg' },
   ];
 
   const showcaseTabs: ShowcaseTab[] = [
@@ -71,7 +70,7 @@ export const HomePage: React.FC = () => {
       tag: 'FÊTES & SOIRÉES DAKAR',
       title: 'FÊTES DE FIN D’ANNÉE',
       subtitle: 'MODE SÉNÉGALAISE FESTIVE & LOOKS COCOONING',
-      bgImage: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?auto=format&fit=crop&w=1400&q=80',
+      bgImage: '/placeholder-product.svg',
       themeGradient: 'from-rose-950 via-slate-950/85 to-purple-950/40',
       catalogLink: '/catalog?categoryId=3',
       buttonText: 'Achetez maintenant',
@@ -79,13 +78,13 @@ export const HomePage: React.FC = () => {
         {
           title: 'Grand Boubou Bazin Getzner',
           price: '35 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/1'
         },
         {
           title: 'Robe Évasée Wax Woodin',
           price: '18 500 FCFA',
-          image: 'https://images.unsplash.com/photo-1590736969955-71cc94801759?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/2'
         }
       ]
@@ -95,7 +94,7 @@ export const HomePage: React.FC = () => {
       tag: 'SÉLECTION SPÉCIALE DAKAR',
       title: 'ROBES & WAX TENDANCE',
       subtitle: 'JUSQU’À -70% PAR RAPPORT AU NEUF',
-      bgImage: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=80',
+      bgImage: '/placeholder-product.svg',
       themeGradient: 'from-purple-950 via-slate-950/85 to-indigo-950/40',
       catalogLink: '/catalog?categoryId=1',
       buttonText: 'Découvrir la sélection',
@@ -103,13 +102,13 @@ export const HomePage: React.FC = () => {
         {
           title: 'Ensemble Bazin Riche Émeraude',
           price: '32 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/13'
         },
         {
           title: 'Tailleur Pantalon Chic Terracotta',
           price: '24 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/14'
         }
       ]
@@ -119,7 +118,7 @@ export const HomePage: React.FC = () => {
       tag: 'STREETWEAR SÉNÉGAL',
       title: 'SNEAKERS & CASUAL HOMME',
       subtitle: 'AUTHENTIQUES & VÉRIFIÉES AVANT EXPÉDITION',
-      bgImage: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?auto=format&fit=crop&w=1400&q=80',
+      bgImage: '/placeholder-product.svg',
       themeGradient: 'from-emerald-950 via-slate-950/85 to-teal-950/40',
       catalogLink: '/catalog?categoryId=4',
       buttonText: 'Voir les sneakers',
@@ -127,13 +126,13 @@ export const HomePage: React.FC = () => {
         {
           title: 'Nike Air Max 90 Dakar Clean',
           price: '28 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/3'
         },
         {
           title: 'Chemise Casual Lin Écru',
           price: '11 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/18'
         }
       ]
@@ -143,7 +142,7 @@ export const HomePage: React.FC = () => {
       tag: 'ARTISANAT LOCAL SÉNÉGALAIS',
       title: 'MAROQUINERIE DE NGAYE',
       subtitle: 'SACS & ACCESSOIRES EN CUIR VÉRITABLE',
-      bgImage: 'https://images.unsplash.com/photo-1492707892479-7bc8d5a4ee93?auto=format&fit=crop&w=1400&q=80',
+      bgImage: '/placeholder-product.svg',
       themeGradient: 'from-amber-950 via-slate-950/85 to-orange-950/40',
       catalogLink: '/catalog?categoryId=5',
       buttonText: 'Soutenir les artisans',
@@ -151,13 +150,13 @@ export const HomePage: React.FC = () => {
         {
           title: 'Sac Cabas Cuir Artisanal Ngaye',
           price: '15 000 FCFA',
-          image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/4'
         },
         {
           title: 'Sandales Cuir Tressées Ngaye',
           price: '8 500 FCFA',
-          image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/20'
         }
       ]
@@ -167,7 +166,7 @@ export const HomePage: React.FC = () => {
       tag: 'BONS PLANS DAKAR',
       title: 'PÉPITES À MOINS DE 10 000 FCFA',
       subtitle: 'RENOUVELEZ VOTRE GARDE-ROBE À PETIT PRIX',
-      bgImage: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80',
+      bgImage: '/placeholder-product.svg',
       themeGradient: 'from-blue-950 via-slate-950/85 to-cyan-950/40',
       catalogLink: '/catalog?maxPrice=10000',
       buttonText: 'Voir les pépites',
@@ -175,13 +174,13 @@ export const HomePage: React.FC = () => {
         {
           title: 'Jean Levi\'s 501 Vintage Bleu',
           price: '9 500 FCFA',
-          image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/16'
         },
         {
           title: 'Robe Courte Imprimée Fleurs',
           price: '7 500 FCFA',
-          image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?auto=format&fit=crop&w=400&q=80',
+          image: '/placeholder-product.svg',
           link: '/product/25'
         }
       ]
@@ -197,24 +196,17 @@ export const HomePage: React.FC = () => {
           categoryApi.getAll(),
         ]);
 
-        if (prodRes.status === 'fulfilled' && prodRes.value?.data?.data?.content?.length) {
-          const apiProducts = prodRes.value.data.data.content;
-          const merged = [...apiProducts];
-          initialCuratedProducts.forEach((curated) => {
-            if (!merged.some((p) => p.id === curated.id)) {
-              merged.push(curated);
-            }
-          });
-          setProducts(merged);
+        if (prodRes.status === 'fulfilled' && prodRes.value?.data?.data?.content) {
+          setProducts(prodRes.value.data.data.content);
         } else {
-          setProducts(initialCuratedProducts);
+          setProducts([]);
         }
 
         if (catRes.status === 'fulfilled' && catRes.value?.data?.data) {
           setCategories(catRes.value.data.data);
         }
       } catch {
-        setProducts(initialCuratedProducts);
+        setProducts([]);
       } finally {
         setLoading(false);
       }

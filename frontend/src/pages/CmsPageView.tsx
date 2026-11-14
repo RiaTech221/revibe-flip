@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { contentApi } from '../services/api';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 import { CmsPage } from '../types';
 import {
   FileText,
@@ -145,7 +146,7 @@ export const CmsPageView: React.FC<CmsPageViewProps> = ({ fixedSlug }) => {
           {/* Contenu Rich Text nettoyé et stylé */}
           <div
             className="cms-content text-xs sm:text-sm text-gray-700 leading-relaxed space-y-4"
-            dangerouslySetInnerHTML={{ __html: page.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(page.content) }}
           />
 
           {/* Pied de page du document */}

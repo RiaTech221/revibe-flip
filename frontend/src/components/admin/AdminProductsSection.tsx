@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Section de Gestion Admin : AdminProductsSection
  * 
  * Module de gestion dédié du back-office ReVibe FliP (AdminProductsSection).
@@ -91,7 +91,7 @@ export const AdminProductsSection: React.FC<AdminProductsSectionProps> = ({
                           src={
                             p.primaryImage ||
                             (p.images && p.images[0]) ||
-                            'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=100&q=80'
+                            '/placeholder-product.svg'
                           }
                           alt=""
                           className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200"

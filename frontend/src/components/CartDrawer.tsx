@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Tiroir Latéral du Panier d'Achat ReVibe FliP
  * 
  * Affiche le contenu du panier dans un volet latéral coulissant :
@@ -283,7 +283,7 @@ export const CartDrawer: React.FC = () => {
                         const image =
                           product.primaryImage ||
                           (product.images && product.images[0]) ||
-                          'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=300&q=80';
+                          '/placeholder-product.svg';
 
                         return (
                           <div

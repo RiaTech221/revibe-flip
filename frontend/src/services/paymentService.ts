@@ -1,21 +1,27 @@
 /**
- * Service de Paiement Mobile Money et Séquestre ReVibe FliP
- * 
- * Gère l'intégration des paiements sécurisés via Mobile Money (Wave, Orange Money, MTN MoMo, Moov) :
- *  * - Initialisation du paiement sous séquestre bancaire ReVibe Shield
- *  * - Vérification du statut de la transaction et confirmation de capture des fonds
- *  * - Déblocage et versement des gains sur le portefeuille du vendeur après livraison conforme
+ * Service de paiement PayTech (Wave, Orange Money, Free Money) — ReVibe FliP
  */
 
 import api from './httpClient';
 import { Payment } from '../types';
 
-/**
- * Service de traitement des transactions Mobile Money (Wave, Orange Money, Free Money) sous séquestre.
- */
+export interface PaymentInitiationResponse {
+  orderId: number;
+  orderNumber: string;
+  reference: string;
+  token: string;
+  redirectUrl: string;
+  amount: number;
+  currency: string;
+}
+
 export const paymentApi = {
+  initiate: (data: { orderId: number; paymentMethod: string; phoneNumber: string }) =>
+    api.post<{ success: boolean; data: PaymentInitiationResponse }>('/payments/initiate', data),
   process: (data: { orderId: number; paymentMethod: string; phoneNumber: string }) =>
-    api.post<{ success: boolean; data: Payment }>('/payments/process', data),
+    api.post<{ success: boolean; data: PaymentInitiationResponse }>('/payments/initiate', data),
+  verifyByOrder: (orderId: number) =>
+    api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}/verify`),
   getByOrder: (orderId: number) =>
     api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}`),
 };

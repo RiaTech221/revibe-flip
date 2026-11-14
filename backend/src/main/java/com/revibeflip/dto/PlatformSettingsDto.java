@@ -26,7 +26,6 @@ public class PlatformSettingsDto {
     private String currency;
     private Integer offerValidityHours;
     private Integer reservationDurationHours;
-    private Boolean demoMode;
     private String updatedBy;
     private LocalDateTime updatedAt;
 
@@ -42,7 +41,6 @@ public class PlatformSettingsDto {
                 .currency(setting.getCurrency())
                 .offerValidityHours(setting.getOfferValidityHours() != null ? setting.getOfferValidityHours() : 24)
                 .reservationDurationHours(setting.getReservationDurationHours() != null ? setting.getReservationDurationHours() : 24)
-                .demoMode(setting.getDemoMode() != null ? setting.getDemoMode() : true)
                 .updatedBy(setting.getUpdatedBy() != null ? setting.getUpdatedBy().getFullName() : "Admin Système")
                 .updatedAt(setting.getUpdatedAt())
                 .build();

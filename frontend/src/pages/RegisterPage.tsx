@@ -24,7 +24,6 @@ export const RegisterPage: React.FC = () => {
 
   const [isOtpStep, setIsOtpStep] = useState(false);
   const [phoneForOtp, setPhoneForOtp] = useState('');
-  const [demoOtp, setDemoOtp] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,9 +33,8 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await authApi.register(formData);
+      await authApi.register(formData);
       setPhoneForOtp(formData.phone);
-      setDemoOtp(res.data.data?.otpDemoCode || null);
       setIsOtpStep(true);
     } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors de l'inscription.");
@@ -110,7 +108,6 @@ export const RegisterPage: React.FC = () => {
           ) : (
             <AuthOtpForm
               phone={phoneForOtp}
-              demoOtpCode={demoOtp}
               loading={loading}
               error={error}
               onSubmit={handleVerifyOtpSubmit}

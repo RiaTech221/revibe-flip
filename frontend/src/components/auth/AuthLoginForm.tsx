@@ -86,58 +86,6 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
         {loading ? 'Connexion en cours...' : 'Se connecter'}
       </button>
 
-      {/* Raccourci de test démonstration */}
-      <div className="pt-2 border-t border-slate-100 text-center">
-        <p className="text-[11px] text-slate-400 font-medium mb-1.5">
-          Comptes de test pré-remplis (cliquez pour remplir) :
-        </p>
-        <div className="flex flex-wrap gap-1.5 justify-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier('+221770000000');
-              setPassword('Admin1234!');
-            }}
-            className="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 text-[10px] font-bold transition-colors cursor-pointer"
-          >
-            Admin (+221770000000)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier('+221771112233');
-              setPassword('Passer123!');
-            }}
-            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition-colors cursor-pointer"
-          >
-            Vendeuse Aminata (+221771112233)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier('+221774445566');
-              setPassword('Passer123!');
-            }}
-            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition-colors cursor-pointer"
-          >
-            Vendeur Moussa (+221774445566)
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIdentifier('+221778889900');
-              setPassword('Passer123!');
-            }}
-            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition-colors cursor-pointer"
-          >
-            Acheteuse Fatou (+221778889900)
-          </button>
-        </div>
-        <p className="text-[10px] text-slate-400 mt-1">
-          Mots de passe : <code className="text-purple-600 font-mono">Passer123!</code> ou <code className="text-purple-600 font-mono">Admin1234!</code>
-        </p>
-      </div>
-
       {onSwitchToRegister && (
         <div className="text-center pt-2">
           <p className="text-xs text-slate-500">

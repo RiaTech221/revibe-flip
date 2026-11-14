@@ -11,7 +11,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { productApi, categoryApi } from '../services/api';
 import { Product, Category } from '../types';
-import { initialCuratedProducts } from '../data/curatedProducts';
 import { CatalogSortBar } from '../components/catalog/CatalogSortBar';
 import { CatalogQuickPills } from '../components/catalog/CatalogQuickPills';
 import { CatalogActiveFilters } from '../components/catalog/CatalogActiveFilters';
@@ -122,11 +121,7 @@ export const CatalogPage: React.FC = () => {
         if (city) params.city = city;
 
         const res = await productApi.search(params);
-        let list = res?.data?.data?.content || [];
-
-        if (list.length === 0) {
-          list = initialCuratedProducts;
-        }
+        const list = res?.data?.data?.content || [];
 
         // Filtrage côté client pour les affinements visuels
         let filtered = [...list];
@@ -203,8 +198,8 @@ export const CatalogPage: React.FC = () => {
         setProducts(filtered);
         setTotalElements(filtered.length);
       } catch {
-        setProducts(initialCuratedProducts);
-        setTotalElements(initialCuratedProducts.length);
+        setProducts([]);
+        setTotalElements(0);
       } finally {
         setLoading(false);
       }

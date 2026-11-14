@@ -44,6 +44,4 @@ public class UpdatePlatformSettingsRequest {
     private Integer offerValidityHours;
 
     private Integer reservationDurationHours;
-
-    private Boolean demoMode;
 }

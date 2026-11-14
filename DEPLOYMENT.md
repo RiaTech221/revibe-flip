@@ -196,3 +196,39 @@ cat backup_revibeflip_YYYY-MM-DD.sql | docker exec -i revibeflip-mysql mysql -u 
 | Redémarrer uniquement le backend | `docker compose restart backend` |
 | Arrêter toute la plateforme | `docker compose down` |
 | Vérifier l'espace disque et RAM du VPS | `df -h && free -m && docker stats --no-stream` |
+
+---
+
+## 8. Sécurité, Intégrations Externes & Runbook d'Incident (Production)
+
+### 8.1 Services externes requis avant mise en production
+1. **PayTech (`https://doc.paytech.sn`)** :
+   - Renseigner `PAYTECH_API_KEY`, `PAYTECH_API_SECRET`, `PAYTECH_ENV=prod`, `PAYTECH_IPN_URL`, `PAYTECH_SUCCESS_URL`, `PAYTECH_CANCEL_URL`, `PAYTECH_TRANSFER_CALLBACK_URL`.
+   - L'application refuse de démarrer en profil `prod` si une variable PayTech obligatoire manque (`PayTechConfigValidator`).
+   - Confirmer avec PayTech : l'activation du module Transfert (`/transfer/transferFund`), le support des remboursements automatisés ou manuels via dashboard, la liste des moyens de paiement actifs (`Wave`, `Orange Money`, `Free Money`), et les modalités de conservation des fonds.
+2. **Fournisseur SMS / OTP** :
+   - Renseigner `SMS_API_URL`, `SMS_API_KEY`, `SMS_SENDER_ID`.
+   - L'application refuse de démarrer en profil `prod` sans configuration SMS valide (`SmsConfigValidator`).
+3. **Premier administrateur** :
+   - Définir `REVIBE_BOOTSTRAP_ADMIN_PHONE` et `REVIBE_BOOTSTRAP_ADMIN_PASSWORD` (mot de passe fort >= 12 caractères) pour le premier démarrage, puis supprimer ces variables. Le changement de mot de passe est imposé à la première connexion.
+
+### 8.2 Migrations Flyway & Sauvegardes Chiffrées
+- En production, `SPRING_JPA_DDL_AUTO=validate` et `spring.flyway.enabled=true` exécutent les scripts dans `backend/src/main/resources/db/migration/`.
+- Avant toute mise à jour, exécuter une sauvegarde chiffrée AES-256 :
+  ```bash
+  BACKUP_ENCRYPTION_KEY="<cle-forte>" MYSQL_PASSWORD="<mdp>" ./scripts/backup-db.sh
+  ```
+- Planifier via `cron` quotidien (ex: `0 3 * * *`) avec rétention 30 jours hors du VPS.
+
+### 8.3 Supervision & Alertes
+- **Healthcheck backend** : `GET /actuator/health` (seul endpoint Actuator exposé en prod, sans détails sensibles).
+- **Réconciliation financière** : tâche planifiée quotidienne comparant le grand livre immuable (`ledger_entries`) aux statuts PayTech et alertant l'administration en cas d'écart.
+- **Surveillance recommandée** : sonde Uptime (ex. UptimeRobot / Prometheus + Grafana) sur `/actuator/health`, alertes disque (> 80%), CPU/RAM, et rotation des logs Docker.
+
+### 8.4 Runbook d'Incident
+1. **Fuite de secret / clé compromise** :
+   - Générer immédiatement une nouvelle clé (`REVIBE_JWT_SECRET`, `PAYTECH_API_SECRET`, `SMS_API_KEY`), mettre à jour `.env`, redémarrer `backend` (`docker compose up -d --force-recreate backend`). La rotation de `REVIBE_JWT_SECRET` invalide instantanément tous les JWT actifs.
+2. **Écart de paiement ou IPN non reçu** :
+   - Vérifier les logs backend (aucune donnée sensible journalisée), consulter la page `/orders/:id` (vérification serveur `get-status`), ou relancer la réconciliation dans l'espace Admin (`/api/admin/ledger`).
+3. **Versement vendeur en état `MANUAL_REQUIRED` ou `FAILED`** :
+   - Consulter le grand livre Admin (`/api/admin/ledger`), effectuer le virement depuis le dashboard PayTech si l'API transfert est indisponible, puis régulariser.

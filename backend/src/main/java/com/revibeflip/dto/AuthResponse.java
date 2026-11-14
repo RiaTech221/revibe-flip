@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponse {
     private String token;
+    private String refreshToken;
     private String tokenType;
     private UserDto user;
-    private String otpDemoCode; // Only in dev/demo mode to easily test OTP verification
 }

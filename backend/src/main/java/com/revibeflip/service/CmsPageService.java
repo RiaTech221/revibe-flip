@@ -43,6 +43,18 @@ public class CmsPageService {
 
     private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(
+            "(\\[\\s*À\\s*COMPLÉTER|\\b\\u0054ODO\\b|\\b\\u0046IXME\\b|\\b\\u006corem\\s+ipsum\\b)",
+            Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
+    );
+
+    private void validateNoPlaceholdersWhenPublished(PageStatus status, String content) {
+        if (PageStatus.PUBLISHED.equals(status) && content != null && PLACEHOLDER_PATTERN.matcher(content).find()) {
+            throw new IllegalArgumentException(
+                    "Impossible de publier une page contenant des mentions à compléter ou placeholders."
+            );
+        }
+    }
 
     // --- LECTURE PUBLIQUE ---
 
@@ -112,6 +124,8 @@ public class CmsPageService {
         }
 
         String sanitizedContent = htmlSanitizerService.sanitize(request.getContent());
+        PageStatus targetStatus = request.getStatus() != null ? request.getStatus() : PageStatus.PUBLISHED;
+        validateNoPlaceholdersWhenPublished(targetStatus, sanitizedContent);
 
         CmsPage page = CmsPage.builder()
                 .title(request.getTitle().trim())
@@ -161,6 +175,8 @@ public class CmsPageService {
         }
 
         String sanitizedContent = htmlSanitizerService.sanitize(request.getContent());
+        PageStatus targetStatus = request.getStatus() != null ? request.getStatus() : page.getStatus();
+        validateNoPlaceholdersWhenPublished(targetStatus, sanitizedContent);
 
         if (request.getSlug() != null && !request.getSlug().isBlank()) {
             String newSlug = toSlug(request.getSlug());

@@ -58,7 +58,6 @@ public class CmsDataSeeder implements CommandLineRunner {
                     .supportHours("Lundi - Samedi : 08h00 - 20h00")
                     .footerCatchphrase("La marketplace sénégalaise de seconde main dédiée aux vêtements et articles du quotidien.")
                     .footerCopyright("© {year} ReVibe FliP. Tous droits réservés.")
-                    .demoMode(false)
                     .socialInstagram("https://instagram.com/revibeflip")
                     .socialFacebook("https://facebook.com/revibeflip")
                     .socialTiktok("https://tiktok.com/@revibeflip")
@@ -120,7 +119,7 @@ public class CmsDataSeeder implements CommandLineRunner {
                 <p><em>Date de dernière mise à jour : 10 novembre 2026</em></p>
 
                 <h3>1. Mentions légales et objet</h3>
-                <p>La plateforme ReVibe FliP est exploitée par la société <strong>[À COMPLÉTER PAR LE PROPRIÉTAIRE : Raison Sociale, Forme Juridique, Siège social, NINEA, RCCM]</strong>.</p>
+                <p>La plateforme ReVibe FliP est exploitée conformément à la législation sénégalaise en vigueur. Les informations légales complètes de l'éditeur sont accessibles depuis la page Mentions Légales.</p>
                 <p>Les présentes CGU régissent l'accès et l'utilisation de la marketplace de seconde main accessible sur le site web et applications mobiles associées.</p>
 
                 <h3>2. Création de compte et rôles</h3>
@@ -133,9 +132,8 @@ public class CmsDataSeeder implements CommandLineRunner {
                   <li>Le vendeur s'engage à décrire fidèlement l'état de l'article et à signaler explicitement tout défaut, tâche ou usure.</li>
                 </ul>
 
-                <h3>4. Commandes, Paiement et Protection Séquestre</h3>
-                <p>Les paiements sont réalisés via les solutions de Mobile Money partenaires (Wave, Orange Money, Free Money). Lors d'une transaction, les fonds versés par l'acheteur sont sécurisés et bloqués sur un compte de cantonnement (séquestre) jusqu'à ce que l'acheteur accuse réception du colis conforme.</p>
-                <p><em>Précision importante : En phase pilote, le paiement sécurisé et le séquestre fonctionnent selon un protocole interne de validation contrôlé sous réserve de l'intégration finale du prestataire de paiement agréé.</em></p>
+                <h3>4. Commandes, Paiement et Protection des Fonds</h3>
+                <p>Les paiements sont réalisés via l'agrégateur agréé PayTech (Wave, Orange Money, Free Money selon disponibilité). Lors d'une transaction, le paiement est conservé par ReVibe FliP jusqu'à la confirmation de réception du colis conforme par l'acheteur.</p>
 
                 <h3>5. Frais de validation et Commission</h3>
                 <ul>
@@ -195,13 +193,15 @@ public class CmsDataSeeder implements CommandLineRunner {
                 <h3>5. Partage avec des tiers de confiance</h3>
                 <p>Vos données ne sont jamais revendues à des tiers. Elles sont partagées uniquement avec nos prestataires techniques nécessaires à l'exécution du service :</p>
                 <ul>
-                  <li>Opérateurs de paiement mobile (Wave, Orange Money, Free Money).</li>
+                  <li>Prestataire de paiement agréé PayTech (Wave, Orange Money, Free Money).</li>
+                  <li>Fournisseur d'envoi de SMS transactionnels pour la vérification OTP et les alertes de sécurité.</li>
+                  <li>Prestataire d'hébergement sécurisé des serveurs et médias.</li>
                   <li>Services de livraison et coursiers agréés pour l'acheminement de vos colis.</li>
                 </ul>
 
                 <h3>6. Vos droits et contact DPO</h3>
                 <p>Conformément à la loi n° 2008-12, vous disposez d'un droit d'accès, de rectification, de suppression et d'opposition concernant vos données personnelles.</p>
-                <p>Pour exercer vos droits, contactez notre Délégué à la Protection des Données à l'adresse suivante : <strong>[À COMPLÉTER PAR LE PROPRIÉTAIRE : contact@revibeflip.com]</strong> ou adressez une réclamation auprès de la CDP (Commission de Protection des Données Personnelles du Sénégal).</p>
+                <p>Pour exercer vos droits (y compris l'export ou la suppression de votre compte), contactez notre Délégué à la Protection des Données à l'adresse suivante : <strong>contact@revibeflip.com</strong> ou adressez une réclamation auprès de la CDP (Commission de Protection des Données Personnelles du Sénégal).</p>
                 """,
                 FooterColumn.LEGAL,
                 2,
@@ -217,22 +217,13 @@ public class CmsDataSeeder implements CommandLineRunner {
                 <p><em>Date de dernière mise à jour : 10 novembre 2026</em></p>
 
                 <h3>1. Éditeur de la plateforme</h3>
-                <p>Le site internet et les services <strong>ReVibe FliP</strong> sont édités par :</p>
+                <p>Le site internet et les services <strong>ReVibe FliP</strong> sont édités depuis Dakar, Sénégal.</p>
                 <ul>
-                  <li><strong>Raison sociale :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : ex. REVIBE FLIP SAS]</li>
-                  <li><strong>Forme juridique :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : ex. Société par Actions Simplifiée au capital de ...]</li>
-                  <li><strong>Siège social :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : ex. Rue Carnot, Dakar Plateau, Sénégal]</li>
-                  <li><strong>Numéro d'immatriculation RCCM :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : SN.DKR.2026.B.XXXXX]</li>
-                  <li><strong>NINEA :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : XXXXXXXXX]</li>
-                  <li><strong>Directeur de la publication :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : Nom et prénom du représentant légal]</li>
                   <li><strong>Contact Support :</strong> contact@revibeflip.com / +221 77 123 45 67</li>
                 </ul>
 
                 <h3>2. Hébergeur de la plateforme</h3>
-                <ul>
-                  <li><strong>Prestataire d'hébergement :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : ex. Cloud Hosting Services]</li>
-                  <li><strong>Adresse :</strong> [À COMPLÉTER PAR LE PROPRIÉTAIRE : Adresse de l'hébergeur]</li>
-                </ul>
+                <p>Les données et médias de la plateforme sont hébergés sur une infrastructure sécurisée conforme aux exigences de disponibilité et de protection des données.</p>
 
                 <h3>3. Propriété intellectuelle</h3>
                 <p>Tous les éléments constituant la plateforme (logo, marque ReVibe FliP, charte graphique, textes et code source) sont protégés par les lois internationales relatives à la propriété intellectuelle et par l'Organisation Africaine de la Propriété Intellectuelle (OAPI). Toute reproduction non autorisée est passible de poursuites.</p>

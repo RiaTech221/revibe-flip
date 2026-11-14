@@ -10,6 +10,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { authApi } from '../services/api';
+import { setAccessToken } from '../services/httpClient';
 
 interface AuthContextType {
   user: User | null;
@@ -31,27 +32,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('revibeflip_token'));
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'otp'>('login');
   const [pendingPhone, setPendingPhone] = useState('');
 
   const refreshUser = async () => {
-    const currentToken = localStorage.getItem('revibeflip_token');
-    if (!currentToken) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
     try {
+      const refreshRes = await authApi.refresh();
+      const newToken = refreshRes.data?.data?.token;
+      const refreshedUser = refreshRes.data?.data?.user;
+      if (newToken && refreshedUser) {
+        setAccessToken(newToken);
+        setToken(newToken);
+        setUser(refreshedUser);
+        return;
+      }
       const res = await authApi.getMe();
       if (res.data && res.data.data) {
         setUser(res.data.data);
       }
-    } catch (err) {
-      console.error('Erreur chargement session', err);
-      logout();
+    } catch {
+      setAccessToken(null);
+      setToken(null);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -62,14 +67,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('revibeflip_token', newToken);
+    setAccessToken(newToken);
     setToken(newToken);
     setUser(newUser);
     closeAuthModal();
   };
 
   const logout = () => {
-    localStorage.removeItem('revibeflip_token');
+    authApi.logout().catch(() => {});
+    setAccessToken(null);
     setToken(null);
     setUser(null);
   };
