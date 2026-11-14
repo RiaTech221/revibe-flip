@@ -31,7 +31,7 @@ export interface Category {
   description?: string;
 }
 
-export type PaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY';
+export type PaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'CARD';
 
 export type ProductCondition =
   | 'NEW_WITH_TAG'
