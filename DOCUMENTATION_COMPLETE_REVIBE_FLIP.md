@@ -393,48 +393,17 @@ La marketplace s'affiche avec son catalogue complet, son logo épuré et ses cat
 
 ### 13.5 Comptes de Démonstration Pré-configurés (Connexion Immédiate)
 
-Le projet initialise automatiquement 4 comptes de test prêts à l'emploi :
-
-| Rôle & Nom | Numéro de Téléphone | Mot de Passe | Ce que vous pouvez tester |
-|---|---|---|---|
-| 👑 **Super Administrateur** | `+221770000000` | `Admin1234!` | Accès au Back-Office (`/admin`), modération des annonces, gestion des litiges, modification des bannières CMS. |
-| 👗 **Vendeuse Aminata Diallo** | `+221771112233` | `Passer123!` | Vendeuse populaire à Dakar (Note 4.9 ★). Son dressing contient des Boubous, Robes Wax et créations locales. |
-| 👔 **Vendeur Moussa Ndiaye** | `+221774445566` | `Passer123!` | Vendeur certifié (Note 4.8 ★). Son dressing contient des Chemises en lin, Sneakers Nike et Sandales en cuir. |
-| 🛍️ **Acheteuse Fatou Sow** | `+221778889900` | `Passer123!` | Acheteuse aux Almadies. Idéale pour simuler un achat, payer par Wave et échanger par message. |
+En environnement local (`dev`), `DevDataSeeder` (exclu du JAR de production `-Pprod`) initialise des données de test. En production, aucun compte par défaut n'est créé : utilisez `REVIBE_BOOTSTRAP_ADMIN_PHONE` et `REVIBE_BOOTSTRAP_ADMIN_PASSWORD` pour créer le premier administrateur (changement de mot de passe requis à la première connexion), et inscrivez vos comptes via `/register` + OTP SMS.
 
 ---
 
-### 13.6 Cinq Scénarios Pratiques de Découverte (Pas-à-Pas)
+### 13.6 Parcours Fonctionnels Clés (Pas-à-Pas)
 
-Pour tester la plateforme de bout en bout en moins de 10 minutes :
-
-#### Scénario 1 : Explorer le Catalogue et les Filtres
-1. Sur la page d'accueil (`http://localhost:5173`), cliquez sur une bulle de catégorie (ex: *Wax & Bazin*, *Chaussures* ou *Hommes*).
-2. Utilisez la barre de recherche en tapant `Lin` ou `Nike`.
-3. Cliquez sur un article pour voir la fiche produit détaillée, les photos et le badge de confiance du vendeur.
-
-#### Scénario 2 : Ajouter au Panier et Passer Commande avec Séquestre Wave
-1. Sur la fiche de l'article *Chemise Casual Homme en Lin Écru*, cliquez sur **Ajouter au panier**.
-2. Un toast de confirmation discret s'affiche en bas à droite : cliquez sur **Voir mon panier**.
-3. Dans le tiroir latéral, cliquez sur **Valider la commande & Payer (11 000 FCFA)**.
-4. Choisissez *Livraison à domicile (+ 2 000 FCFA)* ou *Remise en main propre (Gratuit)*.
-5. Sélectionnez **Wave** et cliquez sur **Confirmer le Paiement sous Séquestre**.
-6. Vous êtes redirigé vers le reçu : les fonds sont bloqués sous séquestre (`ESCROW_LOCKED`).
-
-#### Scénario 3 : Négocier un Prix par Chat Instantané
-1. Sur une fiche article, cliquez sur **Discuter d'abord avec le vendeur**.
-2. La messagerie s'ouvre avec la miniature de l'article pré-chargée.
-3. Envoyez une offre de prix ou un message : le vendeur virtuel vous répond automatiquement !
-
-#### Scénario 4 : Publier une Annonce Vendeur
-1. Cliquez sur le bouton violet **+ Vendre** dans la barre de navigation.
-2. Si vous n'êtes pas connecté, connectez-vous avec le compte d'Aminata (`+221771112233` / `Passer123!`).
-3. Téléversez une photo, donnez un titre (ex: *Robe Soirée Satin*), fixez le prix en FCFA et validez : l'annonce apparaît instantanément dans le catalogue.
-
-#### Scénario 5 : Administrer la Plateforme
-1. Connectez-vous avec le compte Administrateur (`+221770000000` / `Admin1234!`).
-2. Rendez-vous sur `/admin` via le menu profil.
-3. Visualisez les KPIs financiers (GMV, volume sous séquestre), suspendez un utilisateur malveillant en un clic ou modifiez la bannière d'annonce du site.
+1. **Catalogue & Filtres** : explorez les catégories sur `http://localhost:5173` ou utilisez la barre de recherche.
+2. **Panier & Paiement PayTech** : ajoutez un article, choisissez le mode de livraison et le moyen de paiement (Wave, Orange Money, Free Money) ; l'application redirige vers PayTech et valide la commande uniquement après réception/vérification de l'IPN.
+3. **Messagerie & Offres** : négociez directement avec le vendeur via WebSocket STOMP authentifié par JWT.
+4. **Publication d'Annonce** : cliquez sur **+ Vendre**, téléversez une photo (validée côté serveur par signature réelle) et publiez.
+5. **Administration (`/admin`)** : suivez les KPIs financiers, le grand livre, les litiges, le CMS et le **Journal d'Audit** dédié.
 
 ---
 
