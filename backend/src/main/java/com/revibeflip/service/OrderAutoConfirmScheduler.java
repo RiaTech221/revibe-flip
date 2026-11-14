@@ -5,6 +5,7 @@ import com.revibeflip.entity.Order;
 import com.revibeflip.entity.enums.DeliveryStatus;
 import com.revibeflip.entity.enums.NotificationType;
 import com.revibeflip.entity.enums.OrderStatus;
+import com.revibeflip.repository.DeliveryRepository;
 import com.revibeflip.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ import java.util.List;
 public class OrderAutoConfirmScheduler {
 
     private final OrderRepository orderRepository;
-    private final OrderStateMachine stateMachine;
+    private final DeliveryRepository deliveryRepository;
     private final PaymentService paymentService;
     private final NotificationService notificationService;
 
@@ -36,10 +37,10 @@ public class OrderAutoConfirmScheduler {
     @Transactional
     public void autoConfirmDeliveredOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(Math.max(1, autoConfirmDays));
-        List<Order> candidates = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.PAID_ESCROW_LOCKED);
+        List<Order> candidates = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.DELIVERED);
 
         for (Order order : candidates) {
-            Delivery delivery = order.getDelivery();
+            Delivery delivery = deliveryRepository.findByOrderId(order.getId()).orElse(null);
             if (delivery == null || delivery.getStatus() != DeliveryStatus.DELIVERED || delivery.getDeliveredAt() == null) {
                 continue;
             }
@@ -48,10 +49,10 @@ public class OrderAutoConfirmScheduler {
             }
 
             try {
-                stateMachine.transitionOrder(order, OrderStatus.COMPLETED);
-                order.setCompletedAt(LocalDateTime.now());
-                orderRepository.save(order);
-                paymentService.releaseFundsToSeller(order);
+                OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.COMPLETED);
+                order.setStatus(OrderStatus.COMPLETED);
+                Order saved = orderRepository.save(order);
+                paymentService.releaseFundsToSeller(saved);
 
                 notificationService.createNotification(
                         order.getSeller(),

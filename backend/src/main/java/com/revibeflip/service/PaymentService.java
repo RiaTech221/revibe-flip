@@ -416,24 +416,18 @@ public class PaymentService {
 
     private void lockAndMarkProductsSold(Order order) {
         if (order.getProduct() != null) {
-            Product p = productRepository.findByIdForUpdate(order.getProduct().getId())
-                    .orElseThrow(() -> new IllegalStateException("Article introuvable."));
-            if (p.getStatus() == ProductStatus.SOLD) {
+            int updated = productRepository.markSoldIfNotSold(order.getProduct().getId());
+            if (updated == 0) {
                 throw new IllegalStateException("Conflit : cet article a déjà été vendu sur une autre commande.");
             }
-            p.setStatus(ProductStatus.SOLD);
-            productRepository.save(p);
         }
         if (order.getItems() != null) {
             for (OrderItem item : order.getItems()) {
                 if (item.getProduct() != null) {
-                    Product p = productRepository.findByIdForUpdate(item.getProduct().getId())
-                            .orElseThrow(() -> new IllegalStateException("Article introuvable."));
-                    if (p.getStatus() == ProductStatus.SOLD) {
-                        throw new IllegalStateException("Conflit : l'article '" + p.getTitle() + "' a déjà été vendu.");
+                    int updated = productRepository.markSoldIfNotSold(item.getProduct().getId());
+                    if (updated == 0) {
+                        throw new IllegalStateException("Conflit : l'article '" + item.getProduct().getTitle() + "' a déjà été vendu.");
                     }
-                    p.setStatus(ProductStatus.SOLD);
-                    productRepository.save(p);
                 }
             }
         }

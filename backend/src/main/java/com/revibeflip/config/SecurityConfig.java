@@ -106,7 +106,7 @@ public class SecurityConfig {
                                 "/api/media/**",
                                 "/api/products/**",
                                 "/api/reviews/**",
-                                "/api/users/{id}"
+                                "/api/users/{id:\\d+}"
                         ).permitAll()
                         .requestMatchers(
                                 "/actuator/health",

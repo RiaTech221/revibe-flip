@@ -172,9 +172,7 @@ export const MessagesPage: React.FC = () => {
 
   const handleOpenMakeOffer = () => {
     if (!activeConversation) return;
-    const initialPrice = activeConversation.productId
-      ? CURATED_PRODUCTS.find(p => p.id === activeConversation.productId)?.price || 15000
-      : 15000;
+    const initialPrice = Number(activeConversation.productPrice) || 15000;
     setOfferPrice(initialPrice);
     setOfferDeliveryMode('HOME_DELIVERY');
     setOfferDeliveryFee(2000);

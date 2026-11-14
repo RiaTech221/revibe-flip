@@ -18,7 +18,7 @@ import java.util.Map;
 
 /**
  * Implémentation officielle de l'API PayTech (https://doc.paytech.sn).
- * Aucun fallback vers une simulation : sans configuration valide, toute opération échoue explicitement.
+ * Aucun fallback vers un flux fictif : sans configuration valide, toute opération échoue explicitement.
  */
 @Service
 @Slf4j

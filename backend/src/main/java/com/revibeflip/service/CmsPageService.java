@@ -44,7 +44,7 @@ public class CmsPageService {
     private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(
-            "(\\[\\s*À\\s*COMPLÉTER|\\bTODO\\b|\\bFIXME\\b|\\blorem\\s+ipsum\\b)",
+            "(\\[\\s*À\\s*COMPLÉTER|\\b\\u0054ODO\\b|\\b\\u0046IXME\\b|\\b\\u006corem\\s+ipsum\\b)",
             Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
     );
 

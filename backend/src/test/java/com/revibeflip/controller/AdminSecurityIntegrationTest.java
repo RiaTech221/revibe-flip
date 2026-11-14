@@ -50,18 +50,18 @@ class AdminSecurityIntegrationTest {
     }
 
     @Test
-    @DisplayName("Dev: Réinitialisation et re-seed dev accessible à ROLE_ADMIN")
-    @WithMockUser(username = "+221770000000", roles = {"ADMIN"})
+    @DisplayName("Admin: Grand livre accessible à ROLE_ADMIN")
+    @WithMockUser(username = "+221770000001", roles = {"ADMIN"})
     void testDevReseed_AllowedForRoleAdmin() throws Exception {
-        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/admin/dev/reseed?forceReset=false"))
+        mockMvc.perform(get("/api/admin/ledger"))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Sécurité: Accès refusé pour une requête non authentifiée")
+    @DisplayName("Sécurité: Accès refusé (401) pour une requête non authentifiée")
     void testAdminEndpoint_UnauthorizedWithoutAuth() throws Exception {
         mockMvc.perform(get("/api/admin/dashboard"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
