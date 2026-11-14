@@ -1,17 +1,24 @@
 package com.revibeflip.security;
 
+import org.apache.tika.Tika;
+
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Set;
 
 /**
  * Validation cryptographique/binaire (magic bytes) des fichiers uploadés et suppression des métadonnées EXIF.
  */
 public final class SafeMediaService {
+
+    private static final Tika TIKA = new Tika();
+    private static final Set<String> ALLOWED_TIKA_IMAGE_MIMES = Set.of("image/jpeg", "image/png", "image/webp");
 
     private SafeMediaService() {}
 
@@ -60,11 +67,53 @@ public final class SafeMediaService {
 
         // PDF: %PDF-
         if (allowPdf && data[0] == '%' && data[1] == 'P' && data[2] == 'D' && data[3] == 'F' && data[4] == '-') {
+            String tikaMime = TIKA.detect(data);
+            if (!"application/pdf".equalsIgnoreCase(tikaMime)) {
+                throw new IllegalArgumentException("Signature MIME Apache Tika invalide pour le document PDF : " + tikaMime);
+            }
             return DetectedType.PDF;
         }
 
         throw new IllegalArgumentException("Signature binaire du fichier non reconnue (formats acceptés : JPG, PNG, WebP"
                 + (allowPdf ? ", PDF" : "") + ").");
+    }
+
+    /**
+     * Vérifie que le type MIME détecté par Apache Tika correspond aux formats d'images autorisés.
+     */
+    public static void verifyImageWithTika(byte[] data, DetectedType expectedType) {
+        String detectedMime = TIKA.detect(data);
+        if (!ALLOWED_TIKA_IMAGE_MIMES.contains(detectedMime.toLowerCase())
+                || !expectedType.mimeType.equalsIgnoreCase(detectedMime)) {
+            throw new IllegalArgumentException("Type MIME détecté par Apache Tika non autorisé : " + detectedMime);
+        }
+    }
+
+    /**
+     * Liste blanche stricte des URLs d'images autorisées en base :
+     * chemins locaux (/api/uploads/..., /api/media/...) ou HTTPS Cloudinary (res.cloudinary.com).
+     */
+    public static boolean isAllowedImageUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        String trimmed = url.trim();
+        if (trimmed.contains("..") || trimmed.contains("\\") || trimmed.contains("\r") || trimmed.contains("\n")) {
+            return false;
+        }
+        if (trimmed.startsWith("/api/uploads/") || trimmed.startsWith("/api/media/") || trimmed.startsWith("/uploads/")) {
+            return !trimmed.startsWith("//");
+        }
+        try {
+            URI uri = URI.create(trimmed);
+            return "https".equalsIgnoreCase(uri.getScheme())
+                    && "res.cloudinary.com".equalsIgnoreCase(uri.getHost())
+                    && uri.getUserInfo() == null
+                    && uri.getPath() != null
+                    && !uri.getPath().isBlank();
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
     }
 
     /**

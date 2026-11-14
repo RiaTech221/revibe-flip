@@ -57,10 +57,13 @@ export const notificationApi = {
   markAsRead: (id: number) => api.put(`/notifications/${id}/read`),
 };
 
+export type UploadContext = 'products' | 'avatars' | 'cms' | 'disputes' | 'general';
+
 export const uploadApi = {
-  uploadFile: (file: File) => {
+  uploadFile: (file: File, context: UploadContext = 'products') => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('context', context);
     return api.post<{ success: boolean; data: string }>('/uploads', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
