@@ -5,6 +5,7 @@ import com.revibeflip.entity.MediaAsset;
 import com.revibeflip.entity.User;
 import com.revibeflip.repository.MediaAssetRepository;
 import com.revibeflip.security.SafeMediaService;
+import com.revibeflip.service.storage.ImageStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ import java.util.UUID;
 public class MediaAssetService {
 
     private final MediaAssetRepository mediaAssetRepository;
+    private final ImageStorageService imageStorageService;
 
     private static final String UPLOAD_DIR = "uploads/media";
     private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList("image/jpeg", "image/png", "image/webp");
@@ -73,23 +75,29 @@ public class MediaAssetService {
             throw new IllegalArgumentException("Le texte alternatif (description de l'image) est obligatoire pour l'accessibilité.");
         }
 
-        // 4. Contrôle binaire (magic bytes), suppression EXIF et renommage UUID
+        // 4. Contrôle binaire (magic bytes + Apache Tika), suppression EXIF et renommage UUID
         byte[] rawBytes = file.getBytes();
         SafeMediaService.DetectedType detected = SafeMediaService.detectType(rawBytes, true);
+        if (detected != SafeMediaService.DetectedType.PDF) {
+            SafeMediaService.verifyImageWithTika(rawBytes, detected);
+        }
         byte[] cleanBytes = detected != SafeMediaService.DetectedType.PDF
                 ? SafeMediaService.sanitizeImage(rawBytes, detected)
                 : rawBytes;
         String safeFilename = UUID.randomUUID().toString() + detected.extension;
 
-        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+        String publicUrl;
+        if (detected != SafeMediaService.DetectedType.PDF) {
+            publicUrl = imageStorageService.store(cleanBytes, "cms", detected.extension, detected.mimeType);
+        } else {
+            Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            Path targetLocation = uploadPath.resolve(safeFilename).normalize();
+            Files.write(targetLocation, cleanBytes);
+            publicUrl = "/api/media/" + safeFilename;
         }
-
-        Path targetLocation = uploadPath.resolve(safeFilename).normalize();
-        Files.write(targetLocation, cleanBytes);
-
-        String publicUrl = "/api/media/" + safeFilename;
 
         MediaAsset asset = MediaAsset.builder()
                 .filename(safeFilename)
