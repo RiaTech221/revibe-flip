@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Onglet / Vue Vendeur : SellerOrdersTab
  * 
  * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerOrdersTab).
@@ -47,7 +47,7 @@ export const SellerOrdersTab: React.FC<SellerOrdersTabProps> = ({
                   <img
                     src={
                       ord.productImageUrl ||
-                      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=120&q=80'
+                      '/placeholder-product.svg'
                     }
                     alt=""
                     className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-gray-200"

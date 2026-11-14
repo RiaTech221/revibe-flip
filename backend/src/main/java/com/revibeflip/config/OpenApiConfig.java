@@ -26,12 +26,10 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("ReVibe FliP - API REST")
-                        .description("Documentation complète de l'API ReVibe FliP — Marketplace africaine de seconde main. " +
-                                "Gestion des annonces, commandes, messagerie temps réel, paiements mobiles (Wave, Orange Money, Free Money), " +
-                                "livraison avec suivi, système d'Escrow (séquestre) et back-office administrateur.\n\n" +
-                                "Avertissement sur le séquestre : Simulation interne. Le blocage réel des fonds nécessite l'intégration " +
-                                "du prestataire de paiement (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.")
-                        .version("1.0.0 (MVP)")
+                        .description("Documentation complète de l'API ReVibe FliP — Marketplace sénégalaise de seconde main. " +
+                                "Gestion des annonces, commandes, messagerie temps réel, paiements mobiles via PayTech, " +
+                                "livraison avec suivi, conservation des paiements jusqu'à confirmation de réception et back-office administrateur.")
+                        .version("1.0.0")
                         .contact(new Contact()
                                 .name("Équipe Technique ReVibe FliP")
                                 .email("contact@revibeflip.com"))

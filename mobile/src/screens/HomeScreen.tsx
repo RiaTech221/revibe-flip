@@ -78,7 +78,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </View>
           <Text style={styles.heroTitle}>Achetez & Vendez de la Seconde Main en toute confiance</Text>
           <Text style={styles.heroSubtitle}>
-            Vos fonds restent consignés sous séquestre jusqu'à validation de votre commande.
+            Vos fonds sont conservés par ReVibe FliP jusqu'à la confirmation de réception.
           </Text>
           <EscrowBadge style={{ marginTop: 12 }} />
         </View>

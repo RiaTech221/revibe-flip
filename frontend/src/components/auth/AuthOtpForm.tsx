@@ -10,7 +10,6 @@ import { authApi } from '../../services/authService';
 
 interface AuthOtpFormProps {
   phone: string;
-  demoOtpCode?: string | null;
   loading: boolean;
   error: string | null;
   onSubmit: (otpCode: string) => void;
@@ -22,13 +21,12 @@ interface AuthOtpFormProps {
  */
 export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
   phone,
-  demoOtpCode,
   loading,
   error,
   onSubmit,
   onBack,
 }) => {
-  const [otpCode, setOtpCode] = useState(demoOtpCode || '');
+  const [otpCode, setOtpCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
 
@@ -41,11 +39,8 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
     setResending(true);
     setResendMessage(null);
     try {
-      const res = await authApi.resendOtp(phone);
+      await authApi.resendOtp(phone);
       setResendMessage('Nouveau code envoyé par SMS.');
-      if (res.data?.data?.otpDemoCode) {
-        setOtpCode(res.data.data.otpDemoCode);
-      }
     } catch {
       setResendMessage('Erreur lors du renvoi du code.');
     } finally {
@@ -75,22 +70,6 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
       {resendMessage && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs font-bold">
           {resendMessage}
-        </div>
-      )}
-
-      {/* Raccourci Démo */}
-      {demoOtpCode && (
-        <div className="p-3 bg-purple-50 rounded-2xl border border-purple-200 text-center">
-          <span className="text-[10px] text-purple-600 block font-bold uppercase tracking-wider">
-            Code de démonstration
-          </span>
-          <button
-            type="button"
-            onClick={() => setOtpCode(demoOtpCode)}
-            className="text-lg font-black tracking-widest text-purple-700 hover:scale-105 transition-transform cursor-pointer"
-          >
-            {demoOtpCode}
-          </button>
         </div>
       )}
 

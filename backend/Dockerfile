@@ -10,9 +10,9 @@ COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 
-# Copie des sources et compilation du JAR exécutable (sans exécuter les tests lents en conteneur)
+# Copie des sources et compilation du JAR de production (exclut DevDataSeeder via -Pprod)
 COPY src/ src/
-RUN ./mvnw clean package -DskipTests -B
+RUN ./mvnw clean package -Pprod -DskipTests -B
 
 # ==============================================================================
 # 2. RUNTIME STAGE (JRE 21 léger et sécurisé)
@@ -30,14 +30,17 @@ USER spring:spring
 # Copie du JAR depuis le stage de compilation
 COPY --from=builder --chown=spring:spring /app/target/*.jar app.jar
 
-# Variables d'environnement par défaut
-ENV SPRING_PROFILES_ACTIVE=mysql \
+# Variables d'environnement par défaut (profil prod)
+ENV SPRING_PROFILES_ACTIVE=prod \
     UPLOAD_DIR=/app/uploads/ \
     JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
 VOLUME ["/app/uploads"]
 
 EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -fsS http://localhost:8080/actuator/health || exit 1
 
 # Démarrage optimisé de la JVM
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

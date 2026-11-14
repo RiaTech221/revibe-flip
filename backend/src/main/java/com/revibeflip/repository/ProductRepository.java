@@ -21,6 +21,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findBySellerIdOrderByCreatedAtDesc(Long sellerId);
 
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Product p WHERE p.id = :id")
+    java.util.Optional<Product> findByIdForUpdate(@Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.status = com.revibeflip.entity.enums.ProductStatus.SOLD WHERE p.id = :id AND p.status <> com.revibeflip.entity.enums.ProductStatus.SOLD")
+    int markSoldIfNotSold(@Param("id") Long id);
+
     List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
 
     @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' AND (" +

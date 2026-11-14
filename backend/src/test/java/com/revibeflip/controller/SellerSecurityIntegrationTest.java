@@ -38,10 +38,10 @@ class SellerSecurityIntegrationTest {
     private OrderRepository orderRepository;
 
     @Test
-    @DisplayName("Sécurité Espace Vendeur: Accès refusé pour une requête non authentifiée")
+    @DisplayName("Sécurité Espace Vendeur: Accès refusé (401) pour une requête non authentifiée")
     void testUnauthenticated_Forbidden() throws Exception {
         mockMvc.perform(get("/api/seller/dashboard"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

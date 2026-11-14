@@ -113,7 +113,6 @@ class ChatOfferServiceTest {
                 .validationFeeRate(BigDecimal.valueOf(1.0))
                 .offerValidityHours(24)
                 .reservationDurationHours(24)
-                .demoMode(true)
                 .build();
 
         lenient().when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(platformSetting));

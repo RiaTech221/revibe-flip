@@ -4,6 +4,7 @@ import com.revibeflip.dto.MediaAssetDto;
 import com.revibeflip.entity.MediaAsset;
 import com.revibeflip.entity.User;
 import com.revibeflip.repository.MediaAssetRepository;
+import com.revibeflip.security.SafeMediaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -72,29 +73,29 @@ public class MediaAssetService {
             throw new IllegalArgumentException("Le texte alternatif (description de l'image) est obligatoire pour l'accessibilité.");
         }
 
-        // 4. Renommage sécurisé par UUID
-        String extension = "";
-        int dotIdx = originalName.lastIndexOf('.');
-        if (dotIdx > 0) {
-            extension = originalName.substring(dotIdx).toLowerCase();
-        }
-        String safeFilename = UUID.randomUUID().toString() + extension;
+        // 4. Contrôle binaire (magic bytes), suppression EXIF et renommage UUID
+        byte[] rawBytes = file.getBytes();
+        SafeMediaService.DetectedType detected = SafeMediaService.detectType(rawBytes, true);
+        byte[] cleanBytes = detected != SafeMediaService.DetectedType.PDF
+                ? SafeMediaService.sanitizeImage(rawBytes, detected)
+                : rawBytes;
+        String safeFilename = UUID.randomUUID().toString() + detected.extension;
 
-        Path uploadPath = Paths.get(UPLOAD_DIR);
+        Path uploadPath = Paths.get(UPLOAD_DIR).toAbsolutePath().normalize();
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
 
-        Path targetLocation = uploadPath.resolve(safeFilename);
-        Files.copy(file.getInputStream(), targetLocation);
+        Path targetLocation = uploadPath.resolve(safeFilename).normalize();
+        Files.write(targetLocation, cleanBytes);
 
         String publicUrl = "/api/media/" + safeFilename;
 
         MediaAsset asset = MediaAsset.builder()
                 .filename(safeFilename)
                 .originalFilename(originalName)
-                .fileType(contentType)
-                .fileSize(file.getSize())
+                .fileType(detected.mimeType)
+                .fileSize((long) cleanBytes.length)
                 .url(publicUrl)
                 .altText(isImage ? altText.trim() : "Document PDF")
                 .uploadedBy(user)

@@ -27,23 +27,18 @@ import java.util.List;
 /**
  * Contrôleur REST pour l'Espace Administrateur de ReVibe FliP.
  * Tous les endpoints requièrent le rôle ROLE_ADMIN et un jeton JWT valide (Bearer).
- *
- * NOTE SUR LE SÉQUESTRE (Point 8) :
- * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
- * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
  */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Back-Office Administrateur", description = "Gestion globale : utilisateurs, annonces, litiges, commissions, séquestre et paramètres")
+@Tag(name = "Back-Office Administrateur", description = "Gestion globale : utilisateurs, annonces, litiges, commissions, fonds conservés et paramètres")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminController {
 
     private final AdminService adminService;
     private final ReportService reportService;
-    @org.springframework.beans.factory.annotation.Autowired(required = false)
-    private com.revibeflip.config.DevDataSeeder devDataSeeder;
+    private final com.revibeflip.service.LedgerService ledgerService;
 
     // ==========================================
     // 2. DASHBOARD (VUE D'ENSEMBLE)
@@ -68,19 +63,6 @@ public class AdminController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to
     ) {
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getDashboardStats(period, from, to)));
-    }
-
-    @PostMapping("/dev/reseed")
-    @Operation(summary = "Réinitialiser et re-seeder les données de test (dev)", description = "Supprime les commandes dev et réinsère 15 commandes à tous statuts, 3 paiements, 3 signalements, logs d'audit.")
-    public ResponseEntity<com.revibeflip.dto.ApiResponse<String>> reseedDevData(
-            @Parameter(description = "Si true, supprime et réinsère les commandes de test dev")
-            @RequestParam(defaultValue = "false") boolean forceReset
-    ) {
-        if (devDataSeeder != null) {
-            devDataSeeder.seedAll(forceReset);
-            return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok("Seed dev réexécuté avec succès (15 commandes, tous statuts, Wave, OM, Free Money)."));
-        }
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok("DevDataSeeder non actif sur ce profil."));
     }
 
     // ==========================================
@@ -320,7 +302,7 @@ public class AdminController {
     // 7. GESTION DES PAIEMENTS & TRANSACTIONS (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/payments")
-    @Operation(summary = "Lister les paiements et transactions", description = "Décomposition financière : prix article, frais validation (1%), livraison, commission plateforme (20%) et moyen de paiement Wave, Orange Money, Free Money. Note : simulation interne du séquestre.")
+    @Operation(summary = "Lister les paiements et transactions", description = "Décomposition financière : prix article, frais validation (1%), livraison, commission plateforme (20%) et moyen de paiement PayTech (Wave, Orange Money, Free Money).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des transactions"),
             @ApiResponse(responseCode = "401", description = "Non authentifié"),
@@ -436,5 +418,26 @@ public class AdminController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getAuditLogsPage(pageable)));
+    }
+
+    @GetMapping("/ledger")
+    @Operation(summary = "Consulter le grand livre des fonds et soldes")
+    public ResponseEntity<com.revibeflip.dto.ApiResponse<java.util.Map<String, Object>>> getLedger(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("balances", ledgerService.getBalancesFromLedger());
+        result.put("entries", PageResponseDto.fromPage(ledgerService.getEntries(pageable)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(result));
+    }
+
+    @GetMapping(value = "/ledger/export", produces = "text/csv")
+    @Operation(summary = "Exporter le grand livre comptable au format CSV")
+    public ResponseEntity<String> exportLedgerCsv() {
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=revibeflip-ledger.csv")
+                .body(ledgerService.exportCsv());
     }
 }

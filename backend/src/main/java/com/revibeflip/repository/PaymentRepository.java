@@ -13,6 +13,12 @@ import java.util.Optional;
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderId(Long orderId);
     Optional<Payment> findByTransactionReference(String transactionReference);
+    Optional<Payment> findByPaytechToken(String paytechToken);
+    Optional<Payment> findByPayoutReference(String payoutReference);
+    java.util.List<Payment> findByStatusAndCreatedAtBefore(
+            com.revibeflip.entity.enums.PaymentStatus status,
+            java.time.LocalDateTime before
+    );
     java.util.List<Payment> findAllByOrderByCreatedAtDesc();
 
     long countByStatus(com.revibeflip.entity.enums.PaymentStatus status);

@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { contentApi } from '../services/api';
+import { sanitizeHtml } from '../utils/sanitizeHtml';
 import { CmsPage } from '../types';
 import {
   Search,
@@ -67,7 +68,7 @@ export const CommentCaMarchePage: React.FC = () => {
         {/* CONTENU CMS DYNAMIQUE S'IL A ÉTÉ PERSONNALISÉ PAR L'ADMIN */}
         {pageData && pageData.content && (
           <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-150 shadow-xs prose max-w-none text-sm text-gray-700">
-            <div dangerouslySetInnerHTML={{ __html: pageData.content }} />
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(pageData.content) }} />
           </div>
         )}
 

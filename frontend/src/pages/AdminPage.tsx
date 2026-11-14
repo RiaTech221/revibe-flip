@@ -109,10 +109,9 @@ export const AdminPage: React.FC = () => {
   const [validationFeeRate, setValidationFeeRate] = useState<number>(1);
   const [offerValidityHours, setOfferValidityHours] = useState<number>(24);
   const [reservationDurationHours, setReservationDurationHours] = useState<number>(24);
-  const [demoMode, setDemoMode] = useState<boolean>(false);
   const [platformName, setPlatformName] = useState('ReVibe FliP');
   const [supportEmail, setSupportEmail] = useState('contact@revibeflip.com');
-  const [supportPhone, setSupportPhone] = useState('+221770000000');
+  const [supportPhone, setSupportPhone] = useState('+221 77 123 45 67');
   const [currency, setCurrency] = useState('FCFA');
   const [settingsSavedMessage, setSettingsSavedMessage] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AdminActionLog[]>([]);
@@ -292,10 +291,9 @@ export const AdminPage: React.FC = () => {
         setValidationFeeRate(s.validationFeeRate);
         setOfferValidityHours(s.offerValidityHours || 24);
         setReservationDurationHours(s.reservationDurationHours || 24);
-        setDemoMode(s.demoMode || false);
         setPlatformName(s.platformName || 'ReVibe FliP');
         setSupportEmail(s.supportEmail || 'contact@revibeflip.com');
-        setSupportPhone(s.supportPhone || '+221770000000');
+        setSupportPhone(s.supportPhone || '+221 77 123 45 67');
         setCurrency(s.currency || 'FCFA');
       }
       if (auditRes.data?.data) {
@@ -535,7 +533,6 @@ export const AdminPage: React.FC = () => {
         validationFeeRate,
         offerValidityHours,
         reservationDurationHours,
-        demoMode,
         platformName,
         supportEmail,
         supportPhone,
@@ -765,8 +762,6 @@ export const AdminPage: React.FC = () => {
             setOfferValidityHours={setOfferValidityHours}
             reservationDurationHours={reservationDurationHours}
             setReservationDurationHours={setReservationDurationHours}
-            demoMode={demoMode}
-            setDemoMode={setDemoMode}
             platformName={platformName}
             setPlatformName={setPlatformName}
             currency={currency}
