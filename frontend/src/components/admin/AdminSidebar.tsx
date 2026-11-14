@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Settings,
   FileText,
+  History,
   LogOut,
 } from 'lucide-react';
 import { AdminDashboard, User } from '../../types';
@@ -28,6 +29,7 @@ export type AdminTabType =
   | 'orders'
   | 'payments'
   | 'reports'
+  | 'audit'
   | 'settings'
   | 'content';
 
@@ -163,7 +165,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           >
             <span className="flex items-center gap-3">
               <CreditCard className="w-4 h-4" />
-              <span>Séquestre & Transactions</span>
+              <span>Fonds & Transactions</span>
             </span>
           </button>
 
@@ -199,6 +201,21 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <span className="flex items-center gap-3">
               <FileText className="w-4 h-4" />
               <span>Gestionnaire CMS</span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('audit')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer ${
+              activeTab === 'audit'
+                ? 'bg-purple-700 text-white shadow-md shadow-purple-700/20'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-purple-50/40'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <History className="w-4 h-4" />
+              <span>Journal d'Audit</span>
             </span>
           </button>
 
