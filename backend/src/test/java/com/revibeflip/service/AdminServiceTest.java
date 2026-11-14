@@ -114,15 +114,9 @@ class AdminServiceTest {
         when(productRepository.countByStatus(ProductStatus.INACTIVE)).thenReturn(0L);
 
         when(orderRepository.count()).thenReturn(2L);
-        when(paymentRepository.count()).thenReturn(2L);
-        when(orderRepository.sumTotalTransactions()).thenReturn(BigDecimal.valueOf(50000));
-        when(orderRepository.sumTotalCommissions()).thenReturn(BigDecimal.valueOf(10000));
-        when(orderRepository.sumTotalValidationFees()).thenReturn(BigDecimal.valueOf(500));
         when(reportRepository.countByStatus(ReportStatus.PENDING)).thenReturn(0L);
 
         when(categoryRepository.findAll()).thenReturn(List.of(testCategory));
-        when(paymentRepository.findAll()).thenReturn(Collections.emptyList());
-        when(orderRepository.findAll()).thenReturn(Collections.emptyList());
 
         AdminDashboardDto stats = adminService.getDashboardStats();
 
@@ -201,8 +195,8 @@ class AdminServiceTest {
         assertEquals(0, BigDecimal.valueOf(6000).compareTo(stats.getPendingCommissions().getValue()));
         // Panier moyen: 50000 / 1 commande = 50000
         assertEquals(0, BigDecimal.valueOf(50000).compareTo(stats.getAverageBasket().getValue()));
-        // Division par zéro sur nouveaux utilisateurs (prev=0) -> changePct = 0.0
-        assertEquals(0.0, stats.getUsers().getChangePercentage());
+        // Division par zéro sur nouveaux utilisateurs (prev=0, current=2) -> changePct = 100.0
+        assertEquals(100.0, stats.getUsers().getChangePercentage());
         // Transactions
         assertEquals(BigDecimal.valueOf(6), stats.getTransactions().getValue());
         assertEquals(100.0, stats.getTransactions().getChangePercentage()); // (6-3)/3 * 100 = 100%
