@@ -33,6 +33,7 @@ public class AdminService {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final RefreshTokenService refreshTokenService;
     private final OrderRepository orderRepository;
     private final PaymentRepository paymentRepository;
     private final ReportRepository reportRepository;
@@ -605,6 +606,9 @@ public class AdminService {
 
         targetUser.setIsSuspended(suspend);
         User saved = userRepository.save(targetUser);
+        if (suspend) {
+            refreshTokenService.revokeAllForUser(saved);
+        }
 
         logAdminAction(admin,
                 suspend ? "USER_SUSPEND" : "USER_REACTIVATE",

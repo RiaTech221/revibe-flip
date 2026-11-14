@@ -80,6 +80,10 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      - name: Audit de sécurité npm
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
   # ============================================================================
   # 3. MOBILE - React Native / Expo / TypeScript
   # ============================================================================
@@ -105,3 +109,7 @@ jobs:
       - name: Vérification TypeScript (noEmit)
         working-directory: mobile
         run: npx tsc --noEmit
+
+      - name: Audit de sécurité npm
+        working-directory: mobile
+        run: npm audit --audit-level=high

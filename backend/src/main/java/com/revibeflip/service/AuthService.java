@@ -38,6 +38,7 @@ public class AuthService {
     private final NotificationService notificationService;
     private final SmsProvider smsProvider;
     private final OtpRateLimiter otpRateLimiter;
+    private final RefreshTokenService refreshTokenService;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -144,9 +145,11 @@ public class AuthService {
         );
 
         String token = jwtUtil.generateToken(verifiedUser, verifiedUser.getId(), verifiedUser.getRole().name(), verifiedUser.getFullName());
+        String refreshToken = refreshTokenService.createRefreshToken(verifiedUser);
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .user(UserDto.fromEntity(verifiedUser))
                 .build();
@@ -240,8 +243,10 @@ public class AuthService {
         user.setMustChangePassword(false);
         clearResetOtp(user);
         userRepository.save(user);
+        refreshTokenService.revokeAllForUser(user);
     }
 
+    @Transactional(noRollbackFor = BadCredentialsException.class)
     public AuthResponse login(LoginRequest request) {
         String identifier = request.getIdentifier().trim();
 
@@ -253,9 +258,26 @@ public class AuthService {
             throw new IllegalStateException("Ce compte a été suspendu par l'administration. Veuillez contacter le support.");
         }
 
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
+            throw new IllegalStateException("Compte temporairement verrouillé suite à plusieurs tentatives échouées. Réessayez dans quelques minutes.");
+        }
+
         boolean isMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
         if (!isMatch) {
+            int failures = (user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() : 0) + 1;
+            user.setFailedLoginAttempts(failures);
+            if (failures >= 5) {
+                user.setLockedUntil(LocalDateTime.now().plusMinutes(15));
+                user.setFailedLoginAttempts(0);
+            }
+            userRepository.save(user);
             throw new BadCredentialsException("Numéro de téléphone ou mot de passe incorrect.");
+        }
+
+        if (user.getFailedLoginAttempts() != null && user.getFailedLoginAttempts() > 0 || user.getLockedUntil() != null) {
+            user.setFailedLoginAttempts(0);
+            user.setLockedUntil(null);
+            userRepository.save(user);
         }
 
         if (!Boolean.TRUE.equals(user.getIsVerified())) {
@@ -275,12 +297,35 @@ public class AuthService {
         }
 
         String token = jwtUtil.generateToken(user, user.getId(), user.getRole().name(), user.getFullName());
+        String refreshToken = refreshTokenService.createRefreshToken(user);
 
         return AuthResponse.builder()
                 .token(token)
+                .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .user(UserDto.fromEntity(user))
                 .build();
+    }
+
+    @Transactional
+    public AuthResponse refreshToken(String rawRefreshToken) {
+        RefreshTokenService.RotationResult rotated = refreshTokenService.rotateRefreshToken(rawRefreshToken);
+        User user = rotated.user();
+        String newAccessToken = jwtUtil.generateToken(user, user.getId(), user.getRole().name(), user.getFullName());
+        return AuthResponse.builder()
+                .token(newAccessToken)
+                .refreshToken(rotated.rawRefreshToken())
+                .tokenType("Bearer")
+                .user(UserDto.fromEntity(user))
+                .build();
+    }
+
+    @Transactional
+    public void logout(String rawRefreshToken, User user) {
+        refreshTokenService.revokeByRawToken(rawRefreshToken);
+        if (user != null) {
+            refreshTokenService.revokeAllForUser(user);
+        }
     }
 
     private String generateOtp() {
