@@ -13,6 +13,8 @@ interface HeaderProps {
   title?: string;
   showBack?: boolean;
   onBack?: () => void;
+  showSearch?: boolean;
+  onSearchPress?: () => void;
   rightAction?: React.ReactNode;
 }
 
