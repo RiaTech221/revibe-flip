@@ -1,4 +1,4 @@
-# ReVibe FliP — Version 1 (MVP)
+# ReVibe FliP
 > **Redonner une seconde vie — marketplace africaine de seconde main**  
 > *Lancement initial au Sénégal (Dakar & régions)*
 
@@ -8,135 +8,124 @@
 
 ## 🌟 Présentation du Projet
 
-**ReVibe FliP** est une plateforme mobile et web de revente d'articles de seconde main (vêtements, chaussures, accessoires, tenues traditionnelles et Wax), conçue sur mesure pour les réalités africaines et sénégalaises.
+**ReVibe FliP** est une plateforme web et mobile de revente d'articles de seconde main (vêtements, chaussures, accessoires, tenues traditionnelles et Wax), conçue pour les réalités sénégalaises et africaines.
 
-### Points forts de la Version 1 (MVP) :
-- **Paiements Mobiles Locaux** : Intégration adaptée au Sénégal avec **Wave**, **Orange Money** et **Free Money**.
-- **Sécurisation par Séquestre (Escrow)** : L'argent de l'acheteur est bloqué temporairement et n'est libéré au vendeur qu'après confirmation de la bonne réception de l'article.
-- **Frais de Validation (1%)** : 1% du montant de la commande prélevé pour la protection escrow et la prévention anti-fraude.
-- **Modèle Économique (Commission de 20%)** : Commission plateforme de 20% prélevée sur chaque vente réalisée.
-- **Livraison Adaptée** : Choix entre **Livraison à domicile** (moto coursier urbain) et **Remise en main propre** gratuite.
-- **Suivi Pas à Pas** : Chronologie en temps réel (`PENDING` $\rightarrow$ `PICKED_UP` $\rightarrow$ `IN_TRANSIT` $\rightarrow$ `OUT_FOR_DELIVERY` $\rightarrow$ `DELIVERED`).
-- **Messagerie Acheteur-Vendeur** : Discussion instantanée liée directement à l'annonce du produit via WebSocket STOMP.
-- **Système de Confiance & Avis** : Évaluation 1 à 5 étoiles, calcul automatique du score de confiance et badges vérifiés.
-- **Back-Office Administrateur** : Tableau de bord des KPIs financiers, gestion et suspension des utilisateurs, modération des annonces et traitement des litiges/signalements.
+### Fonctionnalités principales :
+- **Paiements Mobiles Locaux (PayTech)** : Intégration serveur PayTech (`https://doc.paytech.sn`) pour **Wave**, **Orange Money** et **Free Money**, avec vérification IPN SHA-256, contrôle de statut serveur et grand livre immuable (`ledger_entries`).
+- **Conservation des Fonds jusqu'à Réception** : Le paiement de l'acheteur est conservé par ReVibe FliP jusqu'à la confirmation de réception (ou auto-confirmation après le délai paramétré, hors litige ouvert).
+- **Frais de Validation (1%) & Commission (20%)** : Recalculés exclusivement côté serveur depuis la base de données.
+- **Livraison Adaptée** : Choix entre **Livraison à domicile** et **Remise en main propre**, avec suivi pas à pas (`PENDING` $\rightarrow$ `PICKED_UP` $\rightarrow$ `IN_TRANSIT` $\rightarrow$ `OUT_FOR_DELIVERY` $\rightarrow$ `DELIVERED`).
+- **Messagerie Acheteur-Vendeur** : Discussion instantanée liée à l'annonce via WebSocket STOMP authentifié par JWT.
+- **Système de Confiance & Avis** : Évaluation 1 à 5 étoiles, score de confiance et signalements.
+- **Back-Office Administrateur** : KPIs financiers, gestion et suspension des utilisateurs, modération des annonces, suivi des paiements/versements, litiges, CMS et **Journal d'Audit** dédié.
 
 ---
 
-## 📚 Documentation Complète & Assurance Qualité
+## 📚 Documentation & Références
 
-- 📖 **Documentation Technique Exhaustive (Fichier par fichier)** : [`DOCUMENTATION_COMPLETE_REVIBE_FLIP.md`](DOCUMENTATION_COMPLETE_REVIBE_FLIP.md)
-- 🧪 **Plan de Tests & Cahier de Recette E2E (13 Classes JUnit 5 & Scénarios UAT)** : [`PLAN_DE_TESTS_ET_RECETTE.md`](PLAN_DE_TESTS_ET_RECETTE.md)
-- 🌳 **Guide de Contribution & Git Workflow Professionnel** : [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- 🚀 **Guide de Déploiement en Production (VPS Hostinger & Docker)** : [`DEPLOYMENT.md`](DEPLOYMENT.md)
+- 🚀 **Guide de Déploiement en Production (VPS & Docker)** : [`DEPLOYMENT.md`](DEPLOYMENT.md)
+- ⚙️ **Variables d'Environnement (Modèle)** : [`.env.example`](.env.example)
+- 🌳 **Guide de Contribution & Git Workflow** : [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - ⚙️ **Pipelines CI/CD (GitHub Actions)** : [`.github/workflows/ci.yml`](.github/workflows/ci.yml) & [`.github/workflows/cd.yml`](.github/workflows/cd.yml)
-
----
-
-Toute l'ingénierie logicielle et la modélisation complète de la **Version 1 (MVP)** sont regroupées dans le sous-dossier `conception-uml/` :
-
-| Fichier | Description |
-|---|---|
-| `conception-uml/DOSSIER_COMPLET_UML_REVIBE_FLIP_V1.html` | **22 Diagrammes UML & Architecture** (style Visual Paradigm en thème mauve, acteurs stickmen, héritage, `«include»`/`«extend»`, composition/agrégation, fragments `alt`/`opt`/`loop`/`par`, barres `Fork/Join`, déploiement 3D, téléchargeables en PDF/SVG) |
-| `conception-uml/DESCRIPTIONS_TEXTUELLES_USE_CASES_V1.md` | **Fiches descriptives textuelles complètes** des 18 Cas d'Utilisation (`UC-01` à `UC-18`) : préconditions, postconditions, scénarios nominaux, alternatifs et d'exception |
-| `conception-uml/USER_STORIES_BACKLOG_V1.md` | **Product Backlog Agile Scrum complet** : 10 Epics, 36 User Stories (`US-01` à `US-36`), critères d'acceptation Gherkin (`Given/When/Then`), Story Points, DoR/DoD et Sprint Planning |
-| `conception-uml/PROTOTYPE_COMPLET_REVIBE_FLIP_V1.html` | **Prototype interactif HTML End-to-End** avec portail d'authentification/OTP en page d'accueil et 3 interfaces distinctes dédiées (**Acheteur**, **Vendeur**, **Admin Back-Office**) |
+- 📖 **Documentation Technique** : [`DOCUMENTATION_COMPLETE_REVIBE_FLIP.md`](DOCUMENTATION_COMPLETE_REVIBE_FLIP.md)
+- 🧪 **Plan de Tests** : [`PLAN_DE_TESTS_ET_RECETTE.md`](PLAN_DE_TESTS_ET_RECETTE.md)
 
 ---
 
 ## 🏗️ Architecture & Stack Technique
 
-- **Backend** : Java 21, Spring Boot 3.4.3, Spring Security 6 (JWT), Spring Data JPA / Hibernate, WebSocket STOMP, Swagger OpenAPI 3.
-- **Configuration** : `application.properties` (Profils `dev` H2 en mémoire/fichier et `mysql`).
-- **Base de données** : H2 pour exécution immédiate sans dépendance + MySQL 8.0 supporté via Docker.
+- **Backend** : Java 21, Spring Boot 3.4.3, Spring Security 6 (JWT 15 min + Refresh Token rotatif en cookie `HttpOnly`), Spring Data JPA / Hibernate, Flyway (MySQL 8 en prod), WebSocket STOMP.
+- **Base de données** :
+  - **Développement (`dev`)** : H2 en mémoire (`jdbc:h2:mem:revibeflip_db`).
+  - **Production (`prod`)** : MySQL 8.0 avec migrations Flyway (`ddl-auto=validate`).
 - **Frontend Web** : React 18, TypeScript, Tailwind CSS, Vite, Lucide Icons, Axios, STOMP.
-- **Application Mobile** : React Native / Expo (TypeScript) structuré dans `mobile/`.
+- **Application Mobile** : React Native / Expo (TypeScript) dans `mobile/`.
 
 ---
 
-## 🚀 Démarrage Rapide
+## 🚀 Démarrage en Développement Local
 
-### 1. Démarrer le Backend (Spring Boot)
-Depuis le dossier `backend` :
-
+### 1. Backend (profil `dev`)
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
+- API REST : `http://localhost:8080/api`
+- Swagger UI *(désactivé en prod)* : `http://localhost:8080/swagger-ui.html`
+- Console H2 *(désactivée en prod)* : `http://localhost:8080/h2-console` (`jdbc:h2:mem:revibeflip_db`, user `sa`, mot de passe vide)
+- En profil `dev`, `DevDataSeeder` initialise un jeu de données local de test (exclu du JAR de production `-Pprod`).
 
-- L'API démarre sur : **`http://localhost:8080`**
-- Documentation interactive Swagger : **`http://localhost:8080/swagger-ui.html`**
-- Console H2 : **`http://localhost:8080/h2-console`** *(JDBC URL: `jdbc:h2:mem:revibeflipdb`, user: `sa`, pas de mot de passe)*
-
----
-
-### 2. Démarrer le Frontend Web (React + TypeScript)
-Depuis le dossier `frontend` :
-
+### 2. Frontend Web
 ```powershell
 cd frontend
 npm install
 npm run dev
 ```
+- Interface web : `http://localhost:5173`
 
-- L'application Web est accessible sur : **`http://localhost:5173`**
-- Le logo épuré, le panier mono-vendeur et le passage en caisse sécurisé y sont immédiatement opérationnels.
-
----
-
-### 3. Démarrer l'Application Mobile (React Native / Expo)
-Depuis le dossier `mobile` :
-
+### 3. Application Mobile (Expo)
 ```powershell
 cd mobile
+npm install
 npm start
 ```
 
 ---
 
-### 4. Démarrage de Toute la Stack en 1 Clic (Docker Compose)
-Pour lancer instantanément l'intégralité de la plateforme (MySQL 8 + Backend Spring Boot + Frontend Nginx + Adminer) :
+## 🔐 Déploiement en Production
 
+### 1. Configuration `.env` obligatoire
+Copiez `.env.example` vers `.env` et renseignez **toutes** les variables requises (au démarrage en `prod`, l'application refuse de démarrer si PayTech, SMS, JWT ou la BDD sont manquants) :
+- **Base de données** : `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `MYSQL_ROOT_PASSWORD`
+- **JWT & CORS** : `JWT_SECRET` (minimum 32 octets aléatoires), `CORS_ALLOWED_ORIGINS` (domaines exacts, sans `*`)
+- **PayTech** : `PAYTECH_API_KEY`, `PAYTECH_API_SECRET`, `PAYTECH_ENV` (`test` ou `prod`), `PAYTECH_IPN_URL`, `PAYTECH_SUCCESS_URL`, `PAYTECH_CANCEL_URL`
+- **SMS OTP** : `SMS_API_URL`, `SMS_API_KEY`, `SMS_SENDER_ID`
+- **Bootstrap du 1er Administrateur** : `REVIBE_BOOTSTRAP_ADMIN_PHONE`, `REVIBE_BOOTSTRAP_ADMIN_EMAIL`, `REVIBE_BOOTSTRAP_ADMIN_PASSWORD` (min. 12 caractères avec majuscule, minuscule, chiffre et caractère spécial — changement imposé à la première connexion)
+
+### 2. Build Production (sans données ni classes dev)
 ```bash
-docker compose up -d --build
+cd backend
+./mvnw clean package -Pprod -DskipTests
 ```
+*(Le profil Maven `-Pprod` exclut `DevDataSeeder` du JAR final.)*
 
-- **Frontend Web** : `http://localhost` (ou `http://localhost:5173`)
-- **Backend API REST** : `http://localhost:8080/api`
-- **Console BDD Adminer** : `http://localhost:8081` (Système: MySQL, Serveur: `mysql`, Utilisateur: `root`, Mot de passe: `rootpassword`, BDD: `revibeflip`)
-
-Pour tout arrêter :
+### 3. Nettoyage pré-lancement & Lancement Docker Production
 ```bash
-docker compose down
+# Optionnel : nettoyer d'éventuelles données de test d'une base existante
+mysql -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_NAME" < backend/scripts/cleanup-dev-data.sql
+
+# Démarrer la stack de production (MySQL 8 + Backend + Frontend Nginx)
+docker compose --profile prod up -d --build
+```
+*(Pour l'outil Adminer en dev uniquement : `docker compose --profile dev up -d adminer`.)*
+
+### 4. Sauvegarde & Restauration chiffrées (AES-256-CBC)
+```bash
+./scripts/backup-db.sh
+./scripts/restore-db.sh <fichier_backup.sql.gz.enc>
 ```
 
 ---
 
-## 👥 Comptes de Démonstration Préconfigurés
+## 🧪 Tests & Contrôles Qualité
 
-Au premier démarrage, le backend initialise automatiquement les pays africains, les catégories et des comptes tests sénégalais :
-
-| Rôle | Nom | Téléphone | Email | Mot de passe | Description |
-|---|---|---|---|---|---|
-| **Administrateur** | Super Admin | `+221770000000` | `admin@revibeflip.com` | `Admin1234!` | Accès complet au Back-Office |
-| **Vendeuse** | Aminata Diallo | `+221771112233` | `aminata@revibeflip.com` | `Passer123!` | Vendeuse Dakar (Note 4.9 ★) |
-| **Vendeur** | Moussa Ndiaye | `+221774445566` | `moussa@revibeflip.com` | `Passer123!` | Vendeur Dakar (Note 4.8 ★) |
-| **Acheteur** | Fatou Sow | `+221778889900` | `fatou@revibeflip.com` | `Passer123!` | Acheteuse Dakar Almadies |
-
----
-
-## 🧪 Tests Automatisés
-
-Le backend inclut une suite complète de tests d'intégration validant le parcours de bout en bout :
-- Inscription et validation du code OTP par SMS
-- Publication d'annonce et gestion du catalogue
-- Calcul rigoureux des montants (1% de frais de validation + 20% de commission plateforme + livraison)
-- Paiement mobile Wave / Orange Money et mise sous séquestre (Escrow)
-- Progression du suivi de livraison et confirmation de réception
-- Déblocage automatique des fonds au vendeur et notation 5 étoiles
-
-Pour relancer la suite de tests :
 ```powershell
+# Suite de tests backend (incluant ProductionAuditSecurityTests)
 cd backend
 .\mvnw.cmd test
+
+# Contrôle CI anti-résidus (mots interdits dans le code livré)
+bash scripts/check-forbidden-words.sh
+
+# Build & audit frontend
+cd frontend
+npm run build
+npm audit --audit-level=high
 ```
+
+---
+
+## 🌳 Workflow Git
+
+Toute évolution suit le flux strict :
+`feature/<nom>` $\rightarrow$ `develop` $\rightarrow$ `main` $\rightarrow$ `deploy` $\rightarrow$ `release`.
