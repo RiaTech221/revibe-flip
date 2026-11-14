@@ -18,7 +18,7 @@
 - **Livraison Adaptée** : Choix entre **Livraison à domicile** et **Remise en main propre**, avec suivi pas à pas (`PENDING` $\rightarrow$ `PICKED_UP` $\rightarrow$ `IN_TRANSIT` $\rightarrow$ `OUT_FOR_DELIVERY` $\rightarrow$ `DELIVERED`).
 - **Messagerie Acheteur-Vendeur** : Discussion instantanée réelle liée à l'annonce via WebSocket STOMP authentifié par JWT (aucune réponse vendeur simulée).
 - **Système de Confiance & Avis** : Évaluation 1 à 5 étoiles, score de confiance et signalements.
-- **Sécurité & Conformité RGPD** : Validation stricte des images uploadées (magic bytes + suppression EXIF), assainissement HTML anti-XSS (`HtmlSanitizerService`), blocage immédiat des comptes suspendus, CSP/CORS stricts et endpoints RGPD (export/suppression).
+- **Sécurité, Anti-Bot & Médias (Cloudinary)** : Validation stricte des images uploadées (5 Mo max, **Apache Tika**, magic bytes, suppression EXIF), liste blanche d'URLs, stockage local ou **Cloudinary** (`STORAGE_PROVIDER=cloudinary`) avec optimisation `f_auto,q_auto` et fallback uniforme, `RateLimitFilter` anti-spoofing (`CF-Connecting-IP`), blocage des scanners, `TurnstileFilter`, assainissement HTML anti-XSS (`HtmlSanitizerService`), CSP/CORS stricts et endpoints RGPD.
 - **Back-Office Administrateur** : KPIs financiers, gestion et suspension des utilisateurs, modération des annonces, suivi des paiements/versements, litiges, CMS et **Journal d'Audit** dédié.
 
 ---
@@ -82,6 +82,7 @@ Copiez `.env.example` vers `.env` et renseignez **toutes** les variables requise
 - **JWT & CORS** : `JWT_SECRET` (minimum 32 octets aléatoires), `CORS_ALLOWED_ORIGINS` (domaines exacts, sans `*`)
 - **PayTech** : `PAYTECH_API_KEY`, `PAYTECH_API_SECRET`, `PAYTECH_ENV` (`test` ou `prod`), `PAYTECH_IPN_URL`, `PAYTECH_SUCCESS_URL`, `PAYTECH_CANCEL_URL`
 - **SMS OTP** : `SMS_API_URL`, `SMS_API_KEY`, `SMS_SENDER_ID`
+- **Stockage Images (Cloudinary en prod)** : `STORAGE_PROVIDER=cloudinary`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_BASE_FOLDER`
 - **Bootstrap du 1er Administrateur** : `REVIBE_BOOTSTRAP_ADMIN_PHONE`, `REVIBE_BOOTSTRAP_ADMIN_EMAIL`, `REVIBE_BOOTSTRAP_ADMIN_PASSWORD` (min. 12 caractères avec majuscule, minuscule, chiffre et caractère spécial — changement imposé à la première connexion)
 
 ### 2. Build Production (sans données ni classes dev)
