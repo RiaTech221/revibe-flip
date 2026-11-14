@@ -68,11 +68,11 @@ export const MessagesScreen = ({ navigation }: any) => {
         }
       >
         <Image
-          source={{
-            uri:
-              item.product?.primaryImage ||
-              'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=200',
-          }}
+          source={
+            item.product?.primaryImage
+              ? { uri: item.product.primaryImage }
+              : require('../../assets/logo.png')
+          }
           style={styles.thumbnail}
         />
 

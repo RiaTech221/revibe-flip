@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Page de Gestion du Profil Utilisateur ReVibe FliP
  * 
  * Permet à l'utilisateur connecté de consulter et modifier ses informations personnelles :
@@ -274,7 +274,7 @@ export const ProfilePage: React.FC = () => {
                     <img
                       src={
                         ord.productImageUrl ||
-                        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=300&q=80'
+                        '/placeholder-product.svg'
                       }
                       alt=""
                       className="w-16 h-16 rounded-2xl object-cover shrink-0 border border-gray-200 shadow-2xs"

@@ -72,11 +72,15 @@ class MediaAssetServiceTest {
     @Test
     @DisplayName("Upload valide : une image JPG avec altText est renommée et persistée avec succès")
     void testValidImageUpload() throws IOException {
+        java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        javax.imageio.ImageIO.write(img, "jpg", baos);
+
         MockMultipartFile imageFile = new MockMultipartFile(
                 "file",
                 "robe-wax.jpg",
                 "image/jpeg",
-                new byte[2048]
+                baos.toByteArray()
         );
 
         when(mediaAssetRepository.save(any(MediaAsset.class))).thenAnswer(i -> {

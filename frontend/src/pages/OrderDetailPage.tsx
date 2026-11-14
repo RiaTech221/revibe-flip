@@ -12,7 +12,6 @@ import { useParams, Link } from 'react-router-dom';
 import { orderApi, reviewApi } from '../services/api';
 import { Order } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import { ChevronLeft, AlertCircle, ShoppingBag } from 'lucide-react';
 import { OrderStatusTimeline } from '../components/order/OrderStatusTimeline';
 import { OrderEscrowCard } from '../components/order/OrderEscrowCard';
@@ -41,45 +40,11 @@ export const OrderDetailPage: React.FC = () => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const buildFallbackOrder = (orderId: number, prod: any) => {
-    const itemPrice = Number(prod.price) || 11000;
-    const validationFee = Math.round(itemPrice * 0.01);
-    const deliveryFee = 2000;
-    const totalAmount = itemPrice + validationFee + deliveryFee;
-
-    const mockOrder: Order = {
-      id: orderId,
-      orderNumber: `CMD-SN-${orderId}`,
-      productId: prod.id,
-      productTitle: prod.title,
-      productImageUrl: prod.primaryImage || (prod.images && prod.images[0]) || '',
-      buyer: user || ({ id: 4, fullName: 'Fatou Sow', phone: '+221778889900', email: 'fatou@revibeflip.com', city: 'Dakar' } as any),
-      seller: prod.seller || ({ id: 3, fullName: 'Moussa Ndiaye', phone: '+221774445566', email: 'moussa@revibeflip.com', city: 'Dakar' } as any),
-      itemPrice,
-      platformCommission: Math.round(itemPrice * 0.20),
-      validationFee,
-      deliveryFee,
-      totalAmount,
-      sellerPayout: itemPrice - Math.round(itemPrice * 0.20),
-      status: 'PAID_ESCROW_LOCKED',
-      deliveryMode: 'HOME_DELIVERY',
-      deliveryModeLabel: 'Livraison à domicile Express',
-      deliveryStatus: 'IN_TRANSIT',
-      deliveryStatusLabel: 'Colis en cours d\'acheminement',
-      deliveryAddress: user?.address || 'Dakar Almadies, Villa 42',
-      deliveryCity: user?.city || 'Dakar',
-      deliveryPhone: user?.phone || '+221778889900',
-      createdAt: new Date().toISOString(),
-    };
-    setOrder(mockOrder);
-  };
-
   const fetchOrder = () => {
     if (!id) return;
     setLoading(true);
+    setError(null);
     const numId = Number(id);
-    const prodId = numId > 1000 ? numId - 1000 : (numId <= 21 && numId > 0 ? numId : 18);
-    const associatedProduct = CURATED_PRODUCTS.find((p) => p.id === prodId) || CURATED_PRODUCTS[0];
 
     orderApi
       .getById(numId)
@@ -87,11 +52,11 @@ export const OrderDetailPage: React.FC = () => {
         if (res.data?.data) {
           setOrder(res.data.data);
         } else {
-          buildFallbackOrder(numId, associatedProduct);
+          setError('Commande introuvable.');
         }
       })
       .catch(() => {
-        buildFallbackOrder(numId, associatedProduct);
+        setError('Impossible de charger les détails de cette commande.');
       })
       .finally(() => {
         setLoading(false);

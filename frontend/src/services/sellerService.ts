@@ -106,7 +106,6 @@ export interface SellerDashboard {
   startDate?: string;
   endDate?: string;
   lastUpdated?: string;
-  demoMode?: boolean;
   currency?: string;
   commissionRate?: number;
   validationFeeRate?: number;

@@ -18,10 +18,13 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  Linking,
 } from 'react-native';
 import { Product, PaymentMethod } from '../types';
 import { colors, formatPrice } from '../theme/colors';
 import { Header } from '../components/common/Header';
+import paymentService from '../services/paymentService';
+import { isAllowedPayTechUrl } from '../utils/deepLink';
 import {
   PaymentMethodSelector,
   EscrowGuaranteeCard,
@@ -64,18 +67,20 @@ export const CheckoutScreen = ({ route, navigation }: any) => {
         agreedPrice: itemPrice,
       });
 
-      Alert.alert(
-        'Paiement Réussi !',
-        `Vos fonds (${formatPrice(totalAmount)}) sont sécurisés sous séquestre jusqu'à réception de votre colis.`,
-        [
-          {
-            text: 'Suivre ma commande',
-            onPress: () => navigation.replace('OrderDetail', { orderId: order.id, order }),
-          },
-        ]
-      );
+      const init = await paymentService.initializePayment({
+        orderId: order.id,
+        paymentMethod,
+        phoneNumber: phoneNumber.trim(),
+      });
+
+      if (!isAllowedPayTechUrl(init?.redirectUrl)) {
+        throw new Error('URL de paiement PayTech invalide ou non autorisée.');
+      }
+
+      await Linking.openURL(init.redirectUrl);
+      navigation.replace('OrderDetail', { orderId: order.id, order });
     } catch (err: any) {
-      Alert.alert('Erreur', err.response?.data?.message || 'Le paiement a échoué. Veuillez réessayer.');
+      Alert.alert('Erreur', err.response?.data?.message || err.message || 'Le paiement a échoué. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -138,7 +143,7 @@ export const CheckoutScreen = ({ route, navigation }: any) => {
         >
           <Lock size={18} color="#ffffff" />
           <Text style={styles.payButtonText}>
-            {loading ? 'Sécurisation en cours...' : `Bloquer ${formatPrice(totalAmount)} sous Séquestre`}
+            {loading ? 'Redirection PayTech...' : `Payer ${formatPrice(totalAmount)} (conservé jusqu'à réception)`}
           </Text>
         </TouchableOpacity>
       </ScrollView>

@@ -1,6 +1,7 @@
 package com.revibeflip.controller;
 
 import com.revibeflip.dto.ApiResponse;
+import com.revibeflip.security.SafeMediaService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
@@ -54,24 +55,27 @@ public class UploadController {
         }
 
         try {
-            Path uploadPath = Paths.get(uploadDir);
+            byte[] rawBytes = file.getBytes();
+            SafeMediaService.DetectedType detected = SafeMediaService.detectType(rawBytes, false);
+            byte[] cleanBytes = SafeMediaService.sanitizeImage(rawBytes, detected);
+
+            Path uploadPath = Paths.get(uploadDir).toAbsolutePath().normalize();
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            String extension = switch (contentType.toLowerCase()) {
-                case "image/png" -> ".png";
-                case "image/webp" -> ".webp";
-                default -> ".jpg";
-            };
-
             // Renommage sécurisé côté serveur avec UUID
-            String storedFileName = UUID.randomUUID().toString() + extension;
-            Path targetLocation = uploadPath.resolve(storedFileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            String storedFileName = UUID.randomUUID().toString() + detected.extension;
+            Path targetLocation = uploadPath.resolve(storedFileName).normalize();
+            if (!targetLocation.startsWith(uploadPath)) {
+                return ResponseEntity.badRequest().body(ApiResponse.error("Nom de fichier invalide."));
+            }
+            Files.write(targetLocation, cleanBytes);
 
             String fileUrl = "/api/uploads/" + storedFileName;
             return ResponseEntity.ok(ApiResponse.ok(fileUrl, "Image téléversée avec succès."));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
         } catch (IOException ex) {
             log.error("Erreur lors de l'enregistrement du fichier", ex);
             return ResponseEntity.internalServerError().body(ApiResponse.error("Impossible d'enregistrer l'image."));
@@ -82,7 +86,11 @@ public class UploadController {
     @Operation(summary = "Servir une image téléversée")
     public ResponseEntity<Resource> getFile(@PathVariable String fileName) {
         try {
-            Path filePath = Paths.get(uploadDir).resolve(fileName).normalize();
+            Path uploadRoot = Paths.get(uploadDir).toAbsolutePath().normalize();
+            Path filePath = uploadRoot.resolve(fileName).normalize();
+            if (!filePath.startsWith(uploadRoot)) {
+                return ResponseEntity.badRequest().build();
+            }
             Resource resource = new UrlResource(filePath.toUri());
             if (resource.exists()) {
                 String contentType = Files.probeContentType(filePath);
@@ -91,6 +99,7 @@ public class UploadController {
                 }
                 return ResponseEntity.ok()
                         .contentType(MediaType.parseMediaType(contentType))
+                        .header("X-Content-Type-Options", "nosniff")
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
             } else {

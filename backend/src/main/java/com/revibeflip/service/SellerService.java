@@ -25,10 +25,6 @@ import java.util.stream.Collectors;
  * Service central pour l'Espace Vendeur ReVibe FliP.
  * Gère le profil, les annonces, commandes, livraison, messagerie temps réel,
  * transactions, avis et notifications du vendeur avec vérification stricte de propriété.
- *
- * NOTE SUR LE SÉQUESTRE (Point 6) :
- * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire
- * (Wave, Orange Money, Free Money) et la validation du cadre juridique avant la production.
  */
 @Service
 @RequiredArgsConstructor
@@ -194,7 +190,6 @@ public class SellerService {
         PlatformSetting settings = platformSettingRepository.findFirstByOrderByIdAsc().orElse(null);
         BigDecimal commissionRate = settings != null && settings.getCommissionRate() != null ? settings.getCommissionRate() : BigDecimal.valueOf(20.0);
         BigDecimal validationFeeRate = settings != null && settings.getValidationFeeRate() != null ? settings.getValidationFeeRate() : BigDecimal.valueOf(1.0);
-        boolean demoMode = settings != null && Boolean.TRUE.equals(settings.getDemoMode());
 
         // Format label "Vendeur depuis [mois année]"
         String sellerSinceLabel = "Vendeur récemment";
@@ -617,7 +612,6 @@ public class SellerService {
                 .startDate(currentStart.toLocalDate().toString())
                 .endDate(currentEnd.toLocalDate().toString())
                 .lastUpdated(java.time.ZonedDateTime.now(dakarZone).format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-                .demoMode(demoMode)
                 .currency("FCFA")
                 .commissionRate(commissionRate)
                 .validationFeeRate(validationFeeRate)

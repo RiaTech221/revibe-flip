@@ -35,6 +35,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("SELECT COUNT(u) FROM User u WHERE u.role = 'ROLE_ADMIN' AND (u.isSuspended = false OR u.isSuspended IS NULL)")
     long countActiveAdmins();
 
+    long countByRole(com.revibeflip.entity.enums.Role role);
+
     long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     java.util.List<User> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);

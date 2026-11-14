@@ -309,7 +309,7 @@ public class SellerController {
     // 5. TRANSACTIONS ET GAINS DU VENDEUR
     // ==========================================
     @GetMapping("/transactions")
-    @Operation(summary = "Historique financier de mes ventes", description = "Décomposition : prix article, frais validation (1%), livraison, commission plateforme (20%) et net vendeur (80%). Note : simulation interne du séquestre.")
+    @Operation(summary = "Historique financier de mes ventes", description = "Décomposition : prix article, frais validation (1%), livraison, commission plateforme (20%) et net vendeur (80%).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des transactions"),
             @ApiResponse(responseCode = "401", description = "Non authentifié")

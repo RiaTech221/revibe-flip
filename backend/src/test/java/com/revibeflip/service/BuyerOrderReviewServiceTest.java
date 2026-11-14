@@ -41,6 +41,7 @@ class BuyerOrderReviewServiceTest {
     @Mock private PlatformSettingRepository platformSettingRepository;
     @Mock private AddressRepository addressRepository;
     @Mock private CartRepository cartRepository;
+    @Mock private PaymentService paymentService;
 
     private OrderService orderService;
     private ReviewService reviewService;
@@ -63,7 +64,8 @@ class BuyerOrderReviewServiceTest {
                 paymentRepository,
                 notificationService,
                 platformSettingRepository,
-                cartRepository
+                cartRepository,
+                paymentService
         );
         reviewService = new ReviewService(reviewRepository, orderRepository, userRepository, notificationService);
         addressService = new AddressService(addressRepository);
@@ -191,7 +193,7 @@ class BuyerOrderReviewServiceTest {
                 .buyer(buyer)
                 .seller(seller)
                 .product(product)
-                .status(OrderStatus.PAID_ESCROW_LOCKED)
+                .status(OrderStatus.DELIVERED)
                 .sellerPayout(BigDecimal.valueOf(16000))
                 .build();
 
@@ -199,7 +201,7 @@ class BuyerOrderReviewServiceTest {
                 .id(2001L)
                 .order(order)
                 .mode(DeliveryMode.HOME_DELIVERY)
-                .status(DeliveryStatus.OUT_FOR_DELIVERY)
+                .status(DeliveryStatus.DELIVERED)
                 .build();
 
         Payment payment = Payment.builder()
@@ -218,7 +220,7 @@ class BuyerOrderReviewServiceTest {
         OrderDto confirmed = orderService.confirmReceipt(1001L, buyer);
 
         assertThat(confirmed.getStatus()).isEqualTo("COMPLETED");
-        assertThat(payment.getEscrowStatus()).isEqualTo(EscrowStatus.RELEASED_TO_SELLER);
+        verify(paymentService).releaseFundsToSeller(any(Order.class));
         assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.DELIVERED);
     }
 

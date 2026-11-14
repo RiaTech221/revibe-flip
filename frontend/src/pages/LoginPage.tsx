@@ -46,13 +46,11 @@ export const LoginPage: React.FC = () => {
           navigate(redirectParam);
         } else if (from) {
           navigate(from);
-        } else if (data.user.phone === '+221771112233' || data.user.phone === '+221772223344') {
-          navigate('/seller');
         } else {
           navigate('/');
         }
-      } else if (data.otpDemoCode) {
-        navigate(`/verify-otp?phone=${encodeURIComponent(identifier)}&code=${encodeURIComponent(data.otpDemoCode)}`);
+      } else {
+        navigate(`/verify-otp?phone=${encodeURIComponent(identifier)}`);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Identifiants invalides. Veuillez réessayer.');

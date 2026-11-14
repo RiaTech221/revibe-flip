@@ -8,6 +8,7 @@ import com.revibeflip.dto.UserDto;
 import com.revibeflip.entity.User;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.service.AddressService;
+import com.revibeflip.service.RefreshTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,7 +18,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Contrôleur REST de gestion du profil personnel et des adresses de livraison.
@@ -30,6 +35,7 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final AddressService addressService;
+    private final RefreshTokenService refreshTokenService;
 
     private User resolveUser(Authentication authentication) {
         if (authentication == null) {
@@ -120,5 +126,35 @@ public class UserController {
         User user = resolveUser(authentication);
         AddressDto def = addressService.setDefaultAddress(user, id);
         return ResponseEntity.ok(ApiResponse.ok(def, "Adresse définie par défaut."));
+    }
+
+    @GetMapping("/me/export")
+    @Operation(summary = "Exporter mes données personnelles (RGPD / Protection des données)")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> exportMyData(Authentication authentication) {
+        User user = resolveUser(authentication);
+        Map<String, Object> export = new LinkedHashMap<>();
+        export.put("exportedAt", LocalDateTime.now().toString());
+        export.put("profile", UserDto.fromEntity(user));
+        export.put("addresses", addressService.getMyAddresses(user));
+        return ResponseEntity.ok(ApiResponse.ok(export, "Export des données personnelles généré."));
+    }
+
+    @DeleteMapping("/me")
+    @Operation(summary = "Supprimer / anonymiser mon compte en conservant les écritures comptables légales")
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(Authentication authentication) {
+        User user = resolveUser(authentication);
+        String anonSuffix = UUID.randomUUID().toString().substring(0, 8);
+        user.setFirstName("Utilisateur");
+        user.setLastName("Supprimé");
+        user.setPhone("DELETED-" + user.getId() + "-" + anonSuffix);
+        user.setEmail(null);
+        user.setAddress(null);
+        user.setProfilePicture(null);
+        user.setIsSuspended(true);
+        user.setOtpCode(null);
+        user.setResetOtpCode(null);
+        userRepository.save(user);
+        refreshTokenService.revokeAllForUser(user);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Compte anonymisé et sessions révoquées."));
     }
 }

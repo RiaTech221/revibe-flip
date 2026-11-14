@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Composant Messagerie & Négociation : ChatHeader
  * 
  * Gère les échanges de chat, propositions d'offres et modales associées (ChatHeader).
@@ -100,7 +100,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             <img
               src={
                 activeConversation.productImageUrl ||
-                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=150&q=80'
+                '/placeholder-product.svg'
               }
               alt=""
               className="w-12 h-12 rounded-xl object-cover border border-purple-200 shrink-0"

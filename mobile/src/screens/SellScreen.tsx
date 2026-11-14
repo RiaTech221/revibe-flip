@@ -103,9 +103,7 @@ export const SellScreen = ({ navigation }: any) => {
         <TouchableOpacity
           style={styles.photoBox}
           onPress={() =>
-            setImageUrl(
-              'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'
-            )
+            Alert.alert('Téléversement photo', 'Sélectionnez une photo depuis votre galerie via le sélecteur de média.')
           }
         >
           <Camera size={28} color={colors.primary} />

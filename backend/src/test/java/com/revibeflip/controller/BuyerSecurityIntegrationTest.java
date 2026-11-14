@@ -37,17 +37,17 @@ class BuyerSecurityIntegrationTest {
     private AddressRepository addressRepository;
 
     @Test
-    @DisplayName("Sécurité Acheteur: Requête non authentifiée refusée sur les commandes")
+    @DisplayName("Sécurité Acheteur: Requête non authentifiée refusée (401) sur les commandes")
     void testUnauthenticated_ForbiddenOnOrders() throws Exception {
         mockMvc.perform(get("/api/orders/my-orders"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("Sécurité Acheteur: Requête non authentifiée refusée sur le carnet d'adresses")
+    @DisplayName("Sécurité Acheteur: Requête non authentifiée refusée (401) sur le carnet d'adresses")
     void testUnauthenticated_ForbiddenOnAddresses() throws Exception {
         mockMvc.perform(get("/api/users/addresses"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -15,4 +15,3 @@ export * from './SellerTopAndStagnantListings';
 export * from './SellerRatingBreakdown';
 export * from './SellerQuickLists';
 export * from './SellerContextualTips';
-export * from './SellerDemoModeBanner';
