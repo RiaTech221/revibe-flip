@@ -143,7 +143,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
             <View style={{ flex: 1 }}>
               <Text style={styles.guaranteeTitle}>Achetez l'esprit tranquille</Text>
               <Text style={styles.guaranteeText}>
-                Votre argent est bloqué sur un compte séquestre. Le vendeur n'est payé que lorsque vous validez votre article.
+                Votre paiement est conservé par ReVibe FliP jusqu'à la confirmation de réception. Le vendeur n'est payé que lorsque vous validez votre article.
               </Text>
             </View>
           </View>
@@ -170,7 +170,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
           onPress={() => navigation.navigate('Checkout', { product })}
         >
           <ShoppingBag size={20} color="#ffffff" />
-          <Text style={styles.buyBtnText}>Acheter (Séquestre)</Text>
+          <Text style={styles.buyBtnText}>Acheter (Paiement protégé)</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

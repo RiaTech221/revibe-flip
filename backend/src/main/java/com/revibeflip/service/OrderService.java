@@ -46,6 +46,7 @@ public class OrderService {
     private final NotificationService notificationService;
     private final PlatformSettingRepository platformSettingRepository;
     private final CartRepository cartRepository;
+    private final PaymentService paymentService;
 
     private final Random random = new Random();
 
@@ -239,32 +240,31 @@ public class OrderService {
             throw new org.springframework.security.access.AccessDeniedException("Seul l'acheteur peut confirmer la réception.");
         }
 
-        if (order.getStatus() == OrderStatus.PENDING_PAYMENT || order.getStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Cette commande ne peut pas être confirmée dans son statut actuel (" + order.getStatus() + ").");
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new IllegalStateException("La confirmation de réception n'est possible qu'une fois la commande livrée (statut actuel : " + order.getStatus() + ").");
         }
 
+        OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.COMPLETED);
         order.setStatus(OrderStatus.COMPLETED);
         Order savedOrder = orderRepository.save(order);
 
         // Update Delivery status to DELIVERED
         deliveryRepository.findByOrderId(orderId).ifPresent(d -> {
             d.setStatus(DeliveryStatus.DELIVERED);
-            d.setDeliveredAt(LocalDateTime.now());
+            if (d.getDeliveredAt() == null) {
+                d.setDeliveredAt(LocalDateTime.now());
+            }
             deliveryRepository.save(d);
         });
 
-        // Release Escrow funds to seller
-        paymentRepository.findByOrderId(orderId).ifPresent(p -> {
-            p.setEscrowStatus(EscrowStatus.RELEASED_TO_SELLER);
-            p.setEscrowReleasedDate(LocalDateTime.now());
-            paymentRepository.save(p);
-        });
+        // Déclenchement du versement net vendeur et écriture immuable au grand livre
+        paymentService.releaseFundsToSeller(savedOrder);
 
         // Notify seller that funds are released
         notificationService.createNotification(
                 order.getSeller(),
-                "Fonds débloqués (Escrow) !",
-                "L'acheteur a confirmé la bonne réception de l'article. Vos gains de " + order.getSellerPayout() + " FCFA ont été versés.",
+                "Paiement libéré !",
+                "L'acheteur a confirmé la bonne réception de l'article. Le versement de " + order.getSellerPayout() + " FCFA a été déclenché.",
                 NotificationType.ORDER_DELIVERED,
                 "/orders/" + order.getId()
         );

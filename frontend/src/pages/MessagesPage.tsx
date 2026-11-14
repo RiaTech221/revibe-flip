@@ -255,18 +255,19 @@ export const MessagesPage: React.FC = () => {
     setPaymentLoading(true);
     setPaymentError(null);
     try {
-      await paymentApi.process({
+      const payRes = await paymentApi.initiate({
         orderId: acceptedOfferToPay.orderId,
         paymentMethod,
         phoneNumber: paymentPhone || user?.phone || '',
       });
-      setPaymentSuccess(true);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
+      const redirectUrl = payRes.data?.data?.redirectUrl;
+      if (redirectUrl && redirectUrl.startsWith('https://')) {
+        window.location.href = redirectUrl;
+        return;
       }
+      setPaymentError("Lien de paiement PayTech indisponible.");
     } catch (err: any) {
-      setPaymentError(err.response?.data?.message || "Échec du paiement.");
+      setPaymentError(err.response?.data?.message || "Échec de l'initialisation du paiement.");
     } finally {
       setPaymentLoading(false);
     }

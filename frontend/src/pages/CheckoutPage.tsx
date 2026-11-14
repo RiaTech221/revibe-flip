@@ -127,29 +127,30 @@ export const CheckoutPage: React.FC = () => {
 
       const order = orderRes.data.data;
 
-      // Paiement direct Mobile Money sous séquestre
-      await paymentApi.process({
+      // Initialisation du paiement PayTech côté serveur
+      const payRes = await paymentApi.initiate({
         orderId: order.id,
         paymentMethod: selectedPaymentMethod,
         phoneNumber: paymentPhone || deliveryPhone,
       });
 
-      // Retrait automatique immédiat de l'article acheté du panier
+      // Retrait de l'article du panier
       try {
         await removeFromCart(product.id);
         await refreshCart();
-      } catch (errCart) {
-        console.warn('Erreur lors du nettoyage du panier post-achat', errCart);
+      } catch {
+        // Ignoré si déjà retiré
+      }
+
+      const redirectUrl = payRes.data?.data?.redirectUrl;
+      if (redirectUrl && redirectUrl.startsWith('https://')) {
+        window.location.href = redirectUrl;
+        return;
       }
 
       navigate(`/orders/${order.id}`);
     } catch (err: any) {
-      // Si backend non connecté / mode démo autonome :
-      try {
-        await removeFromCart(product.id);
-      } catch {}
-      const simulatedOrderId = 1000 + product.id;
-      navigate(`/orders/${simulatedOrderId}`);
+      setError(err.response?.data?.message || "Impossible d'initier le paiement. Veuillez réessayer.");
     } finally {
       setProcessingOrder(false);
     }

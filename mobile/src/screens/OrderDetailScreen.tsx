@@ -45,7 +45,7 @@ export const OrderDetailScreen = ({ route, navigation }: any) => {
   const handleConfirmReceipt = async () => {
     Alert.alert(
       'Confirmer la réception',
-      'Avez-vous bien reçu et vérifié votre article ? Cette action libérera immédiatement les fonds sous séquestre au vendeur.',
+      'Avez-vous bien reçu et vérifié votre article ? Cette action déclenchera le versement au vendeur.',
       [
         { text: 'Annuler', style: 'cancel' },
         {

@@ -138,7 +138,7 @@ export const CheckoutScreen = ({ route, navigation }: any) => {
         >
           <Lock size={18} color="#ffffff" />
           <Text style={styles.payButtonText}>
-            {loading ? 'Sécurisation en cours...' : `Bloquer ${formatPrice(totalAmount)} sous Séquestre`}
+            {loading ? 'Redirection PayTech...' : `Payer ${formatPrice(totalAmount)} (conservé jusqu'à réception)`}
           </Text>
         </TouchableOpacity>
       </ScrollView>

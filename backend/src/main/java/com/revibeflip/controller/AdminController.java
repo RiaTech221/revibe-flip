@@ -38,6 +38,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final ReportService reportService;
+    private final com.revibeflip.service.LedgerService ledgerService;
 
     // ==========================================
     // 2. DASHBOARD (VUE D'ENSEMBLE)
@@ -417,5 +418,26 @@ public class AdminController {
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getAuditLogsPage(pageable)));
+    }
+
+    @GetMapping("/ledger")
+    @Operation(summary = "Consulter le grand livre des fonds et soldes")
+    public ResponseEntity<com.revibeflip.dto.ApiResponse<java.util.Map<String, Object>>> getLedger(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("balances", ledgerService.getBalancesFromLedger());
+        result.put("entries", PageResponseDto.fromPage(ledgerService.getEntries(pageable)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(result));
+    }
+
+    @GetMapping(value = "/ledger/export", produces = "text/csv")
+    @Operation(summary = "Exporter le grand livre comptable au format CSV")
+    public ResponseEntity<String> exportLedgerCsv() {
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=revibeflip-ledger.csv")
+                .body(ledgerService.exportCsv());
     }
 }

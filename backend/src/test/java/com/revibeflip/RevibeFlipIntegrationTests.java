@@ -7,16 +7,24 @@ import com.revibeflip.entity.enums.EscrowStatus;
 import com.revibeflip.entity.enums.OrderStatus;
 import com.revibeflip.entity.enums.PaymentMethod;
 import com.revibeflip.entity.enums.ProductCondition;
+import com.revibeflip.payment.PayTechProperties;
+import com.revibeflip.payment.PaymentGateway;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 class RevibeFlipIntegrationTests {
@@ -32,6 +40,12 @@ class RevibeFlipIntegrationTests {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private PayTechProperties payTechProperties;
+
+    @MockitoBean
+    private PaymentGateway paymentGateway;
 
     @Autowired
     private PaymentService paymentService;
@@ -137,24 +151,55 @@ class RevibeFlipIntegrationTests {
         assertEquals(0, new BigDecimal("16000").compareTo(order.getSellerPayout()), "Rémunération nette vendeur = 16000 FCFA");
         assertEquals("PENDING_PAYMENT", order.getStatus());
 
-        // 5. Paiement mobile Wave sécurisé en Escrow (Séquestre)
+        // 5. Paiement mobile Wave via passerelle PayTech (test double dans src/test)
+        payTechProperties.setApiKey("test_api_key");
+        payTechProperties.setApiSecret("test_api_secret");
+        payTechProperties.setEnv("test");
+        payTechProperties.setIpnUrl("https://example.test/ipn");
+        payTechProperties.setSuccessUrl("https://example.test/success");
+        payTechProperties.setCancelUrl("https://example.test/cancel");
+
+        when(paymentGateway.initiatePayment(any())).thenReturn(
+                new PaymentGateway.PaymentInitiationResult(true, "tok_test_123", "https://paytech.sn/payment/checkout/tok_test_123", "{}")
+        );
+        when(paymentGateway.getPaymentStatus("tok_test_123")).thenReturn(
+                new PaymentGateway.PaymentStatusResult(true, "complete", "Wave", order.getTotalAmount(), "XOF", "{}")
+        );
+        when(paymentGateway.verifyIpnSignature(sha256("test_api_key"), sha256("test_api_secret"))).thenReturn(true);
+        when(paymentGateway.initiateTransfer(any())).thenReturn(
+                new PaymentGateway.TransferResult(true, "trf_test_123", "SUCCESS", "{}")
+        );
+
         ProcessPaymentRequest payReq = ProcessPaymentRequest.builder()
                 .orderId(order.getId())
                 .paymentMethod(PaymentMethod.WAVE)
                 .phoneNumber("+221779998877")
                 .build();
 
-        PaymentDto payment = paymentService.processPayment(payReq, buyerUser);
-        assertNotNull(payment);
+        PaymentInitiationResponse initRes = paymentService.initiatePayment(payReq, buyerUser);
+        assertNotNull(initRes);
+        assertEquals("https://paytech.sn/payment/checkout/tok_test_123", initRes.getRedirectUrl());
+
+        PayTechIpnPayload ipn = new PayTechIpnPayload();
+        ipn.setTypeEvent("sale_complete");
+        ipn.setRefCommand(order.getOrderNumber());
+        ipn.setItemPrice(order.getTotalAmount());
+        ipn.setCurrency("XOF");
+        ipn.setPaymentMethod("Wave");
+        ipn.setToken("tok_test_123");
+        ipn.setApiKeySha256(sha256("test_api_key"));
+        ipn.setApiSecretSha256(sha256("test_api_secret"));
+        paymentService.handlePayTechIpn(ipn, "127.0.0.1");
+
+        PaymentDto payment = paymentService.getPaymentByOrderId(order.getId(), buyerUser);
         assertEquals("SUCCESS", payment.getStatus());
-        assertEquals(EscrowStatus.LOCKED.name(), payment.getEscrowStatus(), "Les fonds doivent être bloqués en Escrow");
-        assertTrue(payment.getTransactionReference().startsWith("WAVE-SN-"));
+        assertEquals(EscrowStatus.LOCKED.name(), payment.getEscrowStatus(), "Les fonds doivent être conservés jusqu'à réception");
 
         // Vérifier que le statut de l'article est passé à SOLD
         ProductDto updatedProduct = productService.getProductById(product.getId());
         assertEquals("SOLD", updatedProduct.getStatus(), "L'article doit être marqué SOLD");
 
-        // 6. Suivi de livraison pas à pas
+        // 6. Suivi de livraison pas à pas jusqu'à DELIVERED
         UpdateDeliveryStatusRequest delivReq1 = UpdateDeliveryStatusRequest.builder()
                 .status(DeliveryStatus.IN_TRANSIT)
                 .carrierName("Express Moto Dakar")
@@ -164,11 +209,18 @@ class RevibeFlipIntegrationTests {
         DeliveryDto deliv1 = deliveryService.updateDeliveryStatus(order.getDelivery().getId(), delivReq1, sellerUser);
         assertEquals(DeliveryStatus.IN_TRANSIT.name(), deliv1.getStatus());
 
-        // 7. Confirmation de réception par l'acheteur et déblocage de l'Escrow
+        UpdateDeliveryStatusRequest delivReq2 = UpdateDeliveryStatusRequest.builder()
+                .status(DeliveryStatus.DELIVERED)
+                .notes("Colis remis à l'acheteur")
+                .build();
+        DeliveryDto deliv2 = deliveryService.updateDeliveryStatus(order.getDelivery().getId(), delivReq2, sellerUser);
+        assertEquals(DeliveryStatus.DELIVERED.name(), deliv2.getStatus());
+
+        // 7. Confirmation de réception par l'acheteur et libération des fonds
         OrderDto completedOrder = orderService.confirmReceipt(order.getId(), buyerUser);
         assertEquals(OrderStatus.COMPLETED.name(), completedOrder.getStatus());
         assertEquals(EscrowStatus.RELEASED_TO_SELLER.name(), completedOrder.getPayment().getEscrowStatus(),
-                "Les fonds doivent être débloqués au vendeur");
+                "Les fonds doivent être libérés au vendeur");
 
         // 8. Évaluation et notation du vendeur (5 étoiles)
         CreateReviewRequest reviewReq = CreateReviewRequest.builder()
@@ -187,5 +239,14 @@ class RevibeFlipIntegrationTests {
         assertTrue(dashboard.getTotalOrders() >= 1);
         assertTrue(dashboard.getTotalCommissions().compareTo(BigDecimal.ZERO) > 0);
         assertTrue(dashboard.getTotalValidationFees().compareTo(BigDecimal.ZERO) > 0);
+    }
+
+    private String sha256(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

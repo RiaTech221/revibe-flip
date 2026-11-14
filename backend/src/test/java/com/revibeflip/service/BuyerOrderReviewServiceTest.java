@@ -41,6 +41,7 @@ class BuyerOrderReviewServiceTest {
     @Mock private PlatformSettingRepository platformSettingRepository;
     @Mock private AddressRepository addressRepository;
     @Mock private CartRepository cartRepository;
+    @Mock private PaymentService paymentService;
 
     private OrderService orderService;
     private ReviewService reviewService;
@@ -63,7 +64,8 @@ class BuyerOrderReviewServiceTest {
                 paymentRepository,
                 notificationService,
                 platformSettingRepository,
-                cartRepository
+                cartRepository,
+                paymentService
         );
         reviewService = new ReviewService(reviewRepository, orderRepository, userRepository, notificationService);
         addressService = new AddressService(addressRepository);

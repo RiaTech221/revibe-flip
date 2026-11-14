@@ -68,6 +68,8 @@ public class SecurityConfig {
                                 "/api/faq/**",
                                 "/api/contact/**",
                                 "/api/media/**",
+                                "/api/payments/ipn",
+                                "/api/payments/transfer-ipn",
                                 "/h2-console/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
