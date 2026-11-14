@@ -175,6 +175,28 @@ docker image prune -f
 
 ---
 
+## 5 bis. Protection Cloudflare (WAF, Anti-Bot, SSL/TLS & Masquage IP)
+
+Pour protéger la plateforme contre les bots, attaques DDoS et scans automatisés tout en masquant l'IP réelle du VPS :
+
+1. **DNS & Proxy Cloudflare (Nuage orange)** :
+   - Ajoutez votre domaine dans Cloudflare, vérifiez les enregistrements DNS (`A` vers l'IP du VPS) avec le **proxy activé (nuage orange)** et basculez les serveurs de noms chez votre registrar.
+2. **SSL/TLS en mode `Full (strict)`** :
+   - Conservez un certificat Let's Encrypt ou un certificat Cloudflare Origin sur votre VPS (Nginx / reverse-proxy) et réglez **SSL/TLS → Full (strict)** sur Cloudflare.
+3. **WAF & Anti-Bot Cloudflare** :
+   - Activez **Bot Fight Mode** et les règles WAF gérées Cloudflare (plan gratuit suffisant pour démarrer).
+   - *(Recommandé)* Activez **Cloudflare Turnstile** en renseignant `REVIBE_TURNSTILE_ENABLED=true` et `REVIBE_TURNSTILE_SECRET_KEY=...` dans `.env` : le backend vérifiera automatiquement le jeton `X-Turnstile-Token` sur `/api/auth/register`, `/api/auth/login`, `/api/auth/forgot-password`, `/api/auth/resend-otp` et `/api/contact`.
+   - `frontend/nginx.conf` et `RateLimitFilter` résolvent déjà l'IP réelle du visiteur via `CF-Connecting-IP` (empêchant le contournement par spoofing `X-Forwarded-For`).
+4. **Pare-feu serveur (UFW) restreint aux IP Cloudflare** :
+   - Pour empêcher toute attaque directe sur l'IP du VPS en contournant Cloudflare, n'autorisez les ports `80` et `443` **que** depuis les plages IPv4/IPv6 officielles de Cloudflare (`https://www.cloudflare.com/ips/`), tout en gardant votre accès SSH sécurisé :
+   ```bash
+   for ip in $(curl -s https://www.cloudflare.com/ips-v4); do ufw allow proto tcp from "$ip" to any port 80,443; done
+   for ip in $(curl -s https://www.cloudflare.com/ips-v6); do ufw allow proto tcp from "$ip" to any port 80,443; done
+   ufw reload
+   ```
+
+---
+
 ## 6. Sauvegarde (Backup) et Restauration
 
 ### 6.1 Sauvegarder la base de données MySQL

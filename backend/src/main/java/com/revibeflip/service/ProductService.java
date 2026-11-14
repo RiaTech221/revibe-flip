@@ -11,6 +11,7 @@ import com.revibeflip.entity.enums.ProductCondition;
 import com.revibeflip.entity.enums.ProductStatus;
 import com.revibeflip.repository.CategoryRepository;
 import com.revibeflip.repository.ProductRepository;
+import com.revibeflip.security.SafeMediaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -100,18 +101,7 @@ public class ProductService {
                 .build();
 
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
-            int order = 0;
-            for (String url : request.getImageUrls()) {
-                if (url != null && !url.isBlank()) {
-                    ProductImage img = ProductImage.builder()
-                            .product(product)
-                            .imageUrl(url.trim())
-                            .isPrimary(order == 0)
-                            .displayOrder(order++)
-                            .build();
-                    product.getImages().add(img);
-                }
-            }
+            addValidatedImages(product, request.getImageUrls());
         }
 
         Product saved = productRepository.save(product);
@@ -146,18 +136,7 @@ public class ProductService {
 
         if (request.getImageUrls() != null) {
             product.getImages().clear();
-            int order = 0;
-            for (String url : request.getImageUrls()) {
-                if (url != null && !url.isBlank()) {
-                    ProductImage img = ProductImage.builder()
-                            .product(product)
-                            .imageUrl(url.trim())
-                            .isPrimary(order == 0)
-                            .displayOrder(order++)
-                            .build();
-                    product.getImages().add(img);
-                }
-            }
+            addValidatedImages(product, request.getImageUrls());
         }
 
         Product updated = productRepository.save(product);
@@ -181,5 +160,24 @@ public class ProductService {
                 .stream()
                 .map(ProductDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private void addValidatedImages(Product product, List<String> imageUrls) {
+        int order = 0;
+        for (String url : imageUrls) {
+            if (url != null && !url.isBlank()) {
+                String trimmed = url.trim();
+                if (!SafeMediaService.isAllowedImageUrl(trimmed)) {
+                    throw new IllegalArgumentException("URL d'image non autorisée : " + trimmed);
+                }
+                ProductImage img = ProductImage.builder()
+                        .product(product)
+                        .imageUrl(trimmed)
+                        .isPrimary(order == 0)
+                        .displayOrder(order++)
+                        .build();
+                product.getImages().add(img);
+            }
+        }
     }
 }

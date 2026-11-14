@@ -4,6 +4,7 @@ import com.revibeflip.entity.MediaAsset;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.Role;
 import com.revibeflip.repository.MediaAssetRepository;
+import com.revibeflip.service.storage.LocalImageStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ class MediaAssetServiceTest {
 
     @BeforeEach
     void setUp() {
-        mediaAssetService = new MediaAssetService(mediaAssetRepository);
+        mediaAssetService = new MediaAssetService(mediaAssetRepository, new LocalImageStorageService("uploads/media-test"));
         adminUser = User.builder().id(1L).email("admin@revibeflip.com").role(Role.ROLE_ADMIN).build();
     }
 

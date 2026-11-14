@@ -132,7 +132,7 @@ class RevibeFlipIntegrationTests {
                 .condition(ProductCondition.NEW_WITH_TAG)
                 .categoryId(1L)
                 .locationCity("Dakar")
-                .imageUrls(List.of("https://images.unsplash.com/photo-1590736969955-71cc94801759"))
+                .imageUrls(List.of("https://res.cloudinary.com/revibeflip/image/upload/v1/revibeflip/products/test-bazin.jpg"))
                 .build();
 
         ProductDto product = productService.createProduct(createProd, sellerUser);
