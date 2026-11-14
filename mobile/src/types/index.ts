@@ -10,6 +10,7 @@
 export interface User {
   id: number;
   phone: string;
+  phoneNumber?: string;
   firstName?: string;
   lastName?: string;
   fullName: string;
@@ -30,10 +31,14 @@ export interface Category {
   description?: string;
 }
 
+export type PaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY';
+
 export type ProductCondition =
   | 'NEW_WITH_TAG'
+  | 'NEW_WITHOUT_TAG'
   | 'VERY_GOOD'
   | 'GOOD'
+  | 'FAIR'
   | 'SATISFACTORY';
 
 export interface Product {
@@ -51,6 +56,7 @@ export interface Product {
   primaryImage?: string;
   images?: string[];
   locationCity?: string;
+  city?: string;
   category?: Category;
   seller?: {
     id: number;
@@ -65,6 +71,7 @@ export interface Product {
 export type DeliveryStatus =
   | 'PENDING'
   | 'PICKED_UP'
+  | 'DISPATCHED'
   | 'IN_TRANSIT'
   | 'OUT_FOR_DELIVERY'
   | 'DELIVERED';
@@ -98,7 +105,11 @@ export interface Order {
   escrowStatus?: string;
   buyer?: User;
   seller?: User;
+  product?: Product;
   delivery?: Delivery;
+  deliveryStatus?: DeliveryStatus;
+  deliveryAddress?: string;
+  deliveryCity?: string;
   createdAt: string;
 }
 
@@ -109,6 +120,7 @@ export interface Message {
   content: string;
   imageUrl?: string;
   sentAt: string;
+  createdAt?: string;
   read: boolean;
 }
 
@@ -116,10 +128,11 @@ export interface ChatOffer {
   id: number;
   conversationId: number;
   agreedPrice: number;
+  offeredPrice?: number;
   deliveryMode: string;
   deliveryFee: number;
   validationFee: number;
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'PAID' | 'EXPIRED';
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'REJECTED' | 'CANCELLED' | 'PAID' | 'EXPIRED';
   expiresAt: string;
   createdAt: string;
 }
@@ -130,10 +143,13 @@ export interface Conversation {
   productTitle?: string;
   productPrice?: number;
   productImage?: string;
+  product?: Product;
   otherUserId: number;
   otherUserName: string;
   lastMessageContent?: string;
+  lastMessage?: string;
   lastMessageDate?: string;
+  lastMessageTime?: string;
   unreadCount?: number;
   activeOffer?: ChatOffer;
 }

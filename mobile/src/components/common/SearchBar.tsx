@@ -13,6 +13,7 @@ interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
   onSubmit?: () => void;
+  onClear?: () => void;
   placeholder?: string;
 }
 
@@ -20,6 +21,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   value,
   onChangeText,
   onSubmit,
+  onClear,
   placeholder = 'Rechercher un article, une marque...',
 }) => {
   return (
@@ -35,7 +37,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         returnKeyType="search"
       />
       {value.length > 0 && (
-        <TouchableOpacity onPress={() => onChangeText('')} style={styles.clearButton}>
+        <TouchableOpacity
+          onPress={() => {
+            onChangeText('');
+            onClear?.();
+          }}
+          style={styles.clearButton}
+        >
           <X size={16} color={colors.textMuted} />
         </TouchableOpacity>
       )}
