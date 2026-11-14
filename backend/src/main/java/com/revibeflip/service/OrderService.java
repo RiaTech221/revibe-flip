@@ -96,7 +96,7 @@ public class OrderService {
                 .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
 
         BigDecimal itemPrice = product.getPrice();
-        // Validation Fee (Escrow simulation interne)
+        // Frais de validation (1%)
         BigDecimal validationFee = itemPrice.multiply(currentValidationFeeRate).setScale(0, RoundingMode.HALF_UP);
         // Delivery fee: 2000 FCFA for home delivery, 0 for in-person handover
         BigDecimal deliveryFee = DeliveryMode.HOME_DELIVERY.equals(request.getDeliveryMode())

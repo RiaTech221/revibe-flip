@@ -23,7 +23,6 @@ export const AuthModal: React.FC = () => {
 
   const [mode, setMode] = useState<'login' | 'register' | 'otp'>(authModalMode);
   const [phoneForOtp, setPhoneForOtp] = useState('');
-  const [demoOtp, setDemoOtp] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,9 +45,8 @@ export const AuthModal: React.FC = () => {
       if (data.token) {
         login(data.token, data.user);
         closeAuthModal();
-      } else if (data.otpDemoCode) {
+      } else {
         setPhoneForOtp(identifier);
-        setDemoOtp(data.otpDemoCode);
         setMode('otp');
       }
     } catch (err: any) {
@@ -62,9 +60,8 @@ export const AuthModal: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await authApi.register(formData);
+      await authApi.register(formData);
       setPhoneForOtp(formData.phone);
-      setDemoOtp(res.data.data?.otpDemoCode || null);
       setMode('otp');
     } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors de l'inscription.");
@@ -144,7 +141,6 @@ export const AuthModal: React.FC = () => {
         {mode === 'otp' && (
           <AuthOtpForm
             phone={phoneForOtp}
-            demoOtpCode={demoOtp}
             loading={loading}
             error={error}
             onSubmit={handleOtpSubmit}

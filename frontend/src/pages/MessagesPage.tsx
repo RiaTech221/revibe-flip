@@ -12,7 +12,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { chatApi, chatOfferApi, paymentApi, uploadApi } from '../services/api';
 import { Conversation, Message, ChatOffer, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import { MessageSquare, ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
 import { ConversationSidebar } from '../components/messages/ConversationSidebar';
 import { ChatHeader } from '../components/messages/ChatHeader';
@@ -63,76 +62,21 @@ export const MessagesPage: React.FC = () => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const getDemoConversations = (): Conversation[] => [
-    {
-      id: 101,
-      productId: 18,
-      productTitle: 'Chemise Casual Homme en Lin Écru Respirant',
-      productImageUrl: 'https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&w=400&q=80',
-      productPrice: '11 000 FCFA',
-      productCondition: 'Très bon état',
-      buyer: user || ({ id: 4, fullName: 'Fatou Sow', phone: '+221778889900', role: 'ROLE_USER', isVerified: true } as any),
-      seller: { id: 3, fullName: 'Moussa Ndiaye', phone: '+221774445566', city: 'Dakar Almadies', rating: 4.8, role: 'ROLE_USER', isVerified: true } as any,
-      lastMessagePreview: "Bonjour ! Oui la chemise est bien disponible.",
-      lastMessageAt: '10:14',
-      unreadCount: 0,
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 102,
-      productId: 1,
-      productTitle: 'Grand Boubou Brodé 3 Pièces Bazin Riche Getzner',
-      productImageUrl: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?auto=format&fit=crop&w=400&q=80',
-      productPrice: '35 000 FCFA',
-      productCondition: 'Très bon état',
-      buyer: user || ({ id: 4, fullName: 'Fatou Sow', phone: '+221778889900', role: 'ROLE_USER', isVerified: true } as any),
-      seller: { id: 2, fullName: 'Aminata Diallo', phone: '+221771112233', city: 'Dakar Plateau', rating: 4.9, role: 'ROLE_USER', isVerified: true } as any,
-      lastMessagePreview: "Bonjour ! Oui la broderie en fil d'or est impeccable.",
-      lastMessageAt: 'Hier',
-      unreadCount: 1,
-      createdAt: new Date().toISOString(),
-    },
-  ];
-
-  const getInitialMessages = (conv: Conversation): Message[] => [
-    {
-      id: 1,
-      conversationId: conv.id,
-      senderId: conv.buyer.id,
-      senderName: conv.buyer.fullName,
-      content: `Bonjour ! Je suis intéressé(e) par votre article "${conv.productTitle || 'cet article'}". Est-il toujours disponible ?`,
-      sentAt: 'Hier 14:30',
-      isRead: true,
-    },
-    {
-      id: 2,
-      conversationId: conv.id,
-      senderId: conv.seller.id,
-      senderName: conv.seller.fullName,
-      content: "Bonjour ! Oui, parfaitement disponible et soigneusement repassé. Vous souhaitez une livraison à domicile ou une remise en main propre à Dakar ?",
-      sentAt: 'Hier 14:35',
-      isRead: true,
-    },
-  ];
-
   const fetchConversations = async (targetId?: number) => {
     try {
       setLoading(true);
       const res = await chatApi.getConversations();
       const list = res?.data?.data || [];
+      setConversations(list);
       if (list.length > 0) {
-        setConversations(list);
         const selected = targetId ? list.find((c: Conversation) => c.id === targetId) || list[0] : list[0];
         setActiveConversation(selected);
       } else {
-        const fallback = getDemoConversations();
-        setConversations(fallback);
-        setActiveConversation(fallback[0]);
+        setActiveConversation(null);
       }
     } catch {
-      const fallback = getDemoConversations();
-      setConversations(fallback);
-      setActiveConversation(fallback[0]);
+      setConversations([]);
+      setActiveConversation(null);
     } finally {
       setLoading(false);
     }
@@ -141,16 +85,9 @@ export const MessagesPage: React.FC = () => {
   const fetchMessages = async (convId: number) => {
     try {
       const res = await chatApi.getMessages(convId);
-      const list = res?.data?.data || [];
-      if (list.length > 0) {
-        setMessages(list);
-      } else if (activeConversation) {
-        setMessages(getInitialMessages(activeConversation));
-      }
+      setMessages(res?.data?.data || []);
     } catch {
-      if (activeConversation) {
-        setMessages(getInitialMessages(activeConversation));
-      }
+      setMessages([]);
     }
   };
 
@@ -321,7 +258,7 @@ export const MessagesPage: React.FC = () => {
       await paymentApi.process({
         orderId: acceptedOfferToPay.orderId,
         paymentMethod,
-        phoneNumber: paymentPhone || user?.phone || '+221770000000',
+        phoneNumber: paymentPhone || user?.phone || '',
       });
       setPaymentSuccess(true);
       if (activeConversation) {

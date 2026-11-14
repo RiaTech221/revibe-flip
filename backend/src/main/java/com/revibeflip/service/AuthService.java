@@ -81,13 +81,10 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        log.info("Code OTP généré pour {}: {}", savedUser.getPhone(), otp);
-
         return AuthResponse.builder()
-                .token(null) // Token provided after OTP validation
+                .token(null)
                 .tokenType("Bearer")
                 .user(UserDto.fromEntity(savedUser))
-                .otpDemoCode(otp) // Displayed in development/demo for testing convenience
                 .build();
     }
 
@@ -129,7 +126,7 @@ public class AuthService {
     }
 
     @Transactional
-    public String resendOtp(String phone) {
+    public void resendOtp(String phone) {
         String cleanPhone = cleanPhoneNumber(phone);
         User user = userRepository.findByPhone(cleanPhone)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé."));
@@ -138,9 +135,6 @@ public class AuthService {
         user.setOtpCode(newOtp);
         user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
         userRepository.save(user);
-
-        log.info("Nouveau code OTP envoyé à {}: {}", cleanPhone, newOtp);
-        return newOtp;
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -155,23 +149,11 @@ public class AuthService {
         }
 
         boolean isMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
-        // Tolérance démo / test : garantit la connexion directe sur les comptes de test pré-remplis
-        if (!isMatch) {
-            String p = user.getPhone();
-            if ("+221770000000".equals(p) && ("Admin1234!".equals(request.getPassword()) || "Admin123!".equals(request.getPassword()) || "password123".equals(request.getPassword()))) {
-                isMatch = true;
-            } else if (("+221771112233".equals(p) || "+221774445566".equals(p) || "+221778889900".equals(p)) &&
-                    ("Passer123!".equals(request.getPassword()) || "password123".equals(request.getPassword()))) {
-                isMatch = true;
-            }
-        }
-
         if (!isMatch) {
             throw new BadCredentialsException("Numéro de téléphone ou mot de passe incorrect.");
         }
 
         if (!Boolean.TRUE.equals(user.getIsVerified())) {
-            // Re-generate OTP code so user can complete verification
             String otp = String.format("%06d", 100000 + random.nextInt(900000));
             user.setOtpCode(otp);
             user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(15));
@@ -180,7 +162,6 @@ public class AuthService {
             return AuthResponse.builder()
                     .token(null)
                     .user(UserDto.fromEntity(user))
-                    .otpDemoCode(otp)
                     .build();
         }
 

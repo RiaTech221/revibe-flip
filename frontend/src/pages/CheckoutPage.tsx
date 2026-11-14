@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Page de Validation de Commande et Paiement Séquestre ReVibe FliP
  * 
  * Tunnel d'achat sécurisé ReVibe FliP :
@@ -13,7 +13,6 @@ import { productApi, orderApi, paymentApi } from '../services/api';
 import { Product, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { CURATED_PRODUCTS } from '../data/curatedProducts';
 import {
   Truck,
   ShieldCheck,
@@ -62,26 +61,18 @@ export const CheckoutPage: React.FC = () => {
     if (!productId) return;
 
     const numId = Number(productId);
-    const fallback = CURATED_PRODUCTS.find((p) => p.id === numId);
 
     productApi
       .getById(numId)
       .then((res) => {
         if (res.data?.data) {
           setProduct(res.data.data);
-        } else if (fallback) {
-          setProduct(fallback);
         } else {
           setError('Article non trouvé ou indisponible.');
         }
       })
-      .catch((err) => {
-        if (fallback) {
-          setProduct(fallback);
-        } else {
-          setError('Article non trouvé ou indisponible.');
-          console.error(err);
-        }
+      .catch(() => {
+        setError('Article non trouvé ou indisponible.');
       })
       .finally(() => setLoading(false));
   }, [productId, isAuthenticated, navigate]);
@@ -167,7 +158,7 @@ export const CheckoutPage: React.FC = () => {
   const imageSrc =
     product.primaryImage ||
     (product.images && product.images[0]) ||
-    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=400&q=80';
+    '/placeholder-product.svg';
 
   return (
     <div className="min-h-screen bg-slate-50/70 py-8 px-4 sm:px-6 lg:px-8 font-sans">

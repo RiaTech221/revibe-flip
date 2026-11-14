@@ -25,10 +25,6 @@ import java.util.stream.Collectors;
 
 /**
  * Service d'administration générale de ReVibe FliP.
- *
- * NOTE SUR LE SÉQUESTRE (Point 8) :
- * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
- * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
  */
 @Service
 @RequiredArgsConstructor
@@ -123,7 +119,6 @@ public class AdminService {
                 .orElseGet(() -> PlatformSetting.builder().build());
         BigDecimal commissionRate = settings.getCommissionRate() != null ? settings.getCommissionRate() : BigDecimal.valueOf(20.0);
         BigDecimal validationFeeRate = settings.getValidationFeeRate() != null ? settings.getValidationFeeRate() : BigDecimal.valueOf(1.0);
-        boolean demoMode = Boolean.TRUE.equals(settings.getDemoMode());
 
         // Données globales
         long totalUsers = userRepository.count();
@@ -460,7 +455,6 @@ public class AdminService {
                 .startDate(currentStart.toLocalDate().toString())
                 .endDate(currentEnd.toLocalDate().toString())
                 .lastUpdated(nowZoned.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss")))
-                .demoMode(demoMode)
                 .currency(settings.getCurrency() != null ? settings.getCurrency() : "FCFA")
                 .commissionRate(commissionRate)
                 .validationFeeRate(validationFeeRate)
@@ -921,7 +915,7 @@ public class AdminService {
                         .validationFeeRate(BigDecimal.valueOf(1.0))
                         .platformName("ReVibe FliP")
                         .supportEmail("contact@revibeflip.com")
-                        .supportPhone("+221770000000")
+                        .supportPhone("+221 77 123 45 67")
                         .currency("FCFA")
                         .build()));
         return PlatformSettingsDto.fromEntity(setting);
@@ -940,7 +934,6 @@ public class AdminService {
         setting.setCurrency(req.getCurrency().trim());
         if (req.getOfferValidityHours() != null) setting.setOfferValidityHours(req.getOfferValidityHours());
         if (req.getReservationDurationHours() != null) setting.setReservationDurationHours(req.getReservationDurationHours());
-        if (req.getDemoMode() != null) setting.setDemoMode(req.getDemoMode());
         setting.setUpdatedBy(admin);
 
         PlatformSetting saved = platformSettingRepository.save(setting);
@@ -992,9 +985,6 @@ public class AdminService {
 
     public void logAdminAction(User admin, String actionType, String targetType, String targetId, String details) {
         try {
-            if (admin == null) {
-                admin = userRepository.findByPhone("+221770000000").orElse(null);
-            }
             if (admin != null) {
                 AdminActionLog logEntry = AdminActionLog.builder()
                         .admin(admin)

@@ -91,9 +91,8 @@ public class DevDataSeeder implements CommandLineRunner {
                     .validationFeeRate(BigDecimal.valueOf(1.0))
                     .platformName("ReVibe FliP")
                     .supportEmail("contact@revibeflip.com")
-                    .supportPhone("+221770000000")
+                    .supportPhone("+221771234567")
                     .currency("FCFA")
-                    .demoMode(true)
                     .build();
             return platformSettingRepository.save(s);
         });

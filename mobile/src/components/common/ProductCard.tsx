@@ -17,8 +17,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
   const imageUrl =
     product.primaryImage ||
-    (product.images && product.images.length > 0 ? product.images[0] : null) ||
-    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=500&q=80';
+    (product.images && product.images.length > 0 ? product.images[0] : null);
 
   const conditionShort = product.conditionLabel
     ? product.conditionLabel.replace('avec étiquette', '').trim()
@@ -27,7 +26,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageContainer}>
-        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={imageUrl ? { uri: imageUrl } : require('../../../assets/logo.png')}
+          style={styles.image}
+          resizeMode="cover"
+        />
         {product.locationCity ? (
           <View style={styles.cityBadge}>
             <Text style={styles.cityText}>{product.locationCity}</Text>

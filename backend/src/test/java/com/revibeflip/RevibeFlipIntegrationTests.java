@@ -60,13 +60,15 @@ class RevibeFlipIntegrationTests {
 
         AuthResponse regResponse = authService.register(registerReq);
         assertNotNull(regResponse);
-        assertNotNull(regResponse.getOtpDemoCode(), "Le code OTP doit être généré");
         assertFalse(regResponse.getUser().getIsVerified(), "Le compte n'est pas encore vérifié");
+
+        var registeredUser = userRepository.findByPhone(registerReq.getPhone()).orElseThrow();
+        assertNotNull(registeredUser.getOtpCode(), "Le code OTP doit être généré");
 
         // 2. Validation OTP
         VerifyOtpRequest verifyReq = VerifyOtpRequest.builder()
                 .phone(registerReq.getPhone())
-                .otpCode(regResponse.getOtpDemoCode())
+                .otpCode(registeredUser.getOtpCode())
                 .build();
 
         AuthResponse authResponse = authService.verifyOtp(verifyReq);
@@ -75,8 +77,20 @@ class RevibeFlipIntegrationTests {
 
         var buyerUser = userRepository.findById(authResponse.getUser().getId()).orElseThrow();
 
-        // 3. Vendeur (Aminata) publie un article
-        var sellerUser = userRepository.findByPhone("+221771112233").orElseThrow();
+        // 3. Vendeur publie un article
+        var sellerUser = userRepository.findByPhone("+221771112233").orElseGet(() ->
+                userRepository.save(com.revibeflip.entity.User.builder()
+                        .firstName("Test")
+                        .lastName("Vendeur")
+                        .phone("+221771112233")
+                        .email("vendeur.test@revibeflip.sn")
+                        .password("$2a$10$dummyhashforunitintegrationtestonly123456789012")
+                        .role(com.revibeflip.entity.enums.Role.ROLE_USER)
+                        .isVerified(true)
+                        .isSuspended(false)
+                        .city("Dakar")
+                        .build())
+        );
         CreateProductRequest createProd = CreateProductRequest.builder()
                 .title("Ensemble Wax Kente Prestige")
                 .description("Superbe ensemble traditionnel en wax authentique")

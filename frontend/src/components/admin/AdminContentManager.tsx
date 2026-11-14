@@ -350,7 +350,6 @@ export const AdminContentManager: React.FC = () => {
         supportPhone: footerConfig.supportPhone,
         supportAddress: footerConfig.supportAddress,
         supportHours: footerConfig.supportHours,
-        demoMode: footerConfig.demoMode,
         logoDarkBgUrl: footerConfig.logoDarkBgUrl,
         logoLightBgUrl: footerConfig.logoLightBgUrl,
         socialLinks: socialsForm,
@@ -936,25 +935,6 @@ export const AdminContentManager: React.FC = () => {
                 className="w-full p-2.5 rounded-xl bg-gray-50 border border-gray-200"
               />
             </div>
-
-            {/* SWITCH MODE DÉMONSTRATION */}
-            <div className="md:col-span-2 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between">
-              <div>
-                <span className="font-bold text-gray-900 block">Mode Démonstration & Simulation</span>
-                <span className="text-[11px] text-amber-900">
-                  Affiche la pastille « Mode démonstration : simulation interne sans prélèvement réel » dans le footer.
-                </span>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={footerConfig.demoMode}
-                  onChange={(e) => setFooterConfig({ ...footerConfig, demoMode: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-700"></div>
-              </label>
-            </div>
           </div>
         </div>
       )}
@@ -1019,7 +999,7 @@ export const AdminContentManager: React.FC = () => {
               <label className="block font-bold text-gray-700 mb-1">WhatsApp (lien direct wa.me)</label>
               <input
                 type="url"
-                placeholder="https://wa.me/221770000000"
+                placeholder="https://wa.me/221771234567"
                 value={socialsForm.whatsapp}
                 onChange={(e) => setSocialsForm({ ...socialsForm, whatsapp: e.target.value })}
                 className="w-full p-2.5 rounded-xl bg-gray-50 border border-gray-200"

@@ -10,11 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * DTO de paiement et séquestre.
- *
- * NOTE SUR LE SÉQUESTRE :
- * Simulation interne. Le blocage réel des fonds nécessite l’intégration du prestataire de paiement
- * (Wave/Orange Money/Free Money) et la validation du cadre juridique avant la production.
+ * DTO de paiement et conservation des fonds.
  */
 @Data
 @Builder

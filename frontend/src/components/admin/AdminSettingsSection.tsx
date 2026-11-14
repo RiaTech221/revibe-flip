@@ -18,8 +18,6 @@ interface AdminSettingsSectionProps {
   setOfferValidityHours: (hours: number) => void;
   reservationDurationHours: number;
   setReservationDurationHours: (hours: number) => void;
-  demoMode: boolean;
-  setDemoMode: (demo: boolean) => void;
   platformName: string;
   setPlatformName: (name: string) => void;
   currency: string;
@@ -55,8 +53,6 @@ export const AdminSettingsSection: React.FC<AdminSettingsSectionProps> = ({
   setOfferValidityHours,
   reservationDurationHours,
   setReservationDurationHours,
-  demoMode,
-  setDemoMode,
   platformName,
   setPlatformName,
   currency,
@@ -160,19 +156,6 @@ export const AdminSettingsSection: React.FC<AdminSettingsSectionProps> = ({
             <p className="text-[10px] text-gray-400 mt-1">
               Temps accordé pour payer après acceptation avant remise en vente (défaut : 24h)
             </p>
-          </div>
-
-          <div className="flex items-center gap-3 md:col-span-2 p-4 bg-purple-50/50 rounded-2xl border border-purple-100">
-            <input
-              type="checkbox"
-              id="demoModeCheck"
-              checked={demoMode}
-              onChange={(e) => setDemoMode(e.target.checked)}
-              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-            />
-            <label htmlFor="demoModeCheck" className="text-xs font-bold text-gray-800 cursor-pointer">
-              Activer le Mode Démonstration (affiche le bandeau informatif "aucun argent réel n'est prélevé")
-            </label>
           </div>
 
           <div>

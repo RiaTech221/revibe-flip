@@ -40,7 +40,7 @@ public class PlatformSetting {
 
     @Column(nullable = false, length = 30)
     @Builder.Default
-    private String supportPhone = "+221770000000";
+    private String supportPhone = "+221 77 123 45 67";
 
     @Column(nullable = false, length = 10)
     @Builder.Default
@@ -53,10 +53,6 @@ public class PlatformSetting {
     @Column(nullable = false)
     @Builder.Default
     private Integer reservationDurationHours = 24; // Durée de réservation avant paiement en heures
-
-    @Column(nullable = false)
-    @Builder.Default
-    private Boolean demoMode = false; // Mode démonstration sans prélèvement réel
 
     // --- Footer & Support Content ---
     @Column(length = 255)
@@ -90,7 +86,7 @@ public class PlatformSetting {
 
     @Column(length = 255)
     @Builder.Default
-    private String socialWhatsapp = "https://wa.me/221770000000";
+    private String socialWhatsapp = "https://wa.me/221771234567";
 
     @Column(length = 255)
     private String socialX;

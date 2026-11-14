@@ -210,7 +210,7 @@ export const SellPage: React.FC = () => {
           <div className="pt-3 border-t border-gray-50 flex gap-2">
             <input
               type="url"
-              placeholder="Ou collez une URL d'image web (Unsplash, etc.)..."
+              placeholder="URL d'image téléversée..."
               value={customImageUrl}
               onChange={(e) => setCustomImageUrl(e.target.value)}
               className="flex-1 px-3 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"

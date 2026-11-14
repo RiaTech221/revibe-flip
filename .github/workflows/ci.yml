@@ -18,6 +18,18 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # 0. CONTRÔLE PROPRETÉ PRODUCTION (Zéro simulation / mock / résidu)
+  # ============================================================================
+  production-hygiene:
+    name: Production Hygiene Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+      - name: Vérification des mots interdits en production
+        run: bash scripts/check-forbidden-words.sh
+
+  # ============================================================================
   # 1. BACKEND - Java 21 / Spring Boot 3 / Maven
   # ============================================================================
   backend-ci:

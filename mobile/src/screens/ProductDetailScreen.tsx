@@ -60,8 +60,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
 
   const imageUrl =
     product.primaryImage ||
-    (product.images && product.images.length > 0 ? product.images[0] : null) ||
-    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80';
+    (product.images && product.images.length > 0 ? product.images[0] : null);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -82,7 +81,11 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Main Product Image */}
-        <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+        <Image
+          source={imageUrl ? { uri: imageUrl } : require('../../assets/logo.png')}
+          style={styles.image}
+          resizeMode="cover"
+        />
 
         <View style={styles.content}>
           {/* Price & Escrow Badge */}

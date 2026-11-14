@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Composant Suivi de Commande : OrderSummaryCard
  * 
  * Affiche une section spécifique du suivi de commande, séquestre ou avis (OrderSummaryCard).
@@ -32,7 +32,7 @@ export const OrderSummaryCard: React.FC<OrderSummaryCardProps> = ({ order, forma
         <img
           src={
             order.productImageUrl ||
-            'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=150&q=80'
+            '/placeholder-product.svg'
           }
           alt={order.productTitle}
           className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-200"

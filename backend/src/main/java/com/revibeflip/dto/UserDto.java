@@ -34,6 +34,7 @@ public class UserDto {
     private Double rating;
     private Integer reviewCount;
     private Boolean isSuspended;
+    private Boolean mustChangePassword;
     private LocalDateTime createdAt;
 
     public static UserDto fromEntity(User user) {
@@ -57,6 +58,7 @@ public class UserDto {
                 .rating(user.getRating())
                 .reviewCount(user.getReviewCount() != null ? user.getReviewCount() : 0)
                 .isSuspended(Boolean.TRUE.equals(user.getIsSuspended()))
+                .mustChangePassword(Boolean.TRUE.equals(user.getMustChangePassword()))
                 .createdAt(user.getCreatedAt())
                 .build();
     }

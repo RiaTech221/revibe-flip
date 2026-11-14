@@ -39,9 +39,9 @@ public class AuthController {
 
     @PostMapping("/resend-otp")
     @Operation(summary = "Renvoyer un nouveau code OTP par SMS")
-    public ResponseEntity<ApiResponse<String>> resendOtp(@RequestParam String phone) {
-        String newOtp = authService.resendOtp(phone);
-        return ResponseEntity.ok(ApiResponse.ok(newOtp, "Nouveau code OTP envoyé avec succès."));
+    public ResponseEntity<ApiResponse<Void>> resendOtp(@RequestParam String phone) {
+        authService.resendOtp(phone);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Si un compte correspond à ce numéro, un nouveau code OTP a été envoyé."));
     }
 
     @PostMapping("/login")
