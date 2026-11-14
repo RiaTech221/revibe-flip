@@ -3,6 +3,7 @@ package com.revibeflip.config;
 import com.revibeflip.security.CustomUserDetailsService;
 import com.revibeflip.security.JwtAuthenticationFilter;
 import com.revibeflip.security.RateLimitFilter;
+import com.revibeflip.security.TurnstileFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,6 +53,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final TurnstileFilter turnstileFilter;
     private final CustomUserDetailsService userDetailsService;
 
     @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
@@ -122,6 +124,7 @@ public class SecurityConfig {
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(turnstileFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -136,7 +139,7 @@ public class SecurityConfig {
                 .collect(Collectors.toList());
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "X-Turnstile-Token"));
         config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("Authorization"));
 
