@@ -5,33 +5,34 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { ShieldCheck } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 
 interface EscrowBadgeProps {
   compact?: boolean;
+  style?: StyleProp<ViewStyle>;
 }
 
-export const EscrowBadge: React.FC<EscrowBadgeProps> = ({ compact = false }) => {
+export const EscrowBadge: React.FC<EscrowBadgeProps> = ({ compact = false, style }) => {
   if (compact) {
     return (
-      <View style={styles.compactContainer}>
+      <View style={[styles.compactContainer, style]}>
         <ShieldCheck size={14} color={colors.primary} />
-        <Text style={styles.compactText}>Séquestre 1%</Text>
+        <Text style={styles.compactText}>Paiement protégé 1%</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.cardContainer}>
+    <View style={[styles.cardContainer, style]}>
       <View style={styles.iconCircle}>
         <ShieldCheck size={20} color={colors.primary} />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>Protection Acheteur & Vendeur (1%)</Text>
         <Text style={styles.description}>
-          Les fonds sont sécurisés sous séquestre Wave/Orange Money jusqu'à confirmation de la livraison.
+          Paiement conservé par ReVibe FliP jusqu'à confirmation de réception.
         </Text>
       </View>
     </View>
