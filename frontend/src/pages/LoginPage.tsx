@@ -26,12 +26,12 @@ export const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLoginSubmit = async (identifier: string, password: string) => {
+  const handleLoginSubmit = async (identifier: string, password: string, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
 
     try {
-      const res = await authApi.login({ identifier, password });
+      const res = await authApi.login({ identifier, password }, turnstileToken);
       const data = res.data.data;
 
       if (data.token) {

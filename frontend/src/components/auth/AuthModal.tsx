@@ -36,11 +36,11 @@ export const AuthModal: React.FC = () => {
 
   if (!isAuthModalOpen) return null;
 
-  const handleLoginSubmit = async (identifier: string, password: string) => {
+  const handleLoginSubmit = async (identifier: string, password: string, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
     try {
-      const res = await authApi.login({ identifier, password });
+      const res = await authApi.login({ identifier, password }, turnstileToken);
       const data = res.data.data;
       if (data.token) {
         login(data.token, data.user);
@@ -56,11 +56,11 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleRegisterSubmit = async (formData: any) => {
+  const handleRegisterSubmit = async (formData: any, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
     try {
-      await authApi.register(formData);
+      await authApi.register(formData, turnstileToken);
       setPhoneForOtp(formData.phone);
       setMode('otp');
     } catch (err: any) {

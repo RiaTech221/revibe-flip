@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { contentApi } from '../services/api';
 import { FooterConfig } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { TurnstileWidget, isTurnstileEnabled } from '../components/security/TurnstileWidget';
 import {
   Mail,
   Phone,
@@ -33,6 +34,8 @@ export const ContactPage: React.FC = () => {
   const [phone, setPhone] = useState(user?.phone || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -69,13 +72,16 @@ export const ContactPage: React.FC = () => {
 
     setLoading(true);
     try {
-      await contentApi.submitContact({
-        fullName: fullName.trim(),
-        email: email.trim() || undefined,
-        phone: phone.trim() || undefined,
-        subject: subject.trim(),
-        message: message.trim(),
-      });
+      await contentApi.submitContact(
+        {
+          fullName: fullName.trim(),
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          subject: subject.trim(),
+          message: message.trim(),
+        },
+        turnstileToken || undefined
+      );
       setSuccess(true);
       setMessage('');
       setSubject('');
@@ -86,6 +92,7 @@ export const ContactPage: React.FC = () => {
       );
     } finally {
       setLoading(false);
+      setTurnstileReset((n) => n + 1);
     }
   };
 
@@ -284,9 +291,11 @@ export const ContactPage: React.FC = () => {
                     />
                   </div>
 
+                  <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
+
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (isTurnstileEnabled && !turnstileToken)}
                     className="w-full py-3.5 px-6 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-black text-xs flex items-center justify-center gap-2 shadow-md shadow-purple-700/20 transition-all disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
