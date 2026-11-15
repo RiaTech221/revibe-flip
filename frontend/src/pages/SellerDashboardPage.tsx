@@ -363,7 +363,7 @@ export const SellerDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row text-slate-800">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:block text-slate-800">
       {/* 1. Sidebar modulaire */}
       <SellerSidebar
         activeTab={activeTab}
@@ -375,7 +375,8 @@ export const SellerDashboardPage: React.FC = () => {
       />
 
       {/* 2. Contenu principal par onglet */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-10 space-y-6 lg:overflow-y-auto lg:max-h-screen overflow-x-hidden">
+      <div className="lg:pl-72 min-w-0">
+        <main className="p-4 sm:p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
         {activeTab === 'overview' && (
           <SellerOverviewTab
             dashboard={dashboard}
@@ -466,7 +467,8 @@ export const SellerDashboardPage: React.FC = () => {
             </button>
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* 3. Modale Produit */}
       <SellerProductModal

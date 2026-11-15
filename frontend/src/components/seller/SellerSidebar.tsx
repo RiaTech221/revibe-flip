@@ -137,7 +137,7 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
             key={item.id}
             type="button"
             onClick={() => handleSelectTab(item.id)}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
               isActive
                 ? 'bg-purple-700 text-white shadow-md shadow-purple-700/20'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-purple-50/40'
@@ -265,8 +265,8 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
       )}
 
       {/* 3. Sidebar Desktop (>= lg) */}
-      <aside className="hidden lg:flex w-72 bg-white border-r border-gray-150 p-6 flex-col justify-between shrink-0 shadow-xs">
-        <div className="space-y-6">
+      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 w-72 bg-white border-r border-gray-150 p-5 flex-col justify-between z-30 shadow-xs overflow-y-auto">
+        <div className="space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-700 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-purple-700/20">
               RF
