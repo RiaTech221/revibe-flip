@@ -283,7 +283,7 @@ export const CatalogPage: React.FC = () => {
   ].filter(Boolean).length;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
       {/* 1. Barre de tri et compteur */}
       <CatalogSortBar
         totalElements={totalElements}
@@ -328,7 +328,7 @@ export const CatalogPage: React.FC = () => {
       {/* 4. Grille principale avec Sidebar filtres */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Sidebar desktop */}
-        <div className="hidden lg:block lg:col-span-1 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
+        <div className="hidden lg:block lg:col-span-1 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar">
           <CatalogFilterSidebar
             categories={categories}
             categoryId={categoryId}

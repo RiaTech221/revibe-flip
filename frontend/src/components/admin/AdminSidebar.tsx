@@ -262,7 +262,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       )}
 
       {/* 3. Sidebar Desktop (>= lg) */}
-      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 w-72 bg-white border-r border-gray-150 p-5 flex-col justify-between z-30 shadow-xs overflow-y-auto">
+      <aside className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 w-72 bg-white border-r border-gray-150 p-5 flex-col justify-between z-30 shadow-xs overflow-y-auto no-scrollbar">
         <div className="space-y-4">
           <div className="flex items-center gap-3 px-2">
             <Logo />
