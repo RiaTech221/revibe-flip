@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { RefreshCw, Calendar } from 'lucide-react';
 import { User } from '../../../types';
 
 interface DashboardHeaderProps {
@@ -62,9 +61,9 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   })();
 
   return (
-    <div className="space-y-3">
-      {/* Top row */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="space-y-2.5">
+      {/* Ligne unique : Titre à gauche, Sélecteur de période à droite */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
             Tableau de bord
@@ -77,36 +76,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </p>
         </div>
 
-        {/* Right actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={onToggleAutoRefresh}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
-              autoRefresh
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            Auto {autoRefresh ? 'on' : 'off'}
-          </button>
-
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 disabled:opacity-50 cursor-pointer shadow-xs"
-            title="Actualiser"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualiser</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Period selector pills */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50 flex-wrap">
+        <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/50 flex-wrap self-start lg:self-auto">
           {periods.map((p) => {
             const isActive = period === p.id;
             return (
@@ -125,33 +95,33 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             );
           })}
         </div>
-
-        {/* Custom dates inline when period === custom */}
-        {period === 'custom' && (
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => onCustomFromChange(e.target.value)}
-              className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-purple-600"
-            />
-            <span className="text-slate-400">à</span>
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => onCustomToChange(e.target.value)}
-              className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-purple-600"
-            />
-            <button
-              type="button"
-              onClick={onApplyCustomDates}
-              className="px-3 py-1 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 cursor-pointer"
-            >
-              Appliquer
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Custom dates inline when period === custom */}
+      {period === 'custom' && (
+        <div className="flex items-center justify-end gap-2 flex-wrap text-xs">
+          <input
+            type="date"
+            value={customFrom}
+            onChange={(e) => onCustomFromChange(e.target.value)}
+            className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-purple-600"
+          />
+          <span className="text-slate-400">à</span>
+          <input
+            type="date"
+            value={customTo}
+            onChange={(e) => onCustomToChange(e.target.value)}
+            className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 focus:outline-none focus:border-purple-600"
+          />
+          <button
+            type="button"
+            onClick={onApplyCustomDates}
+            className="px-3 py-1 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 cursor-pointer"
+          >
+            Appliquer
+          </button>
+        </div>
+      )}
     </div>
   );
 };

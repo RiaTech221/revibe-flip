@@ -27,15 +27,7 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
   const hasItems = !!actionItems && actionItems.hasItemsToHandle;
 
   if (!hasItems) {
-    return (
-      <div className="bg-emerald-50/70 border border-emerald-200/60 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs text-emerald-900">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span className="font-semibold">Rien à traiter 🎉</span>
-          <span className="text-emerald-700/80 hidden sm:inline">• Tout est à jour</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const items = [
@@ -86,54 +78,43 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
     },
   ];
 
+  const activeItems = items.filter((it) => it.count > 0);
+  if (activeItems.length === 0) return null;
+
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+    <div className="bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 flex flex-wrap items-center gap-2 text-xs shadow-2xs">
+      <div className="flex items-center gap-2 text-slate-700 font-semibold shrink-0 mr-1">
         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-        <span>À traiter ({actionItems.totalToHandle})</span>
+        <span>À traiter :</span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {items.map((it) => {
-          const isDanger = it.color === 'rose' && it.count > 0;
-          const isWarning = it.color === 'amber' && it.count > 0;
+      <div className="flex flex-wrap items-center gap-1.5">
+        {activeItems.map((it) => {
+          const isDanger = it.color === 'rose';
+          const isWarning = it.color === 'amber';
 
           return (
             <button
               key={it.id}
               type="button"
               onClick={() => onNavigateTab(it.tab, it.filter)}
-              className={`flex items-center justify-between p-2.5 rounded-xl border transition-all text-left cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-all cursor-pointer active:scale-95 ${
                 isDanger
-                  ? 'bg-rose-50/70 border-rose-200/80 hover:bg-rose-100/70 text-rose-950'
+                  ? 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
                   : isWarning
-                  ? 'bg-amber-50/70 border-amber-200/80 hover:bg-amber-100/70 text-amber-950'
-                  : 'bg-white border-slate-200/70 hover:border-slate-300 text-slate-800'
+                  ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                  : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
               }`}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className={`p-1 rounded-lg shrink-0 ${
-                    isDanger
-                      ? 'bg-rose-100 text-rose-600'
-                      : isWarning
-                      ? 'bg-amber-100 text-amber-600'
-                      : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {it.icon}
-                </span>
-                <span className="text-xs font-semibold truncate">{it.label}</span>
-              </div>
+              {it.icon}
+              <span>{it.label}</span>
               <span
-                className={`text-xs font-extrabold px-1.5 py-0.5 rounded-md shrink-0 ml-1.5 ${
-                  it.count > 0
-                    ? isDanger
-                      ? 'bg-rose-600 text-white'
-                      : isWarning
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-purple-700 text-white'
-                    : 'bg-slate-100 text-slate-400'
+                className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  isDanger
+                    ? 'bg-rose-600 text-white'
+                    : isWarning
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-purple-700 text-white'
                 }`}
               >
                 {it.count}

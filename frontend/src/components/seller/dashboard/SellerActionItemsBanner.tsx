@@ -34,14 +34,7 @@ export const SellerActionItemsBanner: React.FC<SellerActionItemsBannerProps> = (
   const hasItems = !!actionItems && actionItems.hasItemsToHandle;
 
   if (!hasItems) {
-    return (
-      <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl px-3.5 py-2 flex items-center justify-between text-xs text-emerald-800">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-          <span className="font-medium">Tout est à jour • Aucune commande ou offre en attente</span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const allItems = [
