@@ -4,14 +4,15 @@
  * Gère une sous-partie du processus d'inscription, connexion ou vérification OTP (AuthLoginForm).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Phone } from 'lucide-react';
+import { TurnstileWidget, isTurnstileEnabled } from '../security/TurnstileWidget';
 
 interface AuthLoginFormProps {
   initialIdentifier?: string;
   loading: boolean;
   error: string | null;
-  onSubmit: (identifier: string, password: string) => void;
+  onSubmit: (identifier: string, password: string, turnstileToken?: string) => void;
   onSwitchToRegister?: () => void;
 }
 
@@ -27,10 +28,18 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
 }) => {
   const [identifier, setIdentifier] = useState(initialIdentifier);
   const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
+
+  useEffect(() => {
+    if (error) {
+      setTurnstileReset((n) => n + 1);
+    }
+  }, [error]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(identifier.trim(), password);
+    onSubmit(identifier.trim(), password, turnstileToken || undefined);
   };
 
   return (
@@ -78,9 +87,11 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
         </div>
       </div>
 
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
+
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || (isTurnstileEnabled && !turnstileToken)}
         className="w-full h-11 rounded-2xl bg-gradient-to-r from-purple-700 to-pink-600 hover:from-purple-800 hover:to-pink-700 text-white font-black text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
       >
         {loading ? 'Connexion en cours...' : 'Se connecter'}

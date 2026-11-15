@@ -8,18 +8,22 @@
  *  * - Récupération et mise à jour du profil utilisateur connecté
  */
 
-import api from './httpClient';
+import api, { turnstileConfig } from './httpClient';
 import { User } from '../types';
 
 /**
  * Service d'authentification et gestion des sessions utilisateurs (JWT, OTP, Profil).
  */
 export const authApi = {
-  register: (data: any) => api.post('/auth/register', data),
+  register: (data: any, turnstileToken?: string) =>
+    api.post('/auth/register', data, turnstileConfig(turnstileToken)),
   verifyOtp: (data: { phone: string; otpCode: string }) => api.post('/auth/verify-otp', data),
-  resendOtp: (phone: string) => api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`),
-  login: (data: any) => api.post('/auth/login', data),
-  forgotPassword: (phone: string) => api.post('/auth/forgot-password', { phone }),
+  resendOtp: (phone: string, turnstileToken?: string) =>
+    api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`, undefined, turnstileConfig(turnstileToken)),
+  login: (data: any, turnstileToken?: string) =>
+    api.post('/auth/login', data, turnstileConfig(turnstileToken)),
+  forgotPassword: (phone: string, turnstileToken?: string) =>
+    api.post('/auth/forgot-password', { phone }, turnstileConfig(turnstileToken)),
   resetPassword: (data: { phone: string; otpCode: string; newPassword: string }) =>
     api.post('/auth/reset-password', data),
   refresh: () => api.post('/auth/refresh', {}),
