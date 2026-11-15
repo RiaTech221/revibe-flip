@@ -8,19 +8,23 @@ import React, { useState, useEffect } from 'react';
 import { Country } from '../../types';
 import { countryApi } from '../../services/productService';
 import { Phone, Lock, User, Mail, Globe } from 'lucide-react';
+import { TurnstileWidget, isTurnstileEnabled } from '../security/TurnstileWidget';
 
 interface AuthRegisterFormProps {
   loading: boolean;
   error: string | null;
-  onSubmit: (formData: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    email?: string;
-    password: string;
-    confirmPassword: string;
-    countryCode: string;
-  }) => void;
+  onSubmit: (
+    formData: {
+      firstName: string;
+      lastName: string;
+      phone: string;
+      email?: string;
+      password: string;
+      confirmPassword: string;
+      countryCode: string;
+    },
+    turnstileToken?: string
+  ) => void;
   onSwitchToLogin?: () => void;
 }
 
@@ -44,6 +48,14 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
+
+  useEffect(() => {
+    if (error) {
+      setTurnstileReset((n) => n + 1);
+    }
+  }, [error]);
 
   useEffect(() => {
     countryApi.getAll().then((res) => {
@@ -72,15 +84,18 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
 
     const fullPhone = phone.startsWith('+') ? phone : phonePrefix + phone.replace(/^0+/, '');
 
-    onSubmit({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      phone: fullPhone.trim(),
-      email: email.trim() || undefined,
-      password,
-      confirmPassword,
-      countryCode: selectedCountryCode,
-    });
+    onSubmit(
+      {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        phone: fullPhone.trim(),
+        email: email.trim() || undefined,
+        password,
+        confirmPassword,
+        countryCode: selectedCountryCode,
+      },
+      turnstileToken || undefined
+    );
   };
 
   const displayError = error || localError;
@@ -216,9 +231,11 @@ export const AuthRegisterForm: React.FC<AuthRegisterFormProps> = ({
         </div>
       </div>
 
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
+
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || (isTurnstileEnabled && !turnstileToken)}
         className="w-full h-11 rounded-2xl bg-gradient-to-r from-purple-700 to-pink-600 hover:from-purple-800 hover:to-pink-700 text-white font-black text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2 mt-4"
       >
         {loading ? 'Création du compte...' : 'Créer mon compte'}

@@ -19,6 +19,9 @@ export const setAccessToken = (token: string | null) => {
 
 export const getAccessToken = (): string | null => inMemoryAccessToken;
 
+export const turnstileConfig = (token?: string) =>
+  token ? { headers: { 'X-Turnstile-Token': token } } : undefined;
+
 export const api = axios.create({
   baseURL: API_BASE_URL,
   withCredentials: true,

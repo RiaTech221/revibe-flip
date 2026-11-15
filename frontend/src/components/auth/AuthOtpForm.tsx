@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { authApi } from '../../services/authService';
+import { TurnstileWidget, isTurnstileEnabled } from '../security/TurnstileWidget';
 
 interface AuthOtpFormProps {
   phone: string;
@@ -29,6 +30,8 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
   const [otpCode, setOtpCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,12 +42,13 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
     setResending(true);
     setResendMessage(null);
     try {
-      await authApi.resendOtp(phone);
+      await authApi.resendOtp(phone, turnstileToken || undefined);
       setResendMessage('Nouveau code envoyé par SMS.');
     } catch {
       setResendMessage('Erreur lors du renvoi du code.');
     } finally {
       setResending(false);
+      setTurnstileReset((n) => n + 1);
     }
   };
 
@@ -110,13 +114,15 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
         <button
           type="button"
           onClick={handleResend}
-          disabled={resending}
+          disabled={resending || (isTurnstileEnabled && !turnstileToken)}
           className="text-purple-700 hover:text-purple-800 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 ml-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
           <span>Renvoyer le code</span>
         </button>
       </div>
+
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
     </form>
   );
 };
