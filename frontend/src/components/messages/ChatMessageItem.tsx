@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Message } from '../../types';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface ChatMessageItemProps {
   message: Message;
@@ -29,7 +30,7 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, curre
   return (
     <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
       <div
-        className={`max-w-md p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed space-y-2 ${
+        className={`max-w-[85%] sm:max-w-md p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed space-y-2 ${
           isMe
             ? 'bg-purple-700 text-white rounded-br-xs shadow-md shadow-purple-700/10'
             : 'bg-white text-gray-800 rounded-bl-xs border border-gray-150 shadow-xs'
@@ -37,10 +38,10 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, curre
       >
         {message.imageUrl && (
           <img
-            src={message.imageUrl}
+            src={formatImageUrl(message.imageUrl)}
             alt="Détail article"
-            className="w-full max-h-60 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
-            onClick={() => window.open(message.imageUrl, '_blank')}
+            className="w-full max-w-[260px] max-h-56 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
+            onClick={() => window.open(formatImageUrl(message.imageUrl), '_blank')}
           />
         )}
         <p>{message.content}</p>

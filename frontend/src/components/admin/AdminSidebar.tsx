@@ -207,68 +207,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   return (
     <>
-      {/* 1. Barre Mobile / Tablette (< lg) */}
-      <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-2xs">
-        <div className="px-4 py-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Ouvrir le menu admin"
-              className="p-2 -ml-1 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors cursor-pointer shrink-0"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="min-w-0">
-              <p className="text-xs font-black text-gray-900 truncate">Back-Office Admin</p>
-              <p className="text-[11px] font-bold text-purple-700 truncate">{activeItem.label}</p>
-            </div>
-          </div>
-
+      {/* 1. Barre Mobile / Tablette (< lg) — épurée */}
+      <div className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-3 shadow-2xs">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
-            onClick={onLogout}
-            className="p-2 rounded-xl text-gray-500 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer shrink-0"
-            title="Déconnexion"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Ouvrir le menu admin"
+            className="p-2 -ml-1 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-purple-50 hover:text-purple-700 transition-colors cursor-pointer shrink-0"
           >
-            <LogOut className="w-4 h-4" />
+            <Menu className="w-5 h-5" />
           </button>
+          <div className="min-w-0">
+            <p className="text-xs font-black text-gray-900 truncate">Back-Office Admin</p>
+            <p className="text-[11px] font-bold text-purple-700 truncate">{activeItem.label}</p>
+          </div>
         </div>
 
-        {/* Onglets rapides horizontaux sur mobile */}
-        <div className="px-3 pb-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-          {navItems.map((item) => {
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleSelectTab(item.id)}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-purple-700 text-white shadow-xs'
-                    : 'bg-gray-100 text-gray-600 hover:bg-purple-50 hover:text-purple-700'
-                }`}
-              >
-                {item.icon}
-                <span>{item.shortLabel}</span>
-                {item.badge !== undefined && item.badge !== null && (
-                  <span
-                    className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
-                      item.alert
-                        ? 'bg-rose-600 text-white'
-                        : isActive
-                        ? 'bg-purple-800 text-white'
-                        : 'bg-white text-gray-700'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="p-2 rounded-xl text-gray-500 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer shrink-0"
+          title="Déconnexion"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
 
       {/* 2. Tiroir coulissant Mobile (< lg) */}
