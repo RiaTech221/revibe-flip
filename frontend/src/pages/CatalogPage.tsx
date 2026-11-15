@@ -328,7 +328,7 @@ export const CatalogPage: React.FC = () => {
       {/* 4. Grille principale avec Sidebar filtres */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Sidebar desktop */}
-        <div className="hidden lg:block lg:col-span-1 sticky top-24">
+        <div className="hidden lg:block lg:col-span-1 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pr-1">
           <CatalogFilterSidebar
             categories={categories}
             categoryId={categoryId}
