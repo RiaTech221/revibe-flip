@@ -28,12 +28,12 @@ export const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRegisterSubmit = async (formData: any) => {
+  const handleRegisterSubmit = async (formData: any, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
 
     try {
-      await authApi.register(formData);
+      await authApi.register(formData, turnstileToken);
       setPhoneForOtp(formData.phone);
       setIsOtpStep(true);
     } catch (err: any) {
