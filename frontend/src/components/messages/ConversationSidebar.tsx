@@ -7,6 +7,7 @@
 import React from 'react';
 import { Conversation, User } from '../../types';
 import { RefreshCw } from 'lucide-react';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
@@ -15,6 +16,7 @@ interface ConversationSidebarProps {
   onRefresh: () => void;
   loading: boolean;
   currentUser: User | null;
+  className?: string;
 }
 
 export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
@@ -24,9 +26,10 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
   onRefresh,
   loading,
   currentUser,
+  className = '',
 }) => {
   return (
-    <div className="md:col-span-4 border-r border-gray-150 flex flex-col bg-white">
+    <div className={`md:col-span-4 md:border-r border-gray-150 flex-col bg-white min-h-0 ${className || 'flex'}`}>
       <div className="p-4 border-b border-gray-150 flex items-center justify-between">
         <h3 className="font-black text-xs text-gray-700 uppercase tracking-wider">
           Discussions ({conversations.length})
@@ -64,10 +67,11 @@ export const ConversationSidebar: React.FC<ConversationSidebarProps> = ({
               >
                 <img
                   src={
-                    otherUser?.profilePicture ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                      otherUser?.fullName || 'U'
-                    )}&background=9333ea&color=fff`
+                    otherUser?.profilePicture
+                      ? formatImageUrl(otherUser.profilePicture)
+                      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                          otherUser?.fullName || 'U'
+                        )}&background=9333ea&color=fff`
                   }
                   alt={otherUser?.fullName}
                   className="w-10 h-10 rounded-full object-cover shrink-0 border border-gray-200"
