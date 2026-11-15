@@ -32,6 +32,7 @@ export const MessagesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
 
   // Offres dans la conversation
   const [conversationOffers, setConversationOffers] = useState<ChatOffer[]>([]);
@@ -62,23 +63,27 @@ export const MessagesPage: React.FC = () => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const fetchConversations = async (targetId?: number) => {
+  const fetchConversations = async (targetId?: number, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await chatApi.getConversations();
       const list = res?.data?.data || [];
       setConversations(list);
-      if (list.length > 0) {
-        const selected = targetId ? list.find((c: Conversation) => c.id === targetId) || list[0] : list[0];
-        setActiveConversation(selected);
-      } else {
-        setActiveConversation(null);
+      if (!silent) {
+        if (list.length > 0) {
+          const selected = targetId ? list.find((c: Conversation) => c.id === targetId) || list[0] : list[0];
+          setActiveConversation(selected);
+        } else {
+          setActiveConversation(null);
+        }
       }
     } catch {
-      setConversations([]);
-      setActiveConversation(null);
+      if (!silent) {
+        setConversations([]);
+        setActiveConversation(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -104,6 +109,7 @@ export const MessagesPage: React.FC = () => {
     if (isAuthenticated) {
       const targetId = searchParams.get('id');
       const convId = targetId ? parseInt(targetId, 10) : undefined;
+      if (convId) setMobileShowChat(true);
       fetchConversations(convId);
     }
   }, [isAuthenticated, searchParams]);
@@ -131,7 +137,7 @@ export const MessagesPage: React.FC = () => {
         setMessages(prev => [...prev, res.data.data]);
       }
       if (!customContent) setNewMessage('');
-      fetchConversations(activeConversation.id);
+      fetchConversations(activeConversation.id, true);
     } catch {
       const localMsg: Message = {
         id: Date.now(),
@@ -317,19 +323,23 @@ export const MessagesPage: React.FC = () => {
         </span>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-150 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[640px] max-h-[800px]">
+      <div className="bg-white rounded-3xl border border-gray-150 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 h-[calc(100dvh-140px)] min-h-[500px] md:h-[700px] md:max-h-[800px]">
         {/* LISTE DES CONVERSATIONS (4 cols) */}
         <ConversationSidebar
           conversations={conversations}
           activeConversation={activeConversation}
-          onSelectConversation={setActiveConversation}
-          onRefresh={() => fetchConversations(activeConversation?.id)}
+          onSelectConversation={(conv) => {
+            setActiveConversation(conv);
+            setMobileShowChat(true);
+          }}
+          onRefresh={() => fetchConversations(activeConversation?.id, true)}
           loading={loading}
           currentUser={user}
+          className={mobileShowChat ? 'hidden md:flex' : 'flex'}
         />
 
         {/* DISCUSSION ACTIVE (8 cols) */}
-        <div className="md:col-span-8 flex flex-col bg-gray-50/40">
+        <div className={`${mobileShowChat ? 'flex' : 'hidden md:flex'} md:col-span-8 flex-col bg-gray-50/40 min-h-0`}>
           {activeConversation ? (
             <>
               <ChatHeader
@@ -342,10 +352,11 @@ export const MessagesPage: React.FC = () => {
                   setIsPaymentModalOpen(true);
                 }}
                 formatPrice={formatPrice}
+                onBackMobile={() => setMobileShowChat(false)}
               />
 
               {/* MESSAGES & OFFRES */}
-              <div className="flex-1 p-5 overflow-y-auto space-y-4">
+              <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
                 {conversationOffers.map((offer) => (
                   <ChatOfferCard
                     key={`offer-${offer.id}`}

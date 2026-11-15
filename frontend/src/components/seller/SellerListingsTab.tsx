@@ -7,6 +7,7 @@
 import React from 'react';
 import { Search, PlusCircle, Edit2, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { Product } from '../../types';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface SellerListingsTabProps {
   products: Product[];
@@ -110,87 +111,151 @@ export const SellerListingsTab: React.FC<SellerListingsTabProps> = ({
             Aucune annonce trouvée pour ces critères.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-150 text-[10px] font-black text-gray-400 uppercase tracking-wider">
-                <tr>
-                  <th className="p-4">Article</th>
-                  <th className="p-4">Prix</th>
-                  <th className="p-4">Statut</th>
-                  <th className="p-4">Taille / État</th>
-                  <th className="p-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100 font-medium">
-                {filteredProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-purple-50/20 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={
-                            p.primaryImage ||
-                            (p.images && p.images[0]) ||
-                            '/placeholder-product.svg'
-                          }
-                          alt={p.title}
-                          className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200"
-                        />
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-gray-900 truncate max-w-xs">{p.title}</h4>
-                          <span className="text-[11px] text-gray-400">{p.brand || 'Sans marque'}</span>
-                        </div>
+          <>
+            {/* Vue Cartes Mobile (< md) */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {filteredProducts.map((p) => (
+                <div key={p.id} className="p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={formatImageUrl(
+                        p.primaryImage || (p.images && p.images[0]) || '/placeholder-product.svg'
+                      )}
+                      alt={p.title}
+                      className="w-14 h-14 rounded-xl object-cover shrink-0 border border-gray-200"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-bold text-gray-900 text-xs line-clamp-2">{p.title}</h4>
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black whitespace-nowrap shrink-0 ${
+                            p.status === 'ACTIVE'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : p.status === 'SOLD'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {p.status === 'ACTIVE' ? 'EN VENTE' : p.status === 'SOLD' ? 'VENDU' : p.status}
+                        </span>
                       </div>
-                    </td>
-                    <td className="p-4 font-black text-purple-700">{formatPrice(p.price)}</td>
-                    <td className="p-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black ${
-                          p.status === 'ACTIVE'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : p.status === 'SOLD'
-                            ? 'bg-purple-100 text-purple-800'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {p.status === 'ACTIVE' ? 'EN VENTE' : p.status === 'SOLD' ? 'VENDU' : p.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-gray-500">
-                      <span>{p.size || 'Unique'}</span> • <span>{p.condition || 'Bon état'}</span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => onOpenEditModal(p)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
-                          title="Modifier"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onToggleStatus(p)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
-                          title={p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}
-                        >
-                          {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDeleteProduct(p.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        {p.brand || 'Sans marque'} • {p.size || 'Unique'}
+                      </p>
+                      <p className="text-xs font-black text-purple-700 mt-1">{formatPrice(p.price)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => onOpenEditModal(p)}
+                      className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      <span>Modifier</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onToggleStatus(p)}
+                      className="px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      {p.status === 'ACTIVE' ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDeleteProduct(p.id)}
+                      className="p-1.5 rounded-xl bg-rose-50 text-rose-600 cursor-pointer"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Vue Tableau Desktop (>= md) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-150 text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Article</th>
+                    <th className="p-4">Prix</th>
+                    <th className="p-4">Statut</th>
+                    <th className="p-4">Taille / État</th>
+                    <th className="p-4 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100 font-medium">
+                  {filteredProducts.map((p) => (
+                    <tr key={p.id} className="hover:bg-purple-50/20 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={formatImageUrl(
+                              p.primaryImage || (p.images && p.images[0]) || '/placeholder-product.svg'
+                            )}
+                            alt={p.title}
+                            className="w-12 h-12 rounded-xl object-cover shrink-0 border border-gray-200"
+                          />
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-gray-900 truncate max-w-xs">{p.title}</h4>
+                            <span className="text-[11px] text-gray-400">{p.brand || 'Sans marque'}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 font-black text-purple-700 whitespace-nowrap">{formatPrice(p.price)}</td>
+                      <td className="p-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black whitespace-nowrap ${
+                            p.status === 'ACTIVE'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : p.status === 'SOLD'
+                              ? 'bg-purple-100 text-purple-800'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}
+                        >
+                          {p.status === 'ACTIVE' ? 'EN VENTE' : p.status === 'SOLD' ? 'VENDU' : p.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-gray-500 whitespace-nowrap">
+                        <span>{p.size || 'Unique'}</span> • <span>{p.condition || 'Bon état'}</span>
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onOpenEditModal(p)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onToggleStatus(p)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
+                            title={p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}
+                          >
+                            {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteProduct(p.id)}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

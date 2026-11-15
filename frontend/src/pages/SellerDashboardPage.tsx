@@ -375,7 +375,7 @@ export const SellerDashboardPage: React.FC = () => {
       />
 
       {/* 2. Contenu principal par onglet */}
-      <main className="flex-1 p-6 sm:p-10 space-y-6 overflow-y-auto max-h-screen">
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-10 space-y-6 lg:overflow-y-auto lg:max-h-screen overflow-x-hidden">
         {activeTab === 'overview' && (
           <SellerOverviewTab
             dashboard={dashboard}
