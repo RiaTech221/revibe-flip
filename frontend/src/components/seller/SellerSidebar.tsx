@@ -265,7 +265,7 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
       )}
 
       {/* 3. Sidebar Desktop (>= lg) */}
-      <aside className="hidden lg:flex w-72 bg-white border-r border-gray-150 p-6 flex-col justify-between shrink-0 shadow-xs">
+      <aside className="hidden lg:flex w-72 lg:h-full lg:overflow-y-auto bg-white border-r border-gray-150 p-6 flex-col justify-between shrink-0 shadow-xs">
         <div className="space-y-6">
           <div className="flex items-center gap-3 px-2">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-700 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-purple-700/20">

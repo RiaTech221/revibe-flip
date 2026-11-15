@@ -4,11 +4,13 @@
  * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerOverviewTab).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Tag,
   ShoppingBag,
   Star,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { SellerDashboard } from '../../services/sellerService';
 import { Order, User } from '../../types';
@@ -68,6 +70,7 @@ export const SellerOverviewTab: React.FC<SellerOverviewTabProps> = ({
   onNavigateTab,
 }) => {
   const isSuspended = Boolean(dashboard?.isSuspended || currentUser?.isSuspended);
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div className="space-y-6 text-xs">
@@ -168,54 +171,79 @@ export const SellerOverviewTab: React.FC<SellerOverviewTabProps> = ({
         />
       </div>
 
-      {/* 6. Conseils contextuels (sans IA, règles simples) */}
-      <SellerContextualTips
-        tips={dashboard?.contextualTips}
-        onNavigateTab={onNavigateTab}
-        disabled={isSuspended}
-      />
-
       {/* 7. Graphique des ventes sur la période */}
       <SellerSalesChart
         data={dashboard?.salesTrends}
         formatPrice={formatPrice}
       />
 
-      {/* 8. Entonnoir des commandes + Top & Stagnant annonces */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SellerOrderFunnelChart
-          funnel={dashboard?.orderFunnel}
-          onNavigateTab={onNavigateTab}
-          disabled={isSuspended}
-        />
-
-        <SellerTopAndStagnantListings
-          topProducts={dashboard?.topProducts}
-          stagnantProducts={dashboard?.stagnantProducts}
-          formatPrice={formatPrice}
-          onNavigateTab={onNavigateTab}
-          disabled={isSuspended}
-        />
+      {/* Bouton d'affichage des analyses détaillées pour garder la vue épurée */}
+      <div className="flex justify-center pt-1">
+        <button
+          type="button"
+          onClick={() => setShowDetails((prev) => !prev)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:text-purple-700 hover:border-purple-200 hover:bg-purple-50/40 transition-colors cursor-pointer shadow-xs"
+        >
+          {showDetails ? (
+            <>
+              <ChevronUp className="w-4 h-4" />
+              <span>Masquer les analyses détaillées</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-4 h-4" />
+              <span>Afficher les analyses détaillées & listes</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* 9. Répartition des avis par étoiles */}
-      <SellerRatingBreakdown
-        rating={dashboard?.rating}
-        onNavigateTab={onNavigateTab}
-        disabled={isSuspended}
-      />
+      {showDetails && (
+        <div className="space-y-6">
+          {/* 6. Conseils contextuels (sans IA, règles simples) */}
+          <SellerContextualTips
+            tips={dashboard?.contextualTips}
+            onNavigateTab={onNavigateTab}
+            disabled={isSuspended}
+          />
 
-      {/* 10. Listes courtes (5 dernières commandes à préparer, offres, avis, notifications) */}
-      <SellerQuickLists
-        ordersToPrepare={dashboard?.ordersToPrepare}
-        activeOffers={dashboard?.activeOffers}
-        recentReviews={dashboard?.recentReviews}
-        recentNotifications={dashboard?.recentNotifications}
-        formatPrice={formatPrice}
-        onNavigateTab={onNavigateTab}
-        onQuickShip={!isSuspended ? onAcceptOrder : undefined}
-        disabled={isSuspended}
-      />
+          {/* 8. Entonnoir des commandes + Top & Stagnant annonces */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <SellerOrderFunnelChart
+              funnel={dashboard?.orderFunnel}
+              onNavigateTab={onNavigateTab}
+              disabled={isSuspended}
+            />
+
+            <SellerTopAndStagnantListings
+              topProducts={dashboard?.topProducts}
+              stagnantProducts={dashboard?.stagnantProducts}
+              formatPrice={formatPrice}
+              onNavigateTab={onNavigateTab}
+              disabled={isSuspended}
+            />
+          </div>
+
+          {/* 9. Répartition des avis par étoiles */}
+          <SellerRatingBreakdown
+            rating={dashboard?.rating}
+            onNavigateTab={onNavigateTab}
+            disabled={isSuspended}
+          />
+
+          {/* 10. Listes courtes (5 dernières commandes à préparer, offres, avis, notifications) */}
+          <SellerQuickLists
+            ordersToPrepare={dashboard?.ordersToPrepare}
+            activeOffers={dashboard?.activeOffers}
+            recentReviews={dashboard?.recentReviews}
+            recentNotifications={dashboard?.recentNotifications}
+            formatPrice={formatPrice}
+            onNavigateTab={onNavigateTab}
+            onQuickShip={!isSuspended ? onAcceptOrder : undefined}
+            disabled={isSuspended}
+          />
+        </div>
+      )}
     </div>
   );
 };

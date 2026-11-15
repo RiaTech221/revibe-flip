@@ -617,7 +617,7 @@ export const AdminPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-gray-800 flex flex-col lg:flex-row">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#f8fafc] text-gray-800 flex flex-col lg:flex-row">
       {/* 1. SIDEBAR ADMINISTRATEUR */}
       <AdminSidebar
         activeTab={activeTab}
@@ -631,7 +631,7 @@ export const AdminPage: React.FC = () => {
       />
 
       {/* 2. ZONE DE CONTENU PRINCIPAL */}
-      <main className="flex-1 min-w-0 p-3 sm:p-5 lg:p-6 w-full max-w-[1600px] mx-auto space-y-6 overflow-x-hidden">
+      <main className="flex-1 min-w-0 p-3 sm:p-5 lg:p-8 w-full max-w-[1600px] mx-auto space-y-6 lg:h-full lg:overflow-y-auto overflow-x-hidden">
         {activeTab === 'kpi' && (
           <AdminKpiSection
             dashboard={dashboard}

@@ -43,15 +43,17 @@ const AppLayout: React.FC = () => {
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   const isStorefront = !isAdminRoute && !isSellerRoute && !isAuthPage;
 
+  const isDashboardRoute = isAdminRoute || isSellerRoute;
+
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={`flex flex-col min-h-screen ${isDashboardRoute ? 'lg:h-screen lg:overflow-hidden' : ''}`}>
       {isStorefront && (
         <>
           <AnnouncementBanner />
           <Navbar />
         </>
       )}
-      <main className="flex-1">
+      <main className={`flex-1 ${isDashboardRoute ? 'min-h-0' : ''}`}>
         <Routes>
           {/* Authentification Split Screen Moderne */}
           <Route path="/login" element={<LoginPage />} />
