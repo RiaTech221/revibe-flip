@@ -14,6 +14,7 @@ import { Product, ReportReason } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { EscrowShield } from '../components/EscrowShield';
+import { formatImageUrl } from '../utils/imageUrl';
 import {
   ShieldCheck,
   MapPin,
@@ -195,7 +196,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-[4/5] sm:aspect-square bg-slate-100 rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
             <img
-              src={images[activeImageIndex]}
+              src={formatImageUrl(images[activeImageIndex])}
               alt={product.title}
               className="w-full h-full object-cover"
             />
@@ -244,7 +245,7 @@ export const ProductDetailPage: React.FC = () => {
                     idx === activeImageIndex ? 'border-purple-700 shadow-sm scale-105' : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -351,7 +352,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={product.seller?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller?.fullName || 'Vendeur')}&background=9333ea&color=fff`}
+                  src={product.seller?.profilePicture ? formatImageUrl(product.seller.profilePicture) : `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller?.fullName || 'Vendeur')}&background=9333ea&color=fff`}
                   alt={product.seller?.fullName}
                   className="w-12 h-12 rounded-full object-cover border border-purple-100 shadow-sm"
                 />
