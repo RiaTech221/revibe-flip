@@ -7,7 +7,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Conversation, User, ChatOffer } from '../../types';
-import { Tag, CreditCard, ExternalLink } from 'lucide-react';
+import { Tag, CreditCard, ExternalLink, ArrowLeft } from 'lucide-react';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface ChatHeaderProps {
   activeConversation: Conversation;
@@ -16,6 +17,7 @@ interface ChatHeaderProps {
   onOpenMakeOffer: () => void;
   onOpenPaymentModal: (offer: ChatOffer) => void;
   formatPrice: (amount: number) => string;
+  onBackMobile?: () => void;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -25,6 +27,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onOpenMakeOffer,
   onOpenPaymentModal,
   formatPrice,
+  onBackMobile,
 }) => {
   const isSeller = activeConversation.seller?.id === currentUser?.id;
   const isBuyer = activeConversation.buyer?.id === currentUser?.id;
@@ -34,15 +37,26 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
     : activeConversation.buyer;
 
   return (
-    <div className="bg-white border-b border-gray-150 p-4 space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+    <div className="bg-white border-b border-gray-150 p-3 sm:p-4 space-y-3 shrink-0">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+          {onBackMobile && (
+            <button
+              type="button"
+              onClick={onBackMobile}
+              aria-label="Retour aux discussions"
+              className="md:hidden p-2 -ml-1 rounded-xl border border-gray-200 text-gray-600 hover:text-purple-700 hover:bg-purple-50 transition-colors shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          )}
           <img
             src={
-              otherUser?.profilePicture ||
-              `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                otherUser?.fullName || 'U'
-              )}&background=9333ea&color=fff`
+              otherUser?.profilePicture
+                ? formatImageUrl(otherUser.profilePicture)
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    otherUser?.fullName || 'U'
+                  )}&background=9333ea&color=fff`
             }
             alt=""
             className="w-10 h-10 rounded-full object-cover shrink-0 border border-purple-100"
@@ -60,7 +74,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         </div>
 
         {/* Actions Rapides En-tête */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {isSeller && (
             <button
               onClick={onOpenMakeOffer}
@@ -95,12 +109,13 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
       {/* BANDEAU ÉPINGLÉ : ARTICLE CONCERNÉ */}
       {activeConversation.productId && (
-        <div className="p-3 rounded-2xl bg-purple-50/70 border border-purple-200/90 flex items-center justify-between gap-3 text-xs">
+        <div className="p-3 rounded-2xl bg-purple-50/70 border border-purple-200/90 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2.5 min-w-0">
             <img
               src={
-                activeConversation.productImageUrl ||
-                '/placeholder-product.svg'
+                activeConversation.productImageUrl
+                  ? formatImageUrl(activeConversation.productImageUrl)
+                  : '/placeholder-product.svg'
               }
               alt=""
               className="w-12 h-12 rounded-xl object-cover border border-purple-200 shrink-0"
