@@ -86,12 +86,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     closeAuthModal();
   };
 
-  const logout = () => {
+  const logout = async () => {
     sessionStorage.setItem('revibe_logged_out', '1');
-    authApi.logout().catch(() => {});
     setAccessToken(null);
     setToken(null);
     setUser(null);
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignore network errors during logout
+    }
+    window.location.replace('/login');
   };
 
   const openAuthModal = (mode: 'login' | 'register' | 'otp' = 'login', phone = '') => {
