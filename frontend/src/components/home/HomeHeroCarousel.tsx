@@ -6,7 +6,16 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  Shirt,
+  ShoppingBag,
+  Footprints,
+  Tag,
+  Gem,
+} from 'lucide-react';
 
 export interface HeroSlide {
   id: number;
@@ -40,84 +49,115 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
   onPrevSlide,
   onNextSlide,
 }) => {
+  const slidePalettes = [
+    'from-purple-700 via-purple-600 to-fuchsia-500',
+    'from-indigo-700 via-purple-700 to-pink-500',
+    'from-violet-700 via-indigo-600 to-sky-500',
+    'from-amber-600 via-orange-500 to-rose-500',
+    'from-emerald-600 via-teal-600 to-cyan-500',
+  ];
+
+  const leftCards = [
+    {
+      to: '/catalog?categoryId=1',
+      title: 'Dressing Femme',
+      subtitle: 'Robes, Wax & Tops chic',
+      icon: <Sparkles className="w-4 h-4 text-purple-700" />,
+      iconBg: 'bg-purple-100/90',
+    },
+    {
+      to: '/catalog?categoryId=2',
+      title: 'Élégance Homme',
+      subtitle: 'Chemises col mao & lin',
+      icon: <Shirt className="w-4 h-4 text-indigo-700" />,
+      iconBg: 'bg-indigo-100/90',
+    },
+    {
+      to: '/catalog?categoryId=5',
+      title: 'Cuir de Ngaye',
+      subtitle: 'Maroquinerie artisanale',
+      icon: <ShoppingBag className="w-4 h-4 text-amber-700" />,
+      iconBg: 'bg-amber-100/90',
+    },
+  ];
+
+  const rightCards = [
+    {
+      to: '/catalog?categoryId=3',
+      title: 'Boutiques Wax',
+      subtitle: 'Woodin & Bazin Getzner',
+      icon: <Gem className="w-4 h-4 text-pink-700" />,
+      iconBg: 'bg-pink-100/90',
+    },
+    {
+      to: '/catalog?categoryId=4',
+      title: 'Sneakers DKR',
+      subtitle: 'Nike, Adidas vérifiées',
+      icon: <Footprints className="w-4 h-4 text-sky-700" />,
+      iconBg: 'bg-sky-100/90',
+    },
+    {
+      to: '/catalog?maxPrice=15000',
+      title: 'Pépites < 15 000 F',
+      subtitle: 'Les meilleures affaires',
+      icon: <Tag className="w-4 h-4 text-emerald-700" />,
+      iconBg: 'bg-emerald-100/90',
+    },
+  ];
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-2">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-        {/* COLONNE GAUCHE (3 MINI BANNIÈRES VIBRANTES) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+        {/* COLONNE GAUCHE (3 CARTES MODERNES ÉPURÉES) */}
         <div className="hidden md:flex md:col-span-3 flex-col justify-between gap-2.5 h-[280px]">
-          <Link
-            to="/catalog?categoryId=1"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Mode Féminine"
-              className="absolute inset-0 w-full h-full object-cover object-top opacity-65 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors">
-                Dressing Femme
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Robes, Wax & Tops chic</span>
-            </div>
-          </Link>
-
-          <Link
-            to="/catalog?categoryId=2"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Style Homme"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-65 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors">
-                Élégance Homme
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Chemises col mao & lin</span>
-            </div>
-          </Link>
-
-          <Link
-            to="/catalog?categoryId=5"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Artisanat de Ngaye"
-              className="absolute inset-0 w-full h-full object-cover object-center opacity-65 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors">
-                Cuir de Ngaye
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Maroquinerie artisanale</span>
-            </div>
-          </Link>
+          {leftCards.map((card) => (
+            <Link
+              key={card.to}
+              to={card.to}
+              className="group flex-1 rounded-2xl bg-white border border-gray-200/80 px-4 py-3 flex items-center justify-between gap-3 shadow-2xs hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center shrink-0`}>
+                  {card.icon}
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-gray-900 text-xs font-extrabold tracking-tight group-hover:text-purple-700 transition-colors truncate">
+                    {card.title}
+                  </span>
+                  <span className="block text-[11px] text-gray-500 font-medium truncate">
+                    {card.subtitle}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+          ))}
         </div>
 
         {/* COLONNE CENTRALE : CARROUSEL INSPIRÉ TRENDS (SHEIN) */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-6 relative rounded-2xl overflow-hidden bg-gradient-to-r from-purple-700 via-purple-600 to-purple-100 shadow-sm h-[250px] sm:h-[280px]">
+        <div className="col-span-12 md:col-span-9 lg:col-span-6 relative rounded-2xl overflow-hidden shadow-md h-[250px] sm:h-[280px]">
           {slides.map((slide, idx) => {
             const isActive = idx === currentSlide;
+            const palette = slidePalettes[idx % slidePalettes.length];
+            const hasRealBg = slide.bgImage && slide.bgImage !== '/placeholder-product.svg';
+
             return (
               <div
                 key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-500 ${
+                className={`absolute inset-0 transition-opacity duration-500 bg-gradient-to-br ${palette} ${
                   isActive ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'
                 }`}
               >
-                {/* Fond dégradé doux façon Trends */}
-                <img
-                  src={slide.bgImage}
-                  alt={slide.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay"
-                />
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.themeGradient || 'from-purple-800 via-purple-600/90 to-purple-200/95'}`} />
+                {hasRealBg && (
+                  <img
+                    src={slide.bgImage}
+                    alt={slide.title}
+                    className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay"
+                  />
+                )}
+                {/* Décor lumineux discret */}
+                <div className="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-white/15 blur-2xl pointer-events-none" />
+                <div className="absolute -left-10 -bottom-12 w-48 h-48 rounded-full bg-black/10 blur-2xl pointer-events-none" />
 
                 <div className="relative z-10 h-full px-5 sm:px-7 py-5 flex items-center justify-between gap-4">
                   {/* Bloc Texte / Trend à gauche */}
@@ -130,7 +170,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
                       <h2 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight line-clamp-2">
                         {slide.title}
                       </h2>
-                      <p className="text-[11px] text-white/85 font-medium line-clamp-2">
+                      <p className="text-[11px] text-white/90 font-medium line-clamp-2">
                         {slide.subtitle}
                       </p>
                     </div>
@@ -152,7 +192,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
                       <Link
                         key={itemIdx}
                         to={it.link}
-                        className="group relative w-24 sm:w-28 h-32 sm:h-40 rounded-xl bg-white p-1.5 shadow-md shrink-0 transition-transform hover:-translate-y-1"
+                        className="group relative w-24 sm:w-28 h-32 sm:h-40 rounded-xl bg-white p-1.5 shadow-lg shrink-0 transition-transform hover:-translate-y-1"
                         title={it.title}
                       >
                         <div className="relative w-full h-full rounded-lg overflow-hidden bg-slate-100">
@@ -177,7 +217,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
           <button
             type="button"
             onClick={onPrevSlide}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/85 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
             title="Précédent"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -185,7 +225,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
           <button
             type="button"
             onClick={onNextSlide}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/85 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
             title="Suivant"
           >
             <ChevronRight className="w-4 h-4" />
@@ -209,61 +249,30 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
           </div>
         </div>
 
-        {/* COLONNE DROITE (3 SÉLECTIONS PHARES) */}
+        {/* COLONNE DROITE (3 CARTES MODERNES ÉPURÉES) */}
         <div className="hidden lg:flex lg:col-span-3 flex-col justify-between gap-2.5 h-[280px]">
-          <Link
-            to="/catalog?categoryId=3"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Créateurs Wax"
-              className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2 text-right w-full">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors uppercase">
-                Boutiques Wax
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Woodin & Bazin Getzner</span>
-            </div>
-          </Link>
-
-          <Link
-            to="/catalog?categoryId=4"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Sneakers DKR"
-              className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2 text-right w-full">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors uppercase">
-                Sneakers DKR
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Nike, Adidas vérifiées</span>
-            </div>
-          </Link>
-
-          <Link
-            to="/catalog?maxPrice=15000"
-            className="group relative flex-1 rounded-2xl overflow-hidden bg-slate-950 border border-slate-800/80 shadow-xs flex items-center transition-all hover:border-purple-500/60"
-          >
-            <img
-              src="/placeholder-product.svg"
-              alt="Moins de 15 000 FCFA"
-              className="absolute inset-0 w-full h-full object-cover opacity-60 transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-l from-slate-950 via-slate-950/75 to-transparent" />
-            <div className="relative z-10 px-4 py-2 text-right w-full">
-              <span className="text-white text-xs font-black tracking-wide group-hover:text-purple-300 transition-colors uppercase">
-                Pépites &lt; 15 000 F
-              </span>
-              <span className="block text-[10px] text-purple-200/90 font-medium">Les meilleures affaires</span>
-            </div>
-          </Link>
+          {rightCards.map((card) => (
+            <Link
+              key={card.to}
+              to={card.to}
+              className="group flex-1 rounded-2xl bg-white border border-gray-200/80 px-4 py-3 flex items-center justify-between gap-3 shadow-2xs hover:border-purple-300 hover:shadow-md hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center shrink-0`}>
+                  {card.icon}
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-gray-900 text-xs font-extrabold tracking-tight group-hover:text-purple-700 transition-colors truncate">
+                    {card.title}
+                  </span>
+                  <span className="block text-[11px] text-gray-500 font-medium truncate">
+                    {card.subtitle}
+                  </span>
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+            </Link>
+          ))}
         </div>
       </div>
     </section>
