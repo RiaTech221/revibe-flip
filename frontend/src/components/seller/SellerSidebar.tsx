@@ -243,9 +243,6 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-sm font-black text-gray-900 truncate">Espace Vendeur</h2>
-                    <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full inline-block truncate max-w-full">
-                      {dashboard?.sellerSinceLabel || 'Vendeur ReVibe FliP'}
-                    </span>
                   </div>
                 </div>
                 <button
@@ -273,9 +270,6 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-black text-gray-900 tracking-tight">Espace Vendeur</h2>
-              <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full">
-                {dashboard?.sellerSinceLabel || 'Vendeur ReVibe FliP'}
-              </span>
             </div>
           </div>
 

@@ -70,9 +70,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </h1>
           <p className="text-xs text-slate-500 font-medium">
             Bonjour, <span className="font-semibold text-slate-800">{firstName}</span>
-            {formattedTime && (
-              <span className="text-slate-400 ml-2">• Mis à jour à {formattedTime}</span>
-            )}
           </p>
         </div>
 

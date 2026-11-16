@@ -73,12 +73,6 @@ export const SellerDashboardHeader: React.FC<SellerDashboardHeaderProps> = ({
           </h1>
           <p className="text-xs text-slate-500 font-medium">
             Bonjour, <span className="font-semibold text-purple-700">{firstName}</span>
-            {sellerSinceLabel && (
-              <span className="text-slate-400 ml-2">• {sellerSinceLabel}</span>
-            )}
-            {formattedTime && (
-              <span className="text-slate-400 ml-2">• Mis à jour à {formattedTime}</span>
-            )}
           </p>
         </div>
 
