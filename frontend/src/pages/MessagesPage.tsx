@@ -54,7 +54,7 @@ export const MessagesPage: React.FC = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const isSeller = activeConversation?.seller?.id === user?.id;
   const isBuyer = activeConversation?.buyer?.id === user?.id;
@@ -122,7 +122,12 @@ export const MessagesPage: React.FC = () => {
   }, [activeConversation]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [messages, conversationOffers]);
 
   const handleSendMessage = async (e?: React.FormEvent, customContent?: string) => {
@@ -356,7 +361,7 @@ export const MessagesPage: React.FC = () => {
               />
 
               {/* MESSAGES & OFFRES */}
-              <div className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
+              <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
                 {conversationOffers.map((offer) => (
                   <ChatOfferCard
                     key={`offer-${offer.id}`}
@@ -383,7 +388,6 @@ export const MessagesPage: React.FC = () => {
                     <ChatMessageItem key={m.id} message={m} currentUserId={user?.id} />
                   ))
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               <ChatInputBar
