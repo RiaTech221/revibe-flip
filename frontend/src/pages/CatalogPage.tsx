@@ -108,7 +108,7 @@ export const CatalogPage: React.FC = () => {
         setLoading(true);
         const params: any = {
           page: 0,
-          size: 40,
+          limit: 40,
           sortBy,
           sortDir,
         };

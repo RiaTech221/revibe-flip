@@ -142,7 +142,7 @@ export const HomePage: React.FC = () => {
       try {
         setLoading(true);
         const [prodRes, catRes] = await Promise.allSettled([
-          productApi.search({ size: 24 }),
+          productApi.search({ limit: 24 }),
           categoryApi.getAll(),
         ]);
 
