@@ -626,7 +626,7 @@ export const AdminPage: React.FC = () => {
         currentUser={user}
         onLogout={() => {
           logout();
-          navigate('/login');
+          navigate('/login', { replace: true });
         }}
       />
 

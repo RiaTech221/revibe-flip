@@ -79,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (newToken: string, newUser: User) => {
+    sessionStorage.removeItem('revibe_logged_out');
     setAccessToken(newToken);
     setToken(newToken);
     setUser(newUser);
@@ -86,6 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    sessionStorage.setItem('revibe_logged_out', '1');
     authApi.logout().catch(() => {});
     setAccessToken(null);
     setToken(null);
