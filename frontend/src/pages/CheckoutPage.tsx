@@ -187,7 +187,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(product ? `/product/${product.id}` : '/catalog')}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs text-gray-700 hover:text-purple-700 hover:border-purple-300 font-bold transition-colors cursor-pointer shrink-0"
             >
               <ChevronLeft className="w-4 h-4" />
