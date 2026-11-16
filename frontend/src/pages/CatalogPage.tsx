@@ -298,34 +298,7 @@ export const CatalogPage: React.FC = () => {
         activeFiltersCount={activeFiltersCount}
       />
 
-      {/* 2. Filtres rapides horizontaux */}
-      <CatalogQuickPills
-        under10kOnly={under10kOnly}
-        setUnder10kOnly={setUnder10kOnly}
-        dakarOnly={dakarOnly}
-        setDakarOnly={setDakarOnly}
-        topConditionOnly={topConditionOnly}
-        setTopConditionOnly={setTopConditionOnly}
-      />
-
-      {/* 3. Tags des filtres actifs */}
-      <CatalogActiveFilters
-        categoryId={categoryId}
-        categories={categories}
-        selectedSubcategory={selectedSubcategory}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        condition={condition}
-        selectedSize={selectedSize}
-        selectedColor={selectedColor}
-        selectedFabric={selectedFabric}
-        city={city}
-        query={query}
-        onClearFilter={handleClearFilter}
-        onResetAll={handleResetAll}
-      />
-
-      {/* 4. Grille principale avec Sidebar filtres */}
+      {/* 2. Grille principale avec Sidebar filtres */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         {/* Sidebar desktop */}
         <div className="hidden lg:block lg:col-span-1 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto no-scrollbar">
@@ -354,8 +327,33 @@ export const CatalogPage: React.FC = () => {
           />
         </div>
 
-        {/* Grille des articles (3 cols) */}
-        <div className="lg:col-span-3">
+        {/* Colonne droite : filtres rapides + tags actifs + grille des articles (3 cols) */}
+        <div className="lg:col-span-3 space-y-4">
+          <CatalogQuickPills
+            under10kOnly={under10kOnly}
+            setUnder10kOnly={setUnder10kOnly}
+            dakarOnly={dakarOnly}
+            setDakarOnly={setDakarOnly}
+            topConditionOnly={topConditionOnly}
+            setTopConditionOnly={setTopConditionOnly}
+          />
+
+          <CatalogActiveFilters
+            categoryId={categoryId}
+            categories={categories}
+            selectedSubcategory={selectedSubcategory}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            condition={condition}
+            selectedSize={selectedSize}
+            selectedColor={selectedColor}
+            selectedFabric={selectedFabric}
+            city={city}
+            query={query}
+            onClearFilter={handleClearFilter}
+            onResetAll={handleResetAll}
+          />
+
           <CatalogGrid
             products={products}
             loading={loading}
