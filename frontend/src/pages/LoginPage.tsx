@@ -7,7 +7,7 @@
  *  * - Lien direct vers la création de compte pour les nouveaux utilisateurs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/authService';
@@ -19,9 +19,15 @@ import { AuthSplitHero, AuthLoginForm } from '../components/auth';
  * Architecture modulaire encapsulée dans `components/auth/`.
  */
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isAdmin ? '/admin' : '/', { replace: true });
+    }
+  }, [isAuthenticated, isAdmin, navigate]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,13 +47,13 @@ export const LoginPage: React.FC = () => {
         const from = (location.state as any)?.from?.pathname;
 
         if (data.user.role === 'ROLE_ADMIN') {
-          navigate('/admin');
+          navigate('/admin', { replace: true });
         } else if (redirectParam) {
-          navigate(redirectParam);
+          navigate(redirectParam, { replace: true });
         } else if (from) {
-          navigate(from);
+          navigate(from, { replace: true });
         } else {
-          navigate('/');
+          navigate('/', { replace: true });
         }
       } else {
         navigate(`/verify-otp?phone=${encodeURIComponent(identifier)}`);
