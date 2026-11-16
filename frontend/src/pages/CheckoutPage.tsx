@@ -113,6 +113,24 @@ export const CheckoutPage: React.FC = () => {
   const handleInitiateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!clientName.trim()) {
+      setError('Veuillez saisir le nom complet du destinataire.');
+      return;
+    }
+    if (!deliveryPhone.trim()) {
+      setError('Veuillez saisir le numéro de téléphone pour le livreur.');
+      return;
+    }
+    if (deliveryMode === 'HOME_DELIVERY' && (!deliveryCity.trim() || !deliveryAddress.trim())) {
+      setError('Veuillez renseigner la ville et l’adresse complète de livraison.');
+      return;
+    }
+    if (!paymentPhone.trim() && !deliveryPhone.trim()) {
+      setError('Veuillez saisir votre numéro Mobile Money pour le paiement.');
+      return;
+    }
+
     setProcessingOrder(true);
 
     try {
@@ -164,26 +182,17 @@ export const CheckoutPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 py-8 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* FIL D'ARIANE / HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-1 flex-wrap">
-              <Link to="/" className="hover:text-purple-700 flex items-center gap-1 text-gray-600">
-                <Home className="w-3.5 h-3.5" />
-                <span>Accueil</span>
-              </Link>
-              <span>/</span>
-              <Link to="/catalog" className="hover:text-purple-700 flex items-center gap-1 text-gray-600">
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Catalogue</span>
-              </Link>
-              <span>/</span>
-              <Link to={`/product/${product.id}`} className="hover:text-purple-700 flex items-center gap-1">
-                <span>Article</span>
-              </Link>
-              <span>/</span>
-              <span className="text-gray-800 font-bold">Passage en caisse sécurisé</span>
-            </div>
+        {/* HEADER ÉPURÉ */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(product ? `/product/${product.id}` : '/catalog')}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-xs text-gray-700 hover:text-purple-700 hover:border-purple-300 font-bold transition-colors cursor-pointer shrink-0"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Retour</span>
+            </button>
             <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
               Finalisation de votre Achat
             </h1>
@@ -195,14 +204,7 @@ export const CheckoutPage: React.FC = () => {
           </div>
         </div>
 
-        {error && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleInitiateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handleInitiateOrder} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ==================================================== */}
           {/* COLONNE GAUCHE (7/12) : ÉTAPES LIVRAISON & PAIEMENT */}
           {/* ==================================================== */}
@@ -554,11 +556,18 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               </div>
 
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               {/* Bouton de confirmation & paiement */}
               <button
                 type="submit"
                 disabled={processingOrder}
-                className={`w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 disabled:opacity-50 ${
+                className={`w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 disabled:opacity-50 cursor-pointer ${
                   selectedPaymentMethod === 'WAVE'
                     ? 'bg-[#00adef] hover:bg-[#009bd6] shadow-sky-400/25'
                     : selectedPaymentMethod === 'ORANGE_MONEY'

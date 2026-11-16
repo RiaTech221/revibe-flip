@@ -6,7 +6,7 @@
  *  * - Vérifie les rôles requis (ex: ROLE_ADMIN pour les pages du back-office)
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -16,8 +16,22 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, refreshUser } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        if (sessionStorage.getItem('revibe_logged_out') === '1') {
+          window.location.replace('/login');
+          return;
+        }
+        refreshUser();
+      }
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [refreshUser]);
 
   if (loading) {
     return (
@@ -27,7 +41,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminO
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || sessionStorage.getItem('revibe_logged_out') === '1') {
     const redirectUrl = location.pathname + location.search;
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectUrl)}`} state={{ from: location }} replace />;
   }

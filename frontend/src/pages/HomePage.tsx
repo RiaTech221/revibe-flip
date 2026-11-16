@@ -15,6 +15,7 @@ import { HomeHeroCarousel, HeroSlide } from '../components/home/HomeHeroCarousel
 import { HomeCategoryScroll, VisualCategory } from '../components/home/HomeCategoryScroll';
 import { HomeShowcaseSection, ShowcaseTab } from '../components/home/HomeShowcaseSection';
 import { HomeLoginPrompt } from '../components/home/HomeLoginPrompt';
+import { formatImageUrl } from '../utils/imageUrl';
 
 export const HomePage: React.FC = () => {
   const { isAuthenticated } = useAuth();
@@ -64,127 +65,76 @@ export const HomePage: React.FC = () => {
     { id: 'petits-prix', label: 'Pépites < 10 000 F', maxPrice: 10000 },
   ];
 
+  const formatSlidePrice = (amount: number) =>
+    new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
+
+  const buildSlideItems = (predicate: (p: Product) => boolean) => {
+    const matched = products.filter(predicate);
+    const source = matched.length > 0 ? matched : products;
+    return source.slice(0, 2).map((p) => ({
+      title: p.title,
+      price: formatSlidePrice(p.price),
+      image: formatImageUrl(p.images?.[0]),
+      link: `/product/${p.id}`,
+    }));
+  };
+
   const heroSlides: HeroSlide[] = [
     {
       id: 1,
       tag: 'FÊTES & SOIRÉES DAKAR',
       title: 'FÊTES DE FIN D’ANNÉE',
       subtitle: 'MODE SÉNÉGALAISE FESTIVE & LOOKS COCOONING',
-      bgImage: '/placeholder-product.svg',
+      bgImage: '',
       themeGradient: 'from-rose-950 via-slate-950/85 to-purple-950/40',
       catalogLink: '/catalog?categoryId=3',
       buttonText: 'Achetez maintenant',
-      items: [
-        {
-          title: 'Grand Boubou Bazin Getzner',
-          price: '35 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/1'
-        },
-        {
-          title: 'Robe Évasée Wax Woodin',
-          price: '18 500 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/2'
-        }
-      ]
+      items: buildSlideItems((p) => (p as any).categoryId === 3),
     },
     {
       id: 2,
       tag: 'SÉLECTION SPÉCIALE DAKAR',
       title: 'ROBES & WAX TENDANCE',
       subtitle: 'JUSQU’À -70% PAR RAPPORT AU NEUF',
-      bgImage: '/placeholder-product.svg',
+      bgImage: '',
       themeGradient: 'from-purple-950 via-slate-950/85 to-indigo-950/40',
       catalogLink: '/catalog?categoryId=1',
       buttonText: 'Découvrir la sélection',
-      items: [
-        {
-          title: 'Ensemble Bazin Riche Émeraude',
-          price: '32 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/13'
-        },
-        {
-          title: 'Tailleur Pantalon Chic Terracotta',
-          price: '24 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/14'
-        }
-      ]
+      items: buildSlideItems((p) => (p as any).categoryId === 1),
     },
     {
       id: 3,
       tag: 'STREETWEAR SÉNÉGAL',
       title: 'SNEAKERS & CASUAL HOMME',
       subtitle: 'AUTHENTIQUES & VÉRIFIÉES AVANT EXPÉDITION',
-      bgImage: '/placeholder-product.svg',
+      bgImage: '',
       themeGradient: 'from-emerald-950 via-slate-950/85 to-teal-950/40',
       catalogLink: '/catalog?categoryId=4',
       buttonText: 'Voir les sneakers',
-      items: [
-        {
-          title: 'Nike Air Max 90 Dakar Clean',
-          price: '28 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/3'
-        },
-        {
-          title: 'Chemise Casual Lin Écru',
-          price: '11 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/18'
-        }
-      ]
+      items: buildSlideItems((p) => (p as any).categoryId === 4 || (p as any).categoryId === 2),
     },
     {
       id: 4,
       tag: 'ARTISANAT LOCAL SÉNÉGALAIS',
       title: 'MAROQUINERIE DE NGAYE',
       subtitle: 'SACS & ACCESSOIRES EN CUIR VÉRITABLE',
-      bgImage: '/placeholder-product.svg',
+      bgImage: '',
       themeGradient: 'from-amber-950 via-slate-950/85 to-orange-950/40',
       catalogLink: '/catalog?categoryId=5',
       buttonText: 'Soutenir les artisans',
-      items: [
-        {
-          title: 'Sac Cabas Cuir Artisanal Ngaye',
-          price: '15 000 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/4'
-        },
-        {
-          title: 'Sandales Cuir Tressées Ngaye',
-          price: '8 500 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/20'
-        }
-      ]
+      items: buildSlideItems((p) => (p as any).categoryId === 5),
     },
     {
       id: 5,
       tag: 'BONS PLANS DAKAR',
       title: 'PÉPITES À MOINS DE 10 000 FCFA',
       subtitle: 'RENOUVELEZ VOTRE GARDE-ROBE À PETIT PRIX',
-      bgImage: '/placeholder-product.svg',
+      bgImage: '',
       themeGradient: 'from-blue-950 via-slate-950/85 to-cyan-950/40',
       catalogLink: '/catalog?maxPrice=10000',
       buttonText: 'Voir les pépites',
-      items: [
-        {
-          title: 'Jean Levi\'s 501 Vintage Bleu',
-          price: '9 500 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/16'
-        },
-        {
-          title: 'Robe Courte Imprimée Fleurs',
-          price: '7 500 FCFA',
-          image: '/placeholder-product.svg',
-          link: '/product/25'
-        }
-      ]
-    }
+      items: buildSlideItems((p) => p.price <= 10000),
+    },
   ];
 
   useEffect(() => {
@@ -192,7 +142,7 @@ export const HomePage: React.FC = () => {
       try {
         setLoading(true);
         const [prodRes, catRes] = await Promise.allSettled([
-          productApi.search({ size: 24 }),
+          productApi.search({ limit: 24 }),
           categoryApi.getAll(),
         ]);
 
