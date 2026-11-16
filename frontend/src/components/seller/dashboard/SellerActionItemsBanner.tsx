@@ -90,8 +90,8 @@ export const SellerActionItemsBanner: React.FC<SellerActionItemsBannerProps> = (
 
   return (
     <div className="space-y-1.5">
-      {/* PILULES COMPACTES ALIGNÉES À DROITE */}
-      <div className="flex flex-wrap items-center justify-end gap-1.5 text-[11px]">
+      {/* PILULES COMPACTES ALIGNÉES À GAUCHE */}
+      <div className="flex flex-wrap items-center justify-start gap-1.5 text-[11px]">
         {activeItems.map((it) => (
           <button
             key={it.id}

@@ -33,7 +33,8 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
   const items = [
     {
       id: 'reports',
-      label: 'Signalements',
+      singular: 'signalement',
+      plural: 'signalements',
       count: actionItems.pendingReportsAndDisputes,
       color: 'rose',
       tab: 'reports',
@@ -42,7 +43,8 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
     },
     {
       id: 'moderation',
-      label: 'Annonces à modérer',
+      singular: 'annonce à modérer',
+      plural: 'annonces à modérer',
       count: actionItems.pendingModerationProducts,
       color: 'amber',
       tab: 'products',
@@ -51,7 +53,8 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
     },
     {
       id: 'disputedOrders',
-      label: 'Litiges',
+      singular: 'litige',
+      plural: 'litiges',
       count: actionItems.disputedOrders,
       color: 'rose',
       tab: 'orders',
@@ -60,7 +63,8 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
     },
     {
       id: 'deliveredAwaitingConfirmation',
-      label: 'Livrées à confirmer',
+      singular: 'livrée à confirmer',
+      plural: 'livrées à confirmer',
       count: actionItems.deliveredAwaitingConfirmationOrders,
       color: 'purple',
       tab: 'orders',
@@ -69,7 +73,8 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
     },
     {
       id: 'contactMessages',
-      label: 'Messages',
+      singular: 'message',
+      plural: 'messages',
       count: actionItems.unreadContactMessages,
       color: 'slate',
       tab: 'cms',
@@ -82,10 +87,11 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
   if (activeItems.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1.5 text-[11px]">
+    <div className="flex flex-wrap items-center justify-start gap-1.5 text-[11px]">
       {activeItems.map((it) => {
         const isDanger = it.color === 'rose';
         const isWarning = it.color === 'amber';
+        const label = it.count > 1 ? it.plural : it.singular;
 
         return (
           <button
@@ -101,7 +107,7 @@ export const ActionItemsBanner: React.FC<ActionItemsBannerProps> = ({
             }`}
           >
             {it.icon}
-            <span>{it.count} {it.label.toLowerCase()}</span>
+            <span>{it.count} {label}</span>
           </button>
         );
       })}
