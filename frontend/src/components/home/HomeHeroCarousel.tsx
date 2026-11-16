@@ -100,76 +100,84 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
           </Link>
         </div>
 
-        {/* COLONNE CENTRALE : LE GRAND CARROUSEL AVEC MINI-CARTES PRODUITS */}
-        <div className="col-span-12 md:col-span-9 lg:col-span-6 relative rounded-3xl overflow-hidden bg-slate-950 border border-slate-800 shadow-md h-[280px]">
+        {/* COLONNE CENTRALE : CARROUSEL INSPIRÉ TRENDS (SHEIN) */}
+        <div className="col-span-12 md:col-span-9 lg:col-span-6 relative rounded-2xl overflow-hidden bg-gradient-to-r from-purple-700 via-purple-600 to-purple-100 shadow-sm h-[250px] sm:h-[280px]">
           {slides.map((slide, idx) => {
             const isActive = idx === currentSlide;
             return (
               <div
                 key={slide.id}
-                className={`absolute inset-0 transition-opacity duration-700 ${
+                className={`absolute inset-0 transition-opacity duration-500 ${
                   isActive ? 'opacity-100 pointer-events-auto z-10' : 'opacity-0 pointer-events-none z-0'
                 }`}
               >
+                {/* Fond dégradé doux façon Trends */}
                 <img
                   src={slide.bgImage}
                   alt={slide.title}
-                  className="absolute inset-0 w-full h-full object-cover opacity-60"
+                  className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay"
                 />
-                <div className={`absolute inset-0 bg-gradient-to-r ${slide.themeGradient || 'from-slate-950 via-slate-950/80 to-purple-950/40'}`} />
+                <div className={`absolute inset-0 bg-gradient-to-r ${slide.themeGradient || 'from-purple-800 via-purple-600/90 to-purple-200/95'}`} />
 
-                <div className="relative z-10 h-full p-5 sm:p-7 flex flex-col justify-between">
-                  <div className="space-y-1.5 max-w-xs sm:max-w-sm">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full bg-purple-700 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-wider shadow-xs">
-                      {slide.tag}
-                    </span>
-                    <h2 className="text-xl sm:text-2xl font-black text-white leading-tight tracking-tight">
-                      {slide.title}
-                    </h2>
-                    <p className="text-[11px] text-purple-200 font-semibold tracking-wide uppercase">
-                      {slide.subtitle}
-                    </p>
+                <div className="relative z-10 h-full px-5 sm:px-7 py-5 flex items-center justify-between gap-4">
+                  {/* Bloc Texte / Trend à gauche */}
+                  <div className="flex flex-col justify-between h-full max-w-[52%] sm:max-w-[46%] py-1">
+                    <div className="space-y-1.5">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/20 backdrop-blur-xs text-white text-[10px] font-bold uppercase tracking-wider">
+                        <Sparkles className="w-3 h-3" />
+                        <span className="truncate">{slide.tag}</span>
+                      </span>
+                      <h2 className="text-lg sm:text-xl font-black text-white leading-snug tracking-tight line-clamp-2">
+                        {slide.title}
+                      </h2>
+                      <p className="text-[11px] text-white/85 font-medium line-clamp-2">
+                        {slide.subtitle}
+                      </p>
+                    </div>
+
+                    <div>
+                      <Link
+                        to={slide.catalogLink}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white hover:bg-purple-50 text-slate-900 hover:text-purple-700 text-[11px] font-bold shadow-sm transition-all active:scale-95"
+                      >
+                        <span>{slide.buttonText || 'Explorer'}</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
 
-                  <div className="flex items-end justify-between gap-3">
-                    <Link
-                      to={slide.catalogLink}
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-purple-50 text-slate-950 hover:text-purple-700 text-[11px] font-black shadow-md transition-all active:scale-95"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-purple-700" />
-                      <span>{slide.buttonText || 'Explorer la sélection'}</span>
-                    </Link>
-
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      {slide.items.map((it, itemIdx) => (
-                        <Link
-                          key={itemIdx}
-                          to={it.link}
-                          className="group relative w-22 sm:w-26 h-26 sm:h-30 rounded-2xl overflow-hidden bg-slate-900 border-2 border-white/90 shadow-xl shrink-0 transition-transform hover:scale-105"
-                          title={it.title}
-                        >
+                  {/* Mini-cartes encadrées façon SHEIN à droite */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 pr-5 sm:pr-6">
+                    {slide.items.slice(0, 2).map((it, itemIdx) => (
+                      <Link
+                        key={itemIdx}
+                        to={it.link}
+                        className="group relative w-24 sm:w-28 h-32 sm:h-40 rounded-xl bg-white p-1.5 shadow-md shrink-0 transition-transform hover:-translate-y-1"
+                        title={it.title}
+                      >
+                        <div className="relative w-full h-full rounded-lg overflow-hidden bg-slate-100">
                           <img
                             src={it.image}
                             alt={it.title}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          <div className="absolute bottom-1 inset-x-1 bg-white/95 backdrop-blur-xs text-slate-950 text-[10px] sm:text-[11px] font-black text-center py-1 px-1 rounded-xl shadow-xs">
+                          <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white/95 backdrop-blur-xs text-slate-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-sm">
                             {it.price}
                           </div>
-                        </Link>
-                      ))}
-                    </div>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
                 </div>
               </div>
             );
           })}
 
-          {/* Boutons Flèches Précédent / Suivant */}
+          {/* Boutons Flèches Précédent / Suivant épurés */}
           <button
             type="button"
             onClick={onPrevSlide}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white flex items-center justify-center border border-white/30 transition-all active:scale-90 shadow-md cursor-pointer"
+            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/85 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
             title="Précédent"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -177,7 +185,7 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
           <button
             type="button"
             onClick={onNextSlide}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-sm text-white flex items-center justify-center border border-white/30 transition-all active:scale-90 shadow-md cursor-pointer"
+            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/85 hover:bg-white text-slate-800 flex items-center justify-center shadow-sm transition-all active:scale-90 cursor-pointer"
             title="Suivant"
           >
             <ChevronRight className="w-4 h-4" />
@@ -192,8 +200,8 @@ export const HomeHeroCarousel: React.FC<HomeHeroCarouselProps> = ({
                 onClick={() => setCurrentSlide(dotIdx)}
                 className={`h-1.5 rounded-full transition-all cursor-pointer ${
                   dotIdx === currentSlide
-                    ? 'w-6 bg-purple-500'
-                    : 'w-2 bg-white/40 hover:bg-white/70'
+                    ? 'w-5 bg-white'
+                    : 'w-1.5 bg-white/45 hover:bg-white/75'
                 }`}
                 title={`Aller au slide ${dotIdx + 1}`}
               />
