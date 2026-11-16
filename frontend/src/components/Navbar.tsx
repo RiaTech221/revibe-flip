@@ -252,7 +252,7 @@ export const Navbar: React.FC = () => {
                   ) : (
                     <>
                       {/* Menu non connecté (Exactement le modèle Amazon/Shein de l'image utilisateur) */}
-                      <div className="px-4 pb-3 space-y-2.5 border-b border-slate-100">
+                      <div className="px-4 pb-3 border-b border-slate-100">
                         <Link
                           to="/login"
                           onClick={() => setIsUserMenuOpen(false)}
@@ -260,16 +260,6 @@ export const Navbar: React.FC = () => {
                         >
                           Se connecter
                         </Link>
-                        <p className="text-center text-[11px] text-slate-500">
-                          Nouveau client ?{' '}
-                          <Link
-                            to="/register"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="text-purple-700 font-bold hover:underline"
-                          >
-                            S'inscrire ici
-                          </Link>
-                        </p>
                       </div>
 
                       <div className="py-1.5 px-2 space-y-0.5">
