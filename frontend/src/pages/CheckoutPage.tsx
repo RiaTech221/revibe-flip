@@ -113,6 +113,24 @@ export const CheckoutPage: React.FC = () => {
   const handleInitiateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!clientName.trim()) {
+      setError('Veuillez saisir le nom complet du destinataire.');
+      return;
+    }
+    if (!deliveryPhone.trim()) {
+      setError('Veuillez saisir le numéro de téléphone pour le livreur.');
+      return;
+    }
+    if (deliveryMode === 'HOME_DELIVERY' && (!deliveryCity.trim() || !deliveryAddress.trim())) {
+      setError('Veuillez renseigner la ville et l’adresse complète de livraison.');
+      return;
+    }
+    if (!paymentPhone.trim() && !deliveryPhone.trim()) {
+      setError('Veuillez saisir votre numéro Mobile Money pour le paiement.');
+      return;
+    }
+
     setProcessingOrder(true);
 
     try {
@@ -167,7 +185,15 @@ export const CheckoutPage: React.FC = () => {
         {/* FIL D'ARIANE / HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200">
           <div>
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-1 flex-wrap">
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 mb-1.5 flex-wrap">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-gray-200 text-gray-700 hover:text-purple-700 hover:border-purple-300 font-bold transition-colors cursor-pointer mr-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                <span>Retour</span>
+              </button>
               <Link to="/" className="hover:text-purple-700 flex items-center gap-1 text-gray-600">
                 <Home className="w-3.5 h-3.5" />
                 <span>Accueil</span>
@@ -202,7 +228,7 @@ export const CheckoutPage: React.FC = () => {
           </div>
         )}
 
-        <form onSubmit={handleInitiateOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <form onSubmit={handleInitiateOrder} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* ==================================================== */}
           {/* COLONNE GAUCHE (7/12) : ÉTAPES LIVRAISON & PAIEMENT */}
           {/* ==================================================== */}
@@ -554,11 +580,18 @@ export const CheckoutPage: React.FC = () => {
                 </div>
               </div>
 
+              {error && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               {/* Bouton de confirmation & paiement */}
               <button
                 type="submit"
                 disabled={processingOrder}
-                className={`w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 disabled:opacity-50 ${
+                className={`w-full py-4 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2 shadow-lg transition-all active:scale-98 disabled:opacity-50 cursor-pointer ${
                   selectedPaymentMethod === 'WAVE'
                     ? 'bg-[#00adef] hover:bg-[#009bd6] shadow-sky-400/25'
                     : selectedPaymentMethod === 'ORANGE_MONEY'

@@ -296,16 +296,16 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* 4. Bouton Panier (Uniquement l'icône parlante avec pastille compteur, SANS écriture) */}
+            {/* 4. Bouton Panier (Icône circulaire moderne avec pastille compteur ronde) */}
             <button
               type="button"
               onClick={toggleCart}
-              className="relative p-2 sm:p-2.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors cursor-pointer active:scale-95"
+              className="relative w-10 h-10 rounded-full bg-slate-100/80 hover:bg-purple-50 text-slate-700 hover:text-purple-700 flex items-center justify-center transition-all cursor-pointer active:scale-95"
               title="Mon Panier"
             >
-              <ShoppingBag className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              <ShoppingBag className="w-5 h-5" />
               {totalCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-purple-700 text-white text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-xs border-2 border-white animate-scale-in">
+                <span className="absolute -top-0.5 -right-0.5 bg-purple-700 text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none shadow-xs ring-2 ring-white animate-scale-in">
                   {totalCount}
                 </span>
               )}
