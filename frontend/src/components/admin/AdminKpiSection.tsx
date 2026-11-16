@@ -4,17 +4,12 @@
  * Module de gestion dédié du back-office ReVibe FliP (AdminKpiSection).
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   DollarSign,
   CreditCard,
   ShieldCheck,
-  Clock,
-  ShoppingBag,
   Users,
-  Tag,
-  ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { AdminDashboard, User } from '../../types';
 import {
@@ -27,8 +22,6 @@ import {
   CategoryTopChart,
   PaymentDistributionChart,
   OrderFunnelChart,
-  UserRegistrationChart,
-  RecentListsSection,
 } from './dashboard';
 
 interface AdminKpiSectionProps {
@@ -90,9 +83,6 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
 
   // Active / sold products
   const activeProductsCount = dashboard.products?.active ?? dashboard.activeProducts ?? 0;
-  const soldProductsCount = dashboard.products?.sold ?? dashboard.soldProducts ?? 0;
-
-  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <div className="space-y-5 text-xs">
@@ -119,57 +109,57 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
         onNavigateTab={onNavigateTab}
       />
 
-      {/* 4. Cartes principales épurées (4 indicateurs clés) */}
+      {/* 4. Indicateurs Plateforme Admin (4 cartes ciblées sans redondance) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {/* Chiffre d'affaires */}
+        {/* Volume d'affaires global */}
         <MetricCard
-          title="Chiffre d'affaires"
+          title="Volume d'affaires"
           value={formatPrice(dashboard.revenue?.value ?? dashboard.totalTransactionsAmount ?? 0)}
           changePercentage={dashboard.revenue?.changePercentage}
           sparkline={dashboard.revenue?.sparkline}
           icon={<DollarSign className="w-4 h-4 text-purple-700" />}
           iconBgColor="bg-purple-50 text-purple-700"
+          subtitle={`${dashboard.orders?.value ?? dashboard.totalOrders ?? 0} commandes`}
           onClick={() => onNavigateTab('orders')}
         />
 
-        {/* Commissions réalisées */}
+        {/* Revenus plateforme (Commissions + Validation) */}
         <MetricCard
           title={`Commissions (${commRate}%)`}
           value={formatPrice(dashboard.earnedCommissions?.value ?? dashboard.totalCommissions ?? 0)}
           changePercentage={dashboard.earnedCommissions?.changePercentage}
           icon={<CreditCard className="w-4 h-4 text-purple-700" />}
           iconBgColor="bg-purple-50 text-purple-700"
+          subtitle={`Validation (${valFeeRate}%) : ${formatPrice(dashboard.validationFees?.value ?? dashboard.totalValidationFees ?? 0)}`}
           onClick={() => onNavigateTab('orders', 'COMPLETED')}
         />
 
-        {/* Commandes & Panier moyen */}
+        {/* Séquestre & Trésorerie */}
         <MetricCard
-          title="Commandes"
-          value={dashboard.orders?.value ?? dashboard.totalOrders ?? 0}
-          changePercentage={dashboard.orders?.changePercentage}
-          sparkline={dashboard.orders?.sparkline}
-          icon={<ShoppingBag className="w-4 h-4 text-pink-600" />}
-          iconBgColor="bg-pink-50 text-pink-600"
-          subtitle={`Panier : ${formatPrice(dashboard.averageBasket?.value ?? 0)}`}
-          onClick={() => onNavigateTab('orders')}
+          title="Fonds sous séquestre"
+          value={formatPrice(dashboard.escrowLockedFunds?.value ?? 0)}
+          icon={<ShieldCheck className="w-4 h-4 text-emerald-600" />}
+          iconBgColor="bg-emerald-50 text-emerald-600"
+          tooltipText="Montant payé par les acheteurs et conservé par ReVibe FliP jusqu’à la confirmation de réception."
+          subtitle={`En attente : ${formatPrice(dashboard.pendingCommissions?.value ?? 0)}`}
+          onClick={() => onNavigateTab('payments', 'LOCKED')}
         />
 
-        {/* Utilisateurs */}
+        {/* Communauté & Catalogue */}
         <MetricCard
-          title="Utilisateurs"
+          title="Utilisateurs & Annonces"
           value={dashboard.users?.total ?? dashboard.totalUsers ?? 0}
           changePercentage={dashboard.users?.changePercentage}
-          sparkline={dashboard.users?.sparkline}
-          icon={<Users className="w-4 h-4 text-purple-700" />}
-          iconBgColor="bg-purple-50 text-purple-700"
-          subtitle={`${activeUsersCount} actifs`}
+          icon={<Users className="w-4 h-4 text-indigo-600" />}
+          iconBgColor="bg-indigo-50 text-indigo-600"
+          subtitle={`${activeUsersCount} actifs • ${activeProductsCount} annonces`}
           badgeLabel={suspendedUsersCount > 0 ? `${suspendedUsersCount} susp.` : undefined}
           badgeAction={() => onNavigateTab('users', 'SUSPENDED')}
           onClick={() => onNavigateTab('users')}
         />
       </div>
 
-      {/* 5. Tendance des ventes (2/3) & Top 5 des rayons (1/3) */}
+      {/* 5. Pilotage global : Tendance (2/3) & Moyens de paiement (1/3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2">
           <SalesTrendChart
@@ -178,115 +168,28 @@ export const AdminKpiSection: React.FC<AdminKpiSectionProps> = ({
           />
         </div>
         <div className="lg:col-span-1">
-          <CategoryTopChart
-            categoriesBySales={dashboard.topCategoriesBySales || dashboard.topCategories}
-            categoriesByProducts={dashboard.topCategoriesByProducts || dashboard.topCategories}
-            categories={dashboard.topCategories}
+          <PaymentDistributionChart
+            distributions={dashboard.paymentDistributions}
             formatPrice={formatPrice}
             onNavigateTab={onNavigateTab}
           />
         </div>
       </div>
 
-      {/* Bouton pour afficher les indicateurs & graphiques secondaires */}
-      <div className="flex justify-center pt-1">
-        <button
-          type="button"
-          onClick={() => setShowDetails((prev) => !prev)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold text-gray-600 hover:text-purple-700 hover:border-purple-200 hover:bg-purple-50/40 transition-colors cursor-pointer shadow-xs"
-        >
-          {showDetails ? (
-            <>
-              <ChevronUp className="w-4 h-4" />
-              <span>Masquer les détails</span>
-            </>
-          ) : (
-            <>
-              <ChevronDown className="w-4 h-4" />
-              <span>Afficher plus d'indicateurs & graphiques</span>
-            </>
-          )}
-        </button>
+      {/* 6. Entonnoir des commandes & Top Rayons (1/2 et 1/2) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <OrderFunnelChart
+          funnel={dashboard.orderFunnel}
+          onNavigateTab={onNavigateTab}
+        />
+        <CategoryTopChart
+          categoriesBySales={dashboard.topCategoriesBySales || dashboard.topCategories}
+          categoriesByProducts={dashboard.topCategoriesByProducts || dashboard.topCategories}
+          categories={dashboard.topCategories}
+          formatPrice={formatPrice}
+          onNavigateTab={onNavigateTab}
+        />
       </div>
-
-      {showDetails && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* Fonds conservés */}
-            <MetricCard
-              title="Fonds conservés"
-              value={formatPrice(dashboard.escrowLockedFunds?.value ?? 0)}
-              icon={<ShieldCheck className="w-4 h-4 text-emerald-600" />}
-              iconBgColor="bg-emerald-50 text-emerald-600"
-              tooltipText="Montant payé par les acheteurs et conservé par ReVibe FliP jusqu’à la confirmation de réception."
-              onClick={() => onNavigateTab('payments', 'LOCKED')}
-            />
-
-            {/* Commissions en attente */}
-            <MetricCard
-              title="Commissions en attente"
-              value={formatPrice(dashboard.pendingCommissions?.value ?? 0)}
-              icon={<Clock className="w-4 h-4 text-blue-600" />}
-              iconBgColor="bg-blue-50 text-blue-600"
-              onClick={() => onNavigateTab('orders', 'PAID_ESCROW_LOCKED')}
-            />
-
-            {/* Frais de validation */}
-            <MetricCard
-              title={`Frais de validation (${valFeeRate}%)`}
-              value={formatPrice(dashboard.validationFees?.value ?? dashboard.totalValidationFees ?? 0)}
-              changePercentage={dashboard.validationFees?.changePercentage}
-              icon={<ShieldCheck className="w-4 h-4 text-indigo-600" />}
-              iconBgColor="bg-indigo-50 text-indigo-600"
-              onClick={() => onNavigateTab('payments')}
-            />
-
-            {/* Annonces */}
-            <MetricCard
-              title="Annonces"
-              value={dashboard.products?.total ?? dashboard.totalProducts ?? 0}
-              changePercentage={dashboard.products?.changePercentage}
-              sparkline={dashboard.products?.sparkline}
-              icon={<Tag className="w-4 h-4 text-amber-600" />}
-              iconBgColor="bg-amber-50 text-amber-600"
-              subtitle={`${activeProductsCount} actives`}
-              badgeLabel={soldProductsCount > 0 ? `${soldProductsCount} vendues` : undefined}
-              badgeAction={() => onNavigateTab('products', 'SOLD')}
-              onClick={() => onNavigateTab('products')}
-            />
-          </div>
-
-          {/* 6. Répartition des paiements & Entonnoir des commandes côte à côte (1/2 et 1/2) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <PaymentDistributionChart
-              distributions={dashboard.paymentDistributions}
-              formatPrice={formatPrice}
-              onNavigateTab={onNavigateTab}
-            />
-            <OrderFunnelChart
-              funnel={dashboard.orderFunnel}
-              onNavigateTab={onNavigateTab}
-            />
-          </div>
-
-          {/* 7. Nouveaux inscrits par jour */}
-          <div className="w-full">
-            <UserRegistrationChart
-              data={dashboard.userRegistrationTrends}
-              onNavigateTab={onNavigateTab}
-            />
-          </div>
-
-          {/* 8. Listes courtes (5 dernières commandes, signalements, logs d'audit) */}
-          <RecentListsSection
-            orders={dashboard.recentOrders}
-            reports={dashboard.recentReports}
-            auditLogs={dashboard.recentAuditLogs}
-            formatPrice={formatPrice}
-            onNavigateTab={onNavigateTab}
-          />
-        </div>
-      )}
     </div>
   );
 };

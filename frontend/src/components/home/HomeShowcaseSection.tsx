@@ -64,7 +64,7 @@ export const HomeShowcaseSection: React.FC<HomeShowcaseSectionProps> = ({
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-slate-150 p-8 space-y-3">
+        <div className="text-center py-14 px-4 space-y-3">
           <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-700">Aucun article dans cette sélection</h3>
           <button

@@ -30,6 +30,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+let activeRefreshPromise: Promise<{ token: string; user: User } | null> | null = null;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -40,13 +42,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      const refreshRes = await authApi.refresh();
-      const newToken = refreshRes.data?.data?.token;
-      const refreshedUser = refreshRes.data?.data?.user;
-      if (newToken && refreshedUser) {
-        setAccessToken(newToken);
-        setToken(newToken);
-        setUser(refreshedUser);
+      if (!activeRefreshPromise) {
+        activeRefreshPromise = authApi
+          .refresh()
+          .then((refreshRes) => {
+            const newToken = refreshRes.data?.data?.token;
+            const refreshedUser = refreshRes.data?.data?.user;
+            return newToken && refreshedUser ? { token: newToken, user: refreshedUser } : null;
+          })
+          .finally(() => {
+            activeRefreshPromise = null;
+          });
+      }
+      const result = await activeRefreshPromise;
+      if (result) {
+        setAccessToken(result.token);
+        setToken(result.token);
+        setUser(result.user);
         return;
       }
       const res = await authApi.getMe();
@@ -67,17 +79,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (newToken: string, newUser: User) => {
+    sessionStorage.removeItem('revibe_logged_out');
     setAccessToken(newToken);
     setToken(newToken);
     setUser(newUser);
     closeAuthModal();
   };
 
-  const logout = () => {
-    authApi.logout().catch(() => {});
+  const logout = async () => {
+    sessionStorage.setItem('revibe_logged_out', '1');
     setAccessToken(null);
     setToken(null);
     setUser(null);
+    try {
+      await authApi.logout();
+    } catch {
+      // Ignore network errors during logout
+    }
+    window.location.replace('/login');
   };
 
   const openAuthModal = (mode: 'login' | 'register' | 'otp' = 'login', phone = '') => {

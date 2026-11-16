@@ -95,6 +95,9 @@ public class PaymentService {
         OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.PAID_ESCROW_LOCKED);
 
         String itemName = order.getProduct() != null ? order.getProduct().getTitle() : "Commande " + order.getOrderNumber();
+        String customerPhone = (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank())
+                ? request.getPhoneNumber()
+                : buyer.getPhone();
         PaymentGateway.PaymentInitiationResult result = paymentGateway.initiatePayment(
                 new PaymentGateway.PaymentInitiationRequest(
                         order.getOrderNumber(),
@@ -103,7 +106,9 @@ public class PaymentService {
                         order.getTotalAmount(),
                         "XOF",
                         request.getPaymentMethod(),
-                        "{\"orderId\":" + order.getId() + "}"
+                        "{\"orderId\":" + order.getId() + "}",
+                        customerPhone,
+                        buyer.getFullName()
                 )
         );
 

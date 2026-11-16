@@ -17,8 +17,22 @@ public interface PaymentGateway {
             BigDecimal amount,
             String currency,
             PaymentMethod paymentMethod,
-            String customField
-    ) {}
+            String customField,
+            String customerPhone,
+            String customerName
+    ) {
+        public PaymentInitiationRequest(
+                String orderNumber,
+                String itemName,
+                String commandName,
+                BigDecimal amount,
+                String currency,
+                PaymentMethod paymentMethod,
+                String customField
+        ) {
+            this(orderNumber, itemName, commandName, amount, currency, paymentMethod, customField, null, null);
+        }
+    }
 
     record PaymentInitiationResult(
             boolean success,

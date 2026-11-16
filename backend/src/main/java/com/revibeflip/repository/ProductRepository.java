@@ -31,7 +31,12 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
 
-    @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' AND (" +
+    @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' AND " +
+           "NOT EXISTS (SELECT 1 FROM Order o WHERE o.product.id = p.id AND o.status IN (" +
+           "com.revibeflip.entity.enums.OrderStatus.PAID_ESCROW_LOCKED, " +
+           "com.revibeflip.entity.enums.OrderStatus.SHIPPED, " +
+           "com.revibeflip.entity.enums.OrderStatus.DELIVERED, " +
+           "com.revibeflip.entity.enums.OrderStatus.COMPLETED)) AND (" +
            "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
            "(:condition IS NULL OR p.condition = :condition) AND " +
            "(:minPrice IS NULL OR p.price >= :minPrice) AND " +

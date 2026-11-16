@@ -41,7 +41,7 @@ export const CatalogGrid: React.FC<CatalogGridProps> = ({
 
   if (products.length === 0) {
     return (
-      <div className="text-center py-20 bg-white rounded-3xl border border-gray-150 p-8 space-y-3">
+      <div className="text-center py-16 px-4 space-y-3">
         <div className="w-16 h-16 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center mx-auto">
           <ShoppingBag className="w-8 h-8" />
         </div>

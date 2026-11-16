@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -88,7 +89,8 @@ public class PayTechGateway implements PaymentGateway {
             if (redirectUrl.isBlank()) {
                 throw new IllegalStateException("PayTech n'a pas retourné d'URL de redirection.");
             }
-            return new PaymentInitiationResult(true, token, redirectUrl, rawResponse);
+            String enrichedRedirectUrl = appendPrefillParams(redirectUrl, request);
+            return new PaymentInitiationResult(true, token, enrichedRedirectUrl, rawResponse);
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -185,6 +187,26 @@ public class PayTechGateway implements PaymentGateway {
     public boolean isRefundApiSupported() {
         // La documentation officielle PayTech (doc.paytech.sn) ne documente pas d'endpoint REST public de remboursement automatique.
         return false;
+    }
+
+    private String appendPrefillParams(String redirectUrl, PaymentInitiationRequest request) {
+        if (request.paymentMethod() == null || request.customerPhone() == null || request.customerPhone().isBlank()) {
+            return redirectUrl;
+        }
+        String digits = request.customerPhone().replaceAll("[^0-9+]", "");
+        String international = digits.startsWith("+") ? digits : (digits.startsWith("221") ? "+" + digits : "+221" + digits);
+        String national = international.startsWith("+221") ? international.substring(4) : digits;
+
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(redirectUrl)
+                .queryParam("pn", international)
+                .queryParam("nn", national)
+                .queryParam("tp", mapTargetPayment(request.paymentMethod()))
+                .queryParam("nac", 0);
+
+        if (request.customerName() != null && !request.customerName().isBlank()) {
+            builder.queryParam("fn", request.customerName().trim());
+        }
+        return builder.encode().toUriString();
     }
 
     private String mapTargetPayment(PaymentMethod method) {
