@@ -30,6 +30,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+let activeRefreshPromise: Promise<{ token: string; user: User } | null> | null = null;
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -40,13 +42,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = async () => {
     try {
-      const refreshRes = await authApi.refresh();
-      const newToken = refreshRes.data?.data?.token;
-      const refreshedUser = refreshRes.data?.data?.user;
-      if (newToken && refreshedUser) {
-        setAccessToken(newToken);
-        setToken(newToken);
-        setUser(refreshedUser);
+      if (!activeRefreshPromise) {
+        activeRefreshPromise = authApi
+          .refresh()
+          .then((refreshRes) => {
+            const newToken = refreshRes.data?.data?.token;
+            const refreshedUser = refreshRes.data?.data?.user;
+            return newToken && refreshedUser ? { token: newToken, user: refreshedUser } : null;
+          })
+          .finally(() => {
+            activeRefreshPromise = null;
+          });
+      }
+      const result = await activeRefreshPromise;
+      if (result) {
+        setAccessToken(result.token);
+        setToken(result.token);
+        setUser(result.user);
         return;
       }
       const res = await authApi.getMe();

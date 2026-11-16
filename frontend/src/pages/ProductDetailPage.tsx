@@ -167,8 +167,8 @@ export const ProductDetailPage: React.FC = () => {
       {/* Navigation retour & Catégorie moderne */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-all shadow-2xs hover:border-purple-300"
+          onClick={() => navigate('/catalog')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-all shadow-2xs hover:border-purple-300 cursor-pointer"
         >
           <ChevronLeft className="w-3.5 h-3.5 text-purple-700" />
           <span>Retour</span>
