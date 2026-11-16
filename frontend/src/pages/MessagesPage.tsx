@@ -144,17 +144,7 @@ export const MessagesPage: React.FC = () => {
       if (!customContent) setNewMessage('');
       fetchConversations(activeConversation.id, true);
     } catch {
-      const localMsg: Message = {
-        id: Date.now(),
-        conversationId: activeConversation.id,
-        senderId: user?.id || 0,
-        senderName: user?.fullName || 'Moi',
-        content,
-        sentAt: new Date().toISOString(),
-        isRead: false,
-      };
-      setMessages(prev => [...prev, localMsg]);
-      if (!customContent) setNewMessage('');
+      alert("Impossible d'envoyer le message pour le moment. Veuillez réessayer.");
     } finally {
       setSending(false);
     }

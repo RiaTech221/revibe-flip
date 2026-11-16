@@ -367,12 +367,14 @@ export const ProductDetailPage: React.FC = () => {
               </div>
 
               {/* Trust badge */}
-              <div className="text-right">
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Score {Math.round(product.seller?.trustScore || 100)}%
-                </span>
-              </div>
+              {product.seller?.trustScore != null && (
+                <div className="text-right">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Score {Math.round(product.seller.trustScore)}%
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
