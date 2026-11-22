@@ -1,6 +1,7 @@
 package com.revibeflip.service;
 
 import com.revibeflip.dto.CreateReportRequest;
+import com.revibeflip.dto.ReportAckDto;
 import com.revibeflip.dto.ReportDto;
 import com.revibeflip.entity.Product;
 import com.revibeflip.entity.Report;
@@ -29,7 +30,7 @@ public class ReportService {
     private final ProductRepository productRepository;
 
     @Transactional
-    public ReportDto createReport(CreateReportRequest request, User reporter) {
+    public ReportAckDto createReport(CreateReportRequest request, User reporter) {
         User reportedUser = null;
         if (request.getReportedUserId() != null) {
             reportedUser = userRepository.findById(request.getReportedUserId()).orElse(null);
@@ -53,7 +54,7 @@ public class ReportService {
                 .build();
 
         Report saved = reportRepository.save(report);
-        return ReportDto.fromEntity(saved);
+        return ReportAckDto.fromEntity(saved);
     }
 
     public List<ReportDto> getAllReports() {
