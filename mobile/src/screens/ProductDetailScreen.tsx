@@ -91,7 +91,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
           {/* Price & Escrow Badge */}
           <View style={styles.priceRow}>
             <Text style={styles.price}>{formatPrice(product.price)}</Text>
-            <EscrowBadge />
+            <EscrowBadge compact />
           </View>
 
           <Text style={styles.title}>{product.title}</Text>
@@ -323,6 +323,7 @@ const styles = StyleSheet.create({
   },
   chatBtn: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -338,6 +339,7 @@ const styles = StyleSheet.create({
   },
   buyBtn: {
     flex: 1.5,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -350,6 +352,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#ffffff',
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: 'center',
   },
 });
 
