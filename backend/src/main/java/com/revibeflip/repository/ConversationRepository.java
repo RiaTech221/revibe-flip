@@ -2,6 +2,7 @@ package com.revibeflip.repository;
 
 import com.revibeflip.entity.Conversation;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,4 +24,12 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     @Query("SELECT c FROM Conversation c WHERE (c.buyer.id = :u1 AND c.seller.id = :u2) OR (c.buyer.id = :u2 AND c.seller.id = :u1) ORDER BY COALESCE(c.lastMessageAt, c.createdAt) DESC")
     List<Conversation> findByUsers(@Param("u1") Long u1, @Param("u2") Long u2);
+
+    @Modifying
+    @Query("UPDATE Conversation c SET c.product = null WHERE c.product.id = :productId")
+    void clearProduct(@Param("productId") Long productId);
+
+    @Modifying
+    @Query(value = "DELETE FROM conversation_products WHERE product_id = :productId", nativeQuery = true)
+    void deleteConversationProductRefs(@Param("productId") Long productId);
 }

@@ -90,6 +90,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT COUNT(o) > 0 FROM Order o WHERE o.product.id = :productId AND o.status IN :statuses")
     boolean existsByProductIdAndStatusIn(@Param("productId") Long productId, @Param("statuses") java.util.Collection<OrderStatus> statuses);
 
+    boolean existsByProductId(Long productId);
+
     @Query("SELECT o FROM Order o WHERE o.buyer.id = :buyerId AND (:status IS NULL OR o.status = :status) ORDER BY o.createdAt DESC")
     org.springframework.data.domain.Page<Order> searchBuyerOrdersPage(
             @Param("buyerId") Long buyerId,
