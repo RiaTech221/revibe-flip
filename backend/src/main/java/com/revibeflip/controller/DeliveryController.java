@@ -27,14 +27,29 @@ public class DeliveryController {
 
     @GetMapping("/order/{orderId}")
     @Operation(summary = "Obtenir le suivi de livraison pour une commande")
-    public ResponseEntity<ApiResponse<DeliveryDto>> getDeliveryByOrderId(@PathVariable Long orderId) {
-        return ResponseEntity.ok(ApiResponse.ok(deliveryService.getDeliveryByOrderId(orderId)));
+    public ResponseEntity<ApiResponse<DeliveryDto>> getDeliveryByOrderId(
+            @PathVariable Long orderId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(deliveryService.getDeliveryByOrderId(orderId, user)));
     }
 
     @GetMapping("/track/{trackingNumber}")
     @Operation(summary = "Suivre un colis par son numéro de suivi unique")
-    public ResponseEntity<ApiResponse<DeliveryDto>> trackByNumber(@PathVariable String trackingNumber) {
-        return ResponseEntity.ok(ApiResponse.ok(deliveryService.getDeliveryByTrackingNumber(trackingNumber)));
+    public ResponseEntity<ApiResponse<DeliveryDto>> trackByNumber(
+            @PathVariable String trackingNumber,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(deliveryService.getDeliveryByTrackingNumber(trackingNumber, user)));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Obtenir le suivi de livraison par son identifiant unique")
+    public ResponseEntity<ApiResponse<DeliveryDto>> getDeliveryById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok(deliveryService.getDeliveryById(id, user)));
     }
 
     @PutMapping("/{id}/status")
