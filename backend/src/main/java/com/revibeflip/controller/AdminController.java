@@ -4,6 +4,7 @@ import com.revibeflip.dto.*;
 import com.revibeflip.entity.Category;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.*;
+import com.revibeflip.security.PaginationValidator;
 import com.revibeflip.service.AdminService;
 import com.revibeflip.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -80,9 +81,13 @@ public class AdminController {
             @Parameter(description = "Filtrer par rôle (ROLE_USER, ROLE_ADMIN)") @RequestParam(required = false) Role role,
             @Parameter(description = "Filtrer par statut de suspension") @RequestParam(required = false) Boolean isSuspended,
             @Parameter(description = "Numéro de page (0-indexé)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Nombre d'éléments par page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Nombre d'éléments par page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.USER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchUsersPage(query, role, isSuspended, pageable)));
     }
 
@@ -152,9 +157,13 @@ public class AdminController {
             @Parameter(description = "ID du rayon / catégorie") @RequestParam(required = false) Long categoryId,
             @Parameter(description = "ID du vendeur") @RequestParam(required = false) Long sellerId,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchProductsPage(query, status, categoryId, sellerId, pageable)));
     }
 
@@ -259,9 +268,13 @@ public class AdminController {
             @Parameter(description = "Recherche textuelle") @RequestParam(required = false) String query,
             @Parameter(description = "Statut de la commande") @RequestParam(required = false) OrderStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.ORDER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchOrdersPage(query, status, pageable)));
     }
 
@@ -312,9 +325,13 @@ public class AdminController {
             @Parameter(description = "Recherche par référence ou commande") @RequestParam(required = false) String query,
             @Parameter(description = "Moyen de paiement (WAVE, ORANGE_MONEY, FREE_MONEY)") @RequestParam(required = false) PaymentMethod method,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PAYMENT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchPaymentsPage(query, method, pageable)));
     }
 
@@ -331,9 +348,13 @@ public class AdminController {
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<ReportDto>>> searchReports(
             @Parameter(description = "Statut du signalement (PENDING, RESOLVED, DISMISSED)") @RequestParam(required = false) ReportStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.REPORT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchReportsPage(status, pageable)));
     }
 
@@ -414,9 +435,13 @@ public class AdminController {
     })
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<AdminActionLogDto>>> getAuditLogs(
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.AUDIT_LOG_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getAuditLogsPage(pageable)));
     }
 
@@ -424,9 +449,13 @@ public class AdminController {
     @Operation(summary = "Consulter le grand livre des fonds et soldes")
     public ResponseEntity<com.revibeflip.dto.ApiResponse<java.util.Map<String, Object>>> getLedger(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.LEDGER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("balances", ledgerService.getBalancesFromLedger());
         result.put("entries", PageResponseDto.fromPage(ledgerService.getEntries(pageable)));

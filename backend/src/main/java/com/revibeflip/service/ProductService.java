@@ -13,6 +13,7 @@ import com.revibeflip.repository.CategoryRepository;
 import com.revibeflip.repository.ProductRepository;
 import com.revibeflip.security.SafeMediaService;
 import lombok.RequiredArgsConstructor;
+import com.revibeflip.security.PaginationValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -50,9 +51,10 @@ public class ProductService {
             String sortBy,
             String sortDirection
     ) {
-        Sort sort = Sort.by("asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC,
-                sortBy != null ? sortBy : "createdAt");
-        Pageable pageable = PageRequest.of(page, sizeLimit, sort);
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, sizeLimit, sortBy, sortDirection,
+                PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
 
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String cleanSize = (size != null && !size.trim().isEmpty()) ? size.trim() : null;
