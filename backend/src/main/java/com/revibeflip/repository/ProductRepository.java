@@ -26,6 +26,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     java.util.Optional<Product> findByIdForUpdate(@Param("id") Long id);
 
     @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.status = com.revibeflip.entity.enums.ProductStatus.RESERVED WHERE p.id = :id AND p.status = com.revibeflip.entity.enums.ProductStatus.ACTIVE")
+    int reserveProductIfActive(@Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @Query("UPDATE Product p SET p.status = com.revibeflip.entity.enums.ProductStatus.SOLD WHERE p.id = :id AND p.status <> com.revibeflip.entity.enums.ProductStatus.SOLD")
     int markSoldIfNotSold(@Param("id") Long id);
 
