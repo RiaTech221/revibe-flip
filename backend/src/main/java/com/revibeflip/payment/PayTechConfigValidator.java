@@ -8,7 +8,11 @@ import org.springframework.stereotype.Component;
 
 /**
  * Validateur de configuration PayTech au démarrage en production.
- * Refuse de démarrer l'application si une variable PayTech obligatoire est absente.
+ *
+ * <p>Règle : Refuse de démarrer l'application si une variable PayTech obligatoire est absente,
+ * notamment la liste blanche d'IP autorisées (PAYTECH_ALLOWED_IPS).
+ * <p>Pourquoi : Les webhooks IPN de paiement et de virement doivent impérativement être restreints
+ * aux serveurs légitimes de l'agrégateur en production pour empêcher l'injection de fausses notifications.
  */
 @Component
 @Profile("prod")
@@ -28,6 +32,10 @@ public class PayTechConfigValidator {
         }
         if (!"test".equalsIgnoreCase(properties.getEnv()) && !"prod".equalsIgnoreCase(properties.getEnv())) {
             throw new IllegalStateException("PAYTECH_ENV doit valoir 'test' ou 'prod'.");
+        }
+        // SEC-02 : En production, restreindre les IP émettrices des webhooks est obligatoire pour éviter le contournement silencieux
+        if (properties.getAllowedIpList().isEmpty()) {
+            throw new IllegalStateException("PAYTECH_ALLOWED_IPS doit être configuré en production pour restreindre les webhooks IPN PayTech.");
         }
         log.info("Configuration PayTech validée (environnement: {}).", properties.getEnv());
     }

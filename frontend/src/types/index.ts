@@ -41,6 +41,23 @@ export interface User {
   createdAt: string;
 }
 
+/**
+ * SEC-01 — Profil public d'un vendeur exposé sur les endpoints publics.
+ * Ne contient aucune donnée PII (phone, email, address) ni métadonnée de sécurité.
+ */
+export interface PublicUser {
+  id: number;
+  fullName: string;
+  profilePicture?: string;
+  city?: string;
+  countryCode?: string;
+  flagEmoji?: string;
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  trustScore: number;
+}
+
 export interface Country {
   id: number;
   code: string;
@@ -119,7 +136,7 @@ export interface Product {
   countryName: string;
   currency: string;
   viewCount: number;
-  seller: User;
+  seller: PublicUser;
   images: string[];
   primaryImage?: string;
   createdAt: string;
