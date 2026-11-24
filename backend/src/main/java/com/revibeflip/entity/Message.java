@@ -41,6 +41,14 @@ public class Message {
     @Column(length = 500)
     private String imageUrl;
 
+    private Long productId;
+
+    @Column(length = 200)
+    private String productTitle;
+
+    @Column(length = 500)
+    private String productImageUrl;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "offer_id")
     private ChatOffer offer;
