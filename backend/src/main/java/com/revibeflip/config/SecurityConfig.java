@@ -120,8 +120,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/ws/**"
                         ).permitAll()
-                        // Admin endpoints (SEC-13 : normalisation et protection des variantes)
-                        .requestMatchers("/api/admin/**", "/api/v1/admin/**", "/admin/**").hasRole("ADMIN")
+                        // Admin endpoints (SEC-13 & US-36 : normalisation et protection des variantes)
+                        .requestMatchers("/api/admin/**", "/api/v1/admin/**", "/admin/**").hasAnyRole("ADMIN", "COLLABORATOR")
                         // Any other endpoint requires authentication
                         .anyRequest().authenticated()
                 )

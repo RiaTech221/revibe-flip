@@ -36,6 +36,7 @@ import { AdminReportsSection } from '../components/admin/AdminReportsSection';
 import { AdminSettingsSection } from '../components/admin/AdminSettingsSection';
 import { AdminAuditSection } from '../components/admin/AdminAuditSection';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
+import { AdminTeamSection } from '../components/admin/AdminTeamSection';
 import { AdminModals } from '../components/admin/AdminModals';
 
 export const AdminPage: React.FC = () => {
@@ -47,6 +48,27 @@ export const AdminPage: React.FC = () => {
   const setActiveTab = (tab: AdminTabType) => {
     setSearchParams({ tab });
   };
+
+  // Redirection automatique pour les collaborateurs vers leur premier onglet autorisé
+  useEffect(() => {
+    if (!isAdmin && user?.role === 'ROLE_COLLABORATOR') {
+      const perms = user.adminPermissions || [];
+      const allowed: AdminTabType[] = [];
+      if (perms.includes('DASHBOARD')) allowed.push('kpi');
+      if (perms.includes('USERS')) allowed.push('users');
+      if (perms.includes('PRODUCTS')) allowed.push('products');
+      if (perms.includes('CATEGORIES')) allowed.push('categories');
+      if (perms.includes('ORDERS_PAYMENTS')) {
+        allowed.push('orders');
+        allowed.push('payments');
+      }
+      if (perms.includes('REPORTS')) allowed.push('reports');
+
+      if (allowed.length > 0 && !allowed.includes(activeTab)) {
+        setActiveTab(allowed[0]);
+      }
+    }
+  }, [isAdmin, user, activeTab]);
 
   // State: Dashboard
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
@@ -678,7 +700,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'users' && (
+        {(activeTab === 'users' || activeTab === 'team') && (
           <AdminUsersSection
             users={users}
             userSearch={userSearch}
@@ -688,6 +710,7 @@ export const AdminPage: React.FC = () => {
             onToggleSuspend={handleToggleSuspendUser}
             onUpdateRole={handleUpdateUserRole}
             onViewDetail={handleViewUserDetail}
+            initialSubTab={activeTab === 'team' ? 'collaborators' : 'marketplace'}
           />
         )}
 
