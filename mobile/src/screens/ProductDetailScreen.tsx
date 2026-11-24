@@ -164,7 +164,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
           }
         >
           <MessageCircle size={20} color={colors.primary} />
-          <Text style={styles.chatBtnText}>Négocier</Text>
+          <Text style={styles.chatBtnText}>Discuter avec le vendeur</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
