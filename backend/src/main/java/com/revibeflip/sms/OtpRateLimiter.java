@@ -1,5 +1,6 @@
 package com.revibeflip.sms;
 
+import com.revibeflip.exception.TooManyRequestsException;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -29,13 +30,13 @@ public class OtpRateLimiter {
         if (phone != null && !phone.isBlank()) {
             Instant last = lastPhoneSend.get(phone);
             if (last != null && now.isBefore(last.plusSeconds(COOLDOWN_SECONDS))) {
-                throw new IllegalStateException("Veuillez patienter 60 secondes avant de demander un nouveau code.");
+                throw new TooManyRequestsException("Veuillez patienter 60 secondes avant de demander un nouveau code.");
             }
             Deque<Instant> phoneDeque = phoneRequests.computeIfAbsent(phone, k -> new ArrayDeque<>());
             synchronized (phoneDeque) {
                 prune(phoneDeque, now);
                 if (phoneDeque.size() >= MAX_PER_PHONE_PER_HOUR) {
-                    throw new IllegalStateException("Trop de demandes de code pour ce numéro. Réessayez plus tard.");
+                    throw new TooManyRequestsException("Trop de demandes de code pour ce numéro. Réessayez plus tard.");
                 }
                 phoneDeque.addLast(now);
             }
@@ -47,7 +48,7 @@ public class OtpRateLimiter {
             synchronized (ipDeque) {
                 prune(ipDeque, now);
                 if (ipDeque.size() >= MAX_PER_IP_PER_HOUR) {
-                    throw new IllegalStateException("Trop de demandes depuis cette adresse IP. Réessayez plus tard.");
+                    throw new TooManyRequestsException("Trop de demandes depuis cette adresse IP. Réessayez plus tard.");
                 }
                 ipDeque.addLast(now);
             }

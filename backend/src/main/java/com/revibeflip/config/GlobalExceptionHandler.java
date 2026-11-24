@@ -88,6 +88,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(com.revibeflip.exception.TooManyRequestsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(com.revibeflip.exception.TooManyRequestsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(com.revibeflip.exception.SellerConflictException.class)
     public ResponseEntity<ApiResponse<Map<String, Object>>> handleSellerConflict(com.revibeflip.exception.SellerConflictException ex) {
         Map<String, Object> data = new HashMap<>();

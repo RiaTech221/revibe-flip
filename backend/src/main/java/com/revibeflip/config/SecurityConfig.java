@@ -59,7 +59,7 @@ public class SecurityConfig {
     private final TurnstileFilter turnstileFilter;
     private final CustomUserDetailsService userDetailsService;
 
-    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}")
     private String allowedOrigins;
 
     @Bean
@@ -92,6 +92,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/verify-otp",
+                                "/api/auth/skip-otp",
                                 "/api/auth/resend-otp",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
