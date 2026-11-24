@@ -1,6 +1,6 @@
 /**
  * Écran d'Inscription (RegisterScreen) ReVibe FliP Mobile
- * 
+ *
  * Formulaire de création de compte membre sur l'application mobile :
  *  * - Choix du pays de résidence et saisie des informations d'identité
  *  * - Création du mot de passe avec règles de complexité
@@ -15,13 +15,15 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
-import { Phone, Lock, User, Mail } from 'lucide-react-native';
+import { Phone, Lock, User, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services';
 
@@ -32,6 +34,7 @@ export const RegisterScreen = ({ navigation }: any) => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -74,108 +77,130 @@ export const RegisterScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <Header showBack onBack={() => navigation.goBack()} title="Créer un compte" />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Rejoignez la communauté</Text>
-          <Text style={styles.subtitle}>
-            Achetez et vendez vos articles avec la protection du séquestre ReVibe Garanti.
-          </Text>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.formGroup, styles.halfCol]}>
-            <Text style={styles.label}>Prénom *</Text>
-            <View style={styles.inputWrap}>
-              <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Ex: Amina"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
-          </View>
-
-          <View style={[styles.formGroup, styles.halfCol]}>
-            <Text style={styles.label}>Nom *</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Ex: Diallo"
-                placeholderTextColor={colors.textSecondary}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Numéro de téléphone * (Wave / OM)</Text>
-          <View style={styles.inputWrap}>
-            <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="77 000 00 00"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email (optionnel)</Text>
-          <View style={styles.inputWrap}>
-            <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="amina@exemple.sn"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-        </View>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Mot de passe *</Text>
-          <View style={styles.inputWrap}>
-            <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          showsVerticalScrollIndicator={false}
         >
-          {loading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.buttonText}>Créer mon compte</Text>
-          )}
-        </TouchableOpacity>
+          <View style={styles.header}>
+            <Text style={styles.title}>Rejoignez la communauté</Text>
+            <Text style={styles.subtitle}>
+              Achetez et vendez vos articles avec la protection du séquestre ReVibe Garanti.
+            </Text>
+          </View>
 
-        <View style={styles.footerRow}>
-          <Text style={styles.footerText}>Déjà inscrit ?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.footerLink}>Se connecter</Text>
+          <View style={styles.row}>
+            <View style={[styles.formGroup, styles.halfCol]}>
+              <Text style={styles.label}>Prénom *</Text>
+              <View style={styles.inputWrap}>
+                <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Ex: Amina"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.formGroup, styles.halfCol]}>
+              <Text style={styles.label}>Nom *</Text>
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Ex: Diallo"
+                  placeholderTextColor={colors.textSecondary}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Numéro de téléphone * (Wave / OM)</Text>
+            <View style={styles.inputWrap}>
+              <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="77 000 00 00"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email (optionnel)</Text>
+            <View style={styles.inputWrap}>
+              <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="amina@exemple.sn"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Mot de passe *</Text>
+            <View style={styles.inputWrap}>
+              <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword((visible) => !visible)}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                hitSlop={10}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.buttonText}>Créer mon compte</Text>
+            )}
           </TouchableOpacity>
-        </View>
-      </ScrollView>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>Déjà inscrit ?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.footerLink}>Se connecter</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -188,6 +213,9 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
+  },
+  keyboardArea: {
+    flex: 1,
   },
   header: {
     marginBottom: 24,
