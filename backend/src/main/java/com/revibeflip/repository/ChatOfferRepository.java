@@ -3,6 +3,7 @@ package com.revibeflip.repository;
 import com.revibeflip.entity.ChatOffer;
 import com.revibeflip.entity.enums.OfferStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -44,4 +45,8 @@ public interface ChatOfferRepository extends JpaRepository<ChatOffer, Long> {
 
     @Query("SELECT o FROM ChatOffer o WHERE o.seller.id = :sellerId AND o.status = 'OFFER_SENT' AND o.expiresAt > :now ORDER BY o.expiresAt ASC")
     List<ChatOffer> findPendingOffersExpiringSoonest(@Param("sellerId") Long sellerId, @Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
+
+    @Modifying
+    @Query("DELETE FROM ChatOffer co WHERE co.product.id = :productId")
+    void deleteByProductId(@Param("productId") Long productId);
 }
