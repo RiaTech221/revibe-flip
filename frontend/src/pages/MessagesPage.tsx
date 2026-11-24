@@ -20,6 +20,7 @@ import { ChatMessageItem } from '../components/messages/ChatMessageItem';
 import { ChatInputBar } from '../components/messages/ChatInputBar';
 import { MakeOfferModal } from '../components/messages/MakeOfferModal';
 import { OfferPaymentModal } from '../components/messages/OfferPaymentModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const MessagesPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -33,6 +34,14 @@ export const MessagesPage: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Offres dans la conversation
   const [conversationOffers, setConversationOffers] = useState<ChatOffer[]>([]);
@@ -205,47 +214,68 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleAcceptOffer = async (offer: ChatOffer) => {
-    if (!confirm(`Accepter l'offre à ${formatPrice(offer.agreedPrice)} ?`)) return;
-    try {
-      const res = await chatOfferApi.acceptOffer(offer.id);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-      if (res?.data?.data) {
-        setAcceptedOfferToPay(res.data.data);
-      }
-      setIsPaymentModalOpen(true);
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
-    }
+  const handleAcceptOffer = (offer: ChatOffer) => {
+    setConfirmDialog({
+      title: "Accepter cette offre ?",
+      message: `Voulez-vous accepter l'offre de prix à ${formatPrice(offer.agreedPrice)} ? Vous pourrez ensuite procéder au paiement sécurisé.`,
+      confirmLabel: "Accepter l'offre",
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          const res = await chatOfferApi.acceptOffer(offer.id);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+          if (res?.data?.data) {
+            setAcceptedOfferToPay(res.data.data);
+          }
+          setIsPaymentModalOpen(true);
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
+        }
+      },
+    });
   };
 
-  const handleDeclineOffer = async (offerId: number) => {
-    if (!confirm("Refuser cette offre de prix ?")) return;
-    try {
-      await chatOfferApi.declineOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
-    }
+  const handleDeclineOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Refuser cette offre ?',
+      message: "L'acheteur sera informé que vous avez décliné sa proposition de prix.",
+      confirmLabel: 'Refuser',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.declineOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
+        }
+      },
+    });
   };
 
-  const handleCancelOffer = async (offerId: number) => {
-    if (!confirm("Annuler votre offre envoyée ?")) return;
-    try {
-      await chatOfferApi.cancelOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'annulation.");
-    }
+  const handleCancelOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Annuler votre offre ?',
+      message: 'Cette offre de prix sera annulée et ne pourra plus être acceptée par le vendeur.',
+      confirmLabel: "Annuler l'offre",
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.cancelOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'annulation.");
+        }
+      },
+    });
   };
 
   const handleProcessPayment = async (e: React.FormEvent) => {
@@ -431,6 +461,28 @@ export const MessagesPage: React.FC = () => {
         paymentError={paymentError}
         onSubmit={handleProcessPayment}
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+        onCancel={() => {
+          if (!confirmLoading) setConfirmDialog(null);
+        }}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          setConfirmLoading(true);
+          try {
+            await confirmDialog.onConfirm();
+          } finally {
+            setConfirmLoading(false);
+            setConfirmDialog(null);
+          }
+        }}
       />
     </div>
   );
