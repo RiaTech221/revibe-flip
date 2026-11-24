@@ -26,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -69,13 +70,50 @@ public class ChatService {
             throw new org.springframework.security.access.AccessDeniedException("Accès refusé à cette conversation.");
         }
 
-        // Mark incoming messages as read
-        messageRepository.markAsReadForUser(conversationId, currentUser.getId());
+        // Mark incoming messages as read & notify sender in real time
+        int markedCount = messageRepository.markAsReadForUser(conversationId, currentUser.getId());
+        if (markedCount > 0) {
+            broadcastReadReceipt(conversationId, currentUser.getId());
+        }
 
         return messageRepository.findByConversationIdOrderBySentAtAsc(conversationId)
                 .stream()
                 .map(MessageDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public int markConversationAsRead(Long conversationId, User currentUser) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new IllegalArgumentException("Conversation non trouvée."));
+
+        boolean isBuyer = conversation.getBuyer().getId().equals(currentUser.getId());
+        boolean isSeller = conversation.getSeller().getId().equals(currentUser.getId());
+
+        if (!isBuyer && !isSeller && !"ROLE_ADMIN".equals(currentUser.getRole().name())) {
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé à cette conversation.");
+        }
+
+        int markedCount = messageRepository.markAsReadForUser(conversationId, currentUser.getId());
+        if (markedCount > 0) {
+            broadcastReadReceipt(conversationId, currentUser.getId());
+        }
+        return markedCount;
+    }
+
+    public long getTotalUnreadCount(Long userId) {
+        return messageRepository.countTotalUnreadForUser(userId);
+    }
+
+    private void broadcastReadReceipt(Long conversationId, Long readerId) {
+        try {
+            messagingTemplate.convertAndSend(
+                    "/topic/conversations/" + conversationId + "/read",
+                    Map.of("conversationId", conversationId, "readerId", readerId)
+            );
+        } catch (Exception e) {
+            log.debug("Erreur envoi accusé de lecture WebSocket: {}", e.getMessage());
+        }
     }
 
     @Transactional
