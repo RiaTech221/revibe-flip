@@ -4,17 +4,25 @@
  * Affiche la photo de profil, nom complet, indice de confiance Trust Score, note moyenne et drapeau du pays de résidence.
  */
 
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { User } from '../../types';
 import { colors } from '../../theme/colors';
 import { ShieldCheck, UserCheck } from 'lucide-react-native';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface UserProfileHeaderProps {
   user: User | null;
 }
 
 export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ user }) => {
+  const [imgError, setImgError] = useState(false);
+  const avatarUri = formatImageUrl(user?.profilePicture || user?.avatarUrl);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [avatarUri]);
+
   const initials = user?.fullName
     ? user.fullName
         .split(' ')
@@ -26,9 +34,17 @@ export const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ user }) =>
 
   return (
     <View style={styles.card}>
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{initials}</Text>
-      </View>
+      {avatarUri && !imgError ? (
+        <Image
+          source={{ uri: avatarUri }}
+          style={styles.avatarImage}
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials}</Text>
+        </View>
+      )}
 
       <View style={styles.infoCol}>
         <View style={styles.nameRow}>
@@ -75,6 +91,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 16,
+  },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: '#E9D5FF',
+    backgroundColor: '#F3F4F6',
   },
   avatarText: {
     color: '#ffffff',

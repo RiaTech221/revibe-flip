@@ -192,6 +192,7 @@ export interface SellerProfile {
   countryCode: string;
   city?: string;
   address?: string;
+  profilePicture?: string;
   profilePictureUrl?: string;
   activeListingsCount: number;
   soldListingsCount: number;

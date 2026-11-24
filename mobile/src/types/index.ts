@@ -20,6 +20,7 @@ export interface User {
   city?: string;
   address?: string;
   isSuspended?: boolean;
+  profilePicture?: string;
   avatarUrl?: string;
 }
 
