@@ -111,16 +111,36 @@ public class SellerService {
             seller.setLastName(request.getLastName().trim());
         }
         if (request.getEmail() != null) {
-            seller.setEmail(request.getEmail().trim().toLowerCase());
+            String normalizedEmail = request.getEmail().trim().toLowerCase();
+            if (normalizedEmail.isEmpty()) {
+                seller.setEmail(null);
+            } else {
+                userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+                    if (!existing.getId().equals(seller.getId())) {
+                        throw new IllegalStateException("Cette adresse email est déjà utilisée par un autre compte.");
+                    }
+                });
+                seller.setEmail(normalizedEmail);
+            }
         }
         if (request.getCity() != null) {
-            seller.setCity(request.getCity().trim());
+            String trimmed = request.getCity().trim();
+            seller.setCity(trimmed.isEmpty() ? null : trimmed);
         }
         if (request.getAddress() != null) {
-            seller.setAddress(request.getAddress().trim());
+            String trimmed = request.getAddress().trim();
+            seller.setAddress(trimmed.isEmpty() ? null : trimmed);
         }
         if (request.getProfilePicture() != null) {
-            seller.setProfilePicture(request.getProfilePicture());
+            String trimmed = request.getProfilePicture().trim();
+            if (trimmed.isEmpty()) {
+                seller.setProfilePicture(null);
+            } else {
+                if (!com.revibeflip.security.SafeMediaService.isAllowedImageUrl(trimmed)) {
+                    throw new IllegalArgumentException("URL de photo de profil non autorisée.");
+                }
+                seller.setProfilePicture(trimmed);
+            }
         }
 
         userRepository.save(seller);

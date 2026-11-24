@@ -34,7 +34,16 @@ export const authApi = {
 
 export const userApi = {
   updateProfile: (data: Partial<User>) =>
-    api.put<{ success: boolean; data: User }>('/users/profile', data),
+    api.put<{ success: boolean; data: User; message?: string }>('/users/profile', data),
+  uploadProfilePicture: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<{ success: boolean; data: User; message?: string }>(
+      '/users/profile/picture',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+  },
   getProfile: (id: number) =>
     api.get<{ success: boolean; data: User }>(`/users/${id}`),
 };
