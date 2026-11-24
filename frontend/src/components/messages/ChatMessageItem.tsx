@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Check, CheckCheck } from 'lucide-react';
 import { Message } from '../../types';
 import { formatImageUrl } from '../../utils/imageUrl';
 
@@ -76,12 +77,21 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, curre
         )}
         <p>{message.content}</p>
       </div>
-      <span className="text-[10px] text-gray-400 mt-1 px-1">
-        {new Date(message.sentAt).toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}
-      </span>
+      <div className="flex items-center gap-1 mt-1 px-1">
+        <span className="text-[10px] text-gray-400">
+          {new Date(message.sentAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </span>
+        {isMe && (
+          message.isRead ? (
+            <CheckCheck className="w-3.5 h-3.5 text-purple-600" aria-label="Lu" />
+          ) : (
+            <Check className="w-3.5 h-3.5 text-gray-400" aria-label="Envoyé" />
+          )
+        )}
+      </div>
     </div>
   );
 };

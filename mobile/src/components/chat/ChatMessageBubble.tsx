@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { Check, CheckCheck } from 'lucide-react-native';
 import { Message } from '../../types';
 import { colors } from '../../theme/colors';
 
@@ -53,11 +54,20 @@ export const ChatMessageBubble: React.FC<ChatMessageBubbleProps> = ({ message, i
           {message.content}
         </Text>
       </View>
-      <Text style={styles.timestamp}>
-        {(message.sentAt || message.createdAt)
-          ? new Date(message.sentAt || message.createdAt!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          : ''}
-      </Text>
+      <View style={styles.metaRow}>
+        <Text style={styles.timestamp}>
+          {(message.sentAt || message.createdAt)
+            ? new Date(message.sentAt || message.createdAt!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : ''}
+        </Text>
+        {isMyMessage && (
+          (message.isRead ?? message.read) ? (
+            <CheckCheck size={14} color={colors.primary} />
+          ) : (
+            <Check size={14} color="#94a3b8" />
+          )
+        )}
+      </View>
     </View>
   );
 };
@@ -100,11 +110,16 @@ const styles = StyleSheet.create({
   otherBubbleText: {
     color: colors.textPrimary,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+    marginHorizontal: 4,
+  },
   timestamp: {
     fontSize: 10,
     color: colors.textSecondary,
-    marginTop: 2,
-    marginHorizontal: 4,
   },
   productCard: {
     flexDirection: 'row',

@@ -64,6 +64,24 @@ public class ChatController {
         return ResponseEntity.ok(ApiResponse.ok(conversation, "Conversation initiée avec succès."));
     }
 
+    @GetMapping("/unread-count")
+    @Operation(summary = "Compter les messages non lus de l'utilisateur connecté")
+    public ResponseEntity<ApiResponse<Long>> getUnreadCount(Authentication authentication) {
+        User user = resolveUser(authentication);
+        return ResponseEntity.ok(ApiResponse.ok(chatService.getTotalUnreadCount(user.getId())));
+    }
+
+    @PostMapping("/conversations/{id}/read")
+    @Operation(summary = "Marquer les messages d'une conversation comme lus et notifier en temps réel")
+    public ResponseEntity<ApiResponse<Integer>> markAsRead(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        User user = resolveUser(authentication);
+        int updated = chatService.markConversationAsRead(id, user);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Messages marqués comme lus."));
+    }
+
     @PostMapping("/send")
     @Operation(summary = "Envoyer un message texte dans une conversation existante")
     public ResponseEntity<ApiResponse<MessageDto>> sendMessage(

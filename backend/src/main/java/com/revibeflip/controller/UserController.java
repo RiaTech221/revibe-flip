@@ -3,6 +3,7 @@ package com.revibeflip.controller;
 import com.revibeflip.dto.AddressDto;
 import com.revibeflip.dto.AddressRequest;
 import com.revibeflip.dto.ApiResponse;
+import com.revibeflip.dto.PersonalDashboardDto;
 import com.revibeflip.dto.UpdateProfileRequest;
 import com.revibeflip.dto.PublicUserDto;
 import com.revibeflip.dto.UserDto;
@@ -10,6 +11,7 @@ import com.revibeflip.entity.User;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.security.SafeMediaService;
 import com.revibeflip.service.AddressService;
+import com.revibeflip.service.PersonalDashboardService;
 import com.revibeflip.service.RefreshTokenService;
 import com.revibeflip.service.storage.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,6 +49,7 @@ public class UserController {
     private final AddressService addressService;
     private final RefreshTokenService refreshTokenService;
     private final ImageUploadService imageUploadService;
+    private final PersonalDashboardService personalDashboardService;
 
     private User resolveUser(Authentication authentication) {
         if (authentication == null) {
@@ -54,6 +57,23 @@ public class UserController {
         }
         return userRepository.findByIdentifier(authentication.getName())
                 .orElseThrow(() -> new AccessDeniedException("Utilisateur non trouvé"));
+    }
+
+    @GetMapping("/me/dashboard")
+    @Operation(summary = "Consulter mon tableau de bord personnel (commandes ; annonces, note et avis réservés aux vendeurs)")
+    public ResponseEntity<ApiResponse<PersonalDashboardDto>> getMyPersonalDashboard(
+            @RequestParam(defaultValue = "0") int purchasesPage,
+            @RequestParam(defaultValue = "0") int salesPage,
+            @RequestParam(defaultValue = "0") int listingsPage,
+            @RequestParam(defaultValue = "0") int reviewsPage,
+            @RequestParam(defaultValue = "6") int size,
+            Authentication authentication
+    ) {
+        User currentUser = resolveUser(authentication);
+        PersonalDashboardDto dashboard = personalDashboardService.getPersonalDashboard(
+                currentUser, purchasesPage, salesPage, listingsPage, reviewsPage, size
+        );
+        return ResponseEntity.ok(ApiResponse.ok(dashboard));
     }
 
     @GetMapping("/{id}")

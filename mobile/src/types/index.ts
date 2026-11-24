@@ -124,7 +124,8 @@ export interface Message {
   productImageUrl?: string;
   sentAt: string;
   createdAt?: string;
-  read: boolean;
+  isRead?: boolean;
+  read?: boolean;
 }
 
 export interface ChatOffer {

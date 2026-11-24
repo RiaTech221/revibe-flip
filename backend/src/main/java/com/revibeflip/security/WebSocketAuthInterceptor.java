@@ -45,7 +45,7 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final UserRepository userRepository;
     private final ConversationRepository conversationRepository;
 
-    private static final Pattern CONVERSATION_TOPIC_PATTERN = Pattern.compile("^/topic/conversations/(\\d+)$");
+    private static final Pattern CONVERSATION_TOPIC_PATTERN = Pattern.compile("^/topic/conversations/(\\d+)(?:/read)?$");
     private static final Pattern NOTIFICATION_TOPIC_PATTERN = Pattern.compile("^/topic/user\\.(\\d+)\\.notifications$");
     private final Map<String, Deque<Instant>> sendBuckets = new ConcurrentHashMap<>();
 
