@@ -4,6 +4,7 @@ import com.revibeflip.dto.*;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.ContactMessageStatus;
 import com.revibeflip.entity.enums.PageStatus;
+import com.revibeflip.security.PaginationValidator;
 import com.revibeflip.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,11 +50,21 @@ public class AdminCmsController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) PageStatus status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
     ) {
-        Page<CmsPageDto> result = cmsPageService.adminGetPages(
-                search, status, PageRequest.of(page, size, Sort.by("sortOrder").ascending().and(Sort.by("updatedAt").descending()))
-        );
+        org.springframework.data.domain.Pageable pageable;
+        if (sortBy != null && !sortBy.isBlank()) {
+            pageable = PaginationValidator.validateAndCreate(
+                    page, size, sortBy, sortDir, PaginationValidator.CMS_PAGE_SORT_FIELDS, "sortOrder", Sort.Direction.ASC
+            );
+        } else {
+            pageable = PaginationValidator.validateAndCreate(
+                    page, size, Sort.by("sortOrder").ascending().and(Sort.by("updatedAt").descending())
+            );
+        }
+        Page<CmsPageDto> result = cmsPageService.adminGetPages(search, status, pageable);
         return ResponseEntity.ok(ApiResponse.ok(PageResponseDto.fromPage(result)));
     }
 
@@ -208,11 +219,14 @@ public class AdminCmsController {
     public ResponseEntity<ApiResponse<PageResponseDto<ContactMessageDto>>> getContactMessages(
             @RequestParam(required = false) ContactMessageStatus status,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "15") int size
+            @RequestParam(defaultValue = "15") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
     ) {
-        Page<ContactMessageDto> result = contactService.adminGetMessages(
-                status, PageRequest.of(page, size, Sort.by("createdAt").descending())
+        org.springframework.data.domain.Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.CONTACT_MESSAGE_SORT_FIELDS, "createdAt", Sort.Direction.DESC
         );
+        Page<ContactMessageDto> result = contactService.adminGetMessages(status, pageable);
         return ResponseEntity.ok(ApiResponse.ok(PageResponseDto.fromPage(result)));
     }
 
@@ -235,11 +249,14 @@ public class AdminCmsController {
     @GetMapping("/media")
     public ResponseEntity<ApiResponse<PageResponseDto<MediaAssetDto>>> getMediaAssets(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
     ) {
-        Page<MediaAssetDto> result = mediaAssetService.adminGetMediaAssets(
-                PageRequest.of(page, size, Sort.by("createdAt").descending())
+        org.springframework.data.domain.Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.MEDIA_ASSET_SORT_FIELDS, "createdAt", Sort.Direction.DESC
         );
+        Page<MediaAssetDto> result = mediaAssetService.adminGetMediaAssets(pageable);
         return ResponseEntity.ok(ApiResponse.ok(PageResponseDto.fromPage(result)));
     }
 

@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("dev")
 class RevibeFlipIntegrationTests {
 
     @Autowired
