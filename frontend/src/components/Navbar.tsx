@@ -12,7 +12,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { categoryApi, notificationApi } from '../services/api';
+import { categoryApi, notificationApi, chatApi } from '../services/api';
+import { createStompClient } from '../services/wsClient';
 import { Category, Notification } from '../types';
 import { Logo } from './Logo';
 import { formatImageUrl } from '../utils/imageUrl';
@@ -45,6 +46,7 @@ export const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -71,16 +73,55 @@ export const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
+      setUnreadNotifications(0);
+      setUnreadMessages(0);
+      return;
+    }
+
+    const refreshCounts = () => {
       notificationApi.getUnreadCount().then((res) => {
         if (res.data) setUnreadNotifications(res.data.data);
       }).catch(console.error);
 
-      notificationApi.getAll().then((res) => {
-        if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
       }).catch(console.error);
-    }
-  }, [isAuthenticated]);
+    };
+
+    refreshCounts();
+
+    notificationApi.getAll().then((res) => {
+      if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+    }).catch(console.error);
+
+    const handleMessagesRead = () => {
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
+      }).catch(console.error);
+    };
+    window.addEventListener('revibe:messages-read', handleMessagesRead);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/user.${user.id}.notifications`, (frame) => {
+        try {
+          const notif: Notification = JSON.parse(frame.body);
+          setUnreadNotifications((prev) => prev + 1);
+          setNotifications((prev) => [notif, ...prev].slice(0, 5));
+          if (notif.type === 'NEW_MESSAGE') {
+            setUnreadMessages((prev) => prev + 1);
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      window.removeEventListener('revibe:messages-read', handleMessagesRead);
+      client?.deactivate();
+    };
+  }, [isAuthenticated, user?.id, location.pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +187,11 @@ export const Navbar: React.FC = () => {
               title="Messagerie & Discussions"
             >
               <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              {isAuthenticated && unreadMessages > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
             </Link>
 
             {/* 3. Icône Profil Parlante (Ouverture du Menu Compte & Connexion style Amazon / Shein) */}

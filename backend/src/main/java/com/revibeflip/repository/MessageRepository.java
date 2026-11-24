@@ -33,6 +33,6 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     long countConversationsWithUnreadForUser(@Param("userId") Long userId);
 
     @Modifying
-    @Query("UPDATE Message m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.sender.id <> :userId")
-    void markAsReadForUser(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
+    @Query("UPDATE Message m SET m.isRead = true WHERE m.conversation.id = :conversationId AND m.sender.id <> :userId AND m.isRead = false")
+    int markAsReadForUser(@Param("conversationId") Long conversationId, @Param("userId") Long userId);
 }
