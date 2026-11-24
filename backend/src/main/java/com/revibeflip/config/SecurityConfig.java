@@ -89,6 +89,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/verify-otp",
+                                "/api/auth/skip-otp",
                                 "/api/auth/resend-otp",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
