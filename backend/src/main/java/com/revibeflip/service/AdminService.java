@@ -44,6 +44,9 @@ public class AdminService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final com.revibeflip.repository.ContactMessageRepository contactMessageRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ChatOfferRepository chatOfferRepository;
 
     // Cache en mémoire court (30 secondes)
     private static class DashboardCacheEntry {
@@ -697,7 +700,17 @@ public class AdminService {
     public void deleteProduct(Long productId, User admin) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
+
+        if (orderRepository.existsByProductId(productId) || orderItemRepository.existsByProductId(productId)) {
+            throw new IllegalStateException("Protection activée : Impossible de supprimer cette annonce car elle est liée à une ou plusieurs commandes. Vous pouvez la désactiver à la place.");
+        }
+
         String title = product.getTitle();
+        cartItemRepository.deleteByProductId(productId);
+        chatOfferRepository.deleteByProductId(productId);
+        conversationRepository.clearProduct(productId);
+        conversationRepository.deleteConversationProductRefs(productId);
+        reportRepository.clearReportedProduct(productId);
         productRepository.delete(product);
 
         logAdminAction(admin,
