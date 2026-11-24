@@ -59,6 +59,21 @@ export const RegisterPage: React.FC = () => {
     }
   };
 
+  const handleSkipOtp = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authApi.skipOtp(phoneForOtp);
+      const data = res.data.data;
+      login(data.token, data.user);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Impossible de passer la vérification OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col md:flex-row relative">
       {/* 1. PANNEAU LATÉRAL GAUCHE */}
@@ -112,7 +127,7 @@ export const RegisterPage: React.FC = () => {
               error={error}
               onSubmit={handleVerifyOtpSubmit}
               onBack={() => setIsOtpStep(false)}
-              onSkip={() => navigate('/')}
+              onSkip={handleSkipOtp}
             />
           )}
         </div>

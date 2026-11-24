@@ -90,6 +90,21 @@ export const RegisterScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleSkipOtp = async () => {
+    setLoading(true);
+    try {
+      const data = await authService.skipOtp(fullPhoneForOtp);
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
+      navigation.navigate('MainTabs');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de passer la vérification OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResend = async () => {
     setLoading(true);
     try {
@@ -187,8 +202,8 @@ export const RegisterScreen = ({ navigation }: any) => {
 
             <View style={styles.twoBtnRow}>
               <TouchableOpacity
-                style={styles.skipButton}
-                onPress={() => navigation.navigate('MainTabs')}
+                style={[styles.skipButton, loading && styles.buttonDisabled]}
+                onPress={handleSkipOtp}
                 disabled={loading}
               >
                 <Text style={styles.skipButtonText}>Passer</Text>

@@ -14,6 +14,8 @@ import com.revibeflip.sms.OtpRateLimiter;
 import com.revibeflip.sms.SmsProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.env.Environment;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.UUID;
 
 /**
@@ -42,6 +45,7 @@ public class AuthService {
     private final SmsProvider smsProvider;
     private final OtpRateLimiter otpRateLimiter;
     private final RefreshTokenService refreshTokenService;
+    private final Environment environment;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -169,6 +173,39 @@ public class AuthService {
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
                 .user(UserDto.fromEntity(verifiedUser))
+                .build();
+    }
+
+    /**
+     * Mode test hors production uniquement : permet au bouton « Passer » de connecter
+     * un compte tout juste créé (PENDING_OTP) afin de poursuivre les tests.
+     */
+    @Transactional
+    public AuthResponse skipOtpForDevTest(String phone) {
+        if (Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
+            throw new AccessDeniedException("Le contournement OTP est désactivé en production.");
+        }
+        String cleanPhone = cleanPhoneNumber(phone);
+        User user = userRepository.findByPhone(cleanPhone)
+                .orElseThrow(() -> new IllegalArgumentException("Compte introuvable."));
+
+        if (user.getStatus() != AccountStatus.PENDING_OTP) {
+            throw new AccessDeniedException("Ce compte est déjà actif et ne peut pas utiliser le mode test.");
+        }
+
+        user.setIsVerified(true);
+        user.setStatus(AccountStatus.ACTIVE);
+        clearVerificationOtp(user);
+        User activeUser = userRepository.save(user);
+
+        String token = jwtUtil.generateToken(activeUser, activeUser.getId(), activeUser.getRole().name(), activeUser.getFullName());
+        String refreshToken = refreshTokenService.createRefreshToken(activeUser);
+
+        return AuthResponse.builder()
+                .token(token)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .user(UserDto.fromEntity(activeUser))
                 .build();
     }
 
