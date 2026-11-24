@@ -21,6 +21,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class LedgerService {
 
     private final LedgerEntryRepository ledgerEntryRepository;
@@ -86,7 +87,9 @@ public class LedgerService {
         );
     }
 
-    private void recordIfAbsent(
+    // Point d'intégration : Ventilation des frais de livraison à ajouter dans les types d'écritures du grand livre
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void recordIfAbsent(
             Long orderId,
             String orderNumber,
             String paymentReference,
@@ -98,16 +101,21 @@ public class LedgerService {
         if (ledgerEntryRepository.existsByOrderIdAndEntryType(orderId, type)) {
             return;
         }
-        ledgerEntryRepository.save(LedgerEntry.builder()
-                .orderId(orderId)
-                .orderNumber(orderNumber)
-                .paymentReference(paymentReference)
-                .entryType(type)
-                .amount(amount)
-                .currency("XOF")
-                .userId(userId)
-                .description(description)
-                .build());
+        try {
+            ledgerEntryRepository.save(LedgerEntry.builder()
+                    .orderId(orderId)
+                    .orderNumber(orderNumber)
+                    .paymentReference(paymentReference)
+                    .entryType(type)
+                    .amount(amount)
+                    .currency("XOF")
+                    .userId(userId)
+                    .description(description)
+                    .build());
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            // SEC-03 : Contrainte SQL unique (order_id, entry_type) déclenchée : tolérée comme déjà enregistrée
+            log.info("Écriture grand livre déjà présente pour commande {} type {} (idempotent).", orderNumber, type);
+        }
     }
 
     @Transactional(readOnly = true)

@@ -4,6 +4,7 @@ import com.revibeflip.dto.AddressDto;
 import com.revibeflip.dto.AddressRequest;
 import com.revibeflip.dto.ApiResponse;
 import com.revibeflip.dto.UpdateProfileRequest;
+import com.revibeflip.dto.PublicUserDto;
 import com.revibeflip.dto.UserDto;
 import com.revibeflip.entity.User;
 import com.revibeflip.repository.UserRepository;
@@ -13,10 +14,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -47,10 +50,13 @@ public class UserController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Consulter le profil public d'un utilisateur")
-    public ResponseEntity<ApiResponse<UserDto>> getUserProfile(@PathVariable Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
-        return ResponseEntity.ok(ApiResponse.ok(UserDto.fromEntity(user)));
+    public ResponseEntity<ApiResponse<PublicUserDto>> getUserProfile(@PathVariable Long id) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null || Boolean.TRUE.equals(user.getIsSuspended())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Utilisateur non trouvé"));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(PublicUserDto.fromEntity(user)));
     }
 
     @PutMapping("/profile")

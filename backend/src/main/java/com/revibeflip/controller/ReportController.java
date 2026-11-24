@@ -2,6 +2,7 @@ package com.revibeflip.controller;
 
 import com.revibeflip.dto.ApiResponse;
 import com.revibeflip.dto.CreateReportRequest;
+import com.revibeflip.dto.ReportAckDto;
 import com.revibeflip.dto.ReportDto;
 import com.revibeflip.entity.User;
 import com.revibeflip.service.ReportService;
@@ -29,11 +30,11 @@ public class ReportController {
 
     @PostMapping
     @Operation(summary = "Signaler un article ou un profil utilisateur")
-    public ResponseEntity<ApiResponse<ReportDto>> createReport(
+    public ResponseEntity<ApiResponse<ReportAckDto>> createReport(
             @Valid @RequestBody CreateReportRequest request,
             @AuthenticationPrincipal User reporter
     ) {
-        ReportDto report = reportService.createReport(request, reporter);
+        ReportAckDto report = reportService.createReport(request, reporter);
         return ResponseEntity.ok(ApiResponse.ok(report, "Votre signalement a été transmis à l'équipe de modération."));
     }
 }

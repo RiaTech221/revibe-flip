@@ -18,6 +18,7 @@ export const authApi = {
   register: (data: any, turnstileToken?: string) =>
     api.post('/auth/register', data, turnstileConfig(turnstileToken)),
   verifyOtp: (data: { phone: string; otpCode: string }) => api.post('/auth/verify-otp', data),
+  skipOtp: (phone: string) => api.post(`/auth/skip-otp?phone=${encodeURIComponent(phone)}`),
   resendOtp: (phone: string, turnstileToken?: string) =>
     api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`, undefined, turnstileConfig(turnstileToken)),
   login: (data: any, turnstileToken?: string) =>

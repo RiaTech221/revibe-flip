@@ -20,8 +20,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Optional<Order> findByOrderNumber(String orderNumber);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.QueryHints({@jakarta.persistence.QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")})
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdForUpdate(@Param("id") Long id);
+
+    @Query("SELECT o FROM Order o LEFT JOIN FETCH o.items LEFT JOIN FETCH o.buyer LEFT JOIN FETCH o.seller LEFT JOIN FETCH o.product WHERE o.id = :id")
+    Optional<Order> findByIdWithDetails(@Param("id") Long id);
 
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.orderNumber = :orderNumber")
@@ -85,6 +89,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(o) > 0 FROM Order o WHERE o.product.id = :productId AND o.status IN :statuses")
     boolean existsByProductIdAndStatusIn(@Param("productId") Long productId, @Param("statuses") java.util.Collection<OrderStatus> statuses);
+
+    boolean existsByProductId(Long productId);
 
     @Query("SELECT o FROM Order o WHERE o.buyer.id = :buyerId AND (:status IS NULL OR o.status = :status) ORDER BY o.createdAt DESC")
     org.springframework.data.domain.Page<Order> searchBuyerOrdersPage(

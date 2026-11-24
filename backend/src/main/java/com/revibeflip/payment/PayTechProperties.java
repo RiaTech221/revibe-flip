@@ -28,6 +28,8 @@ public class PayTechProperties {
     private String cancelUrl = "";
     private String transferCallbackUrl = "";
     private String allowedIps = "";
+    private int connectTimeoutMs = 5000;
+    private int readTimeoutMs = 10000;
 
     public boolean isConfigured() {
         return apiKey != null && !apiKey.isBlank()

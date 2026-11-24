@@ -27,6 +27,18 @@ import { Phone, Lock, User, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services';
 
+const formatSenegalPhone = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 9);
+  return [
+    digits.slice(0, 2),
+    digits.slice(2, 5),
+    digits.slice(5, 7),
+    digits.slice(7, 9),
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
+
 export const RegisterScreen = ({ navigation }: any) => {
   const { login } = useAuth();
   const [firstName, setFirstName] = useState('');
@@ -38,34 +50,21 @@ export const RegisterScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !password) {
-      Alert.alert('Champs requis', 'Veuillez remplir tous les champs obligatoires.');
+    const digits = phoneDisplay.replace(/\D/g, '');
+    if (!/^7\d{8}$/.test(digits)) {
+      Alert.alert('Numéro invalide', 'Veuillez saisir un numéro sénégalais au format 7X XXX XX XX.');
       return;
     }
 
+    const fullPhone = `+221${digits}`;
     setLoading(true);
     try {
-      const fullPhone = phone.startsWith('+') ? phone.trim() : `+221${phone.replace(/^0+/, '').trim()}`;
-      const data = await authService.register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+      await authService.register({
         phone: fullPhone,
-        email: email.trim() || undefined,
-        password,
-        confirmPassword: password,
         countryCode: 'SN',
       });
-
-      if (data?.token) {
-        login(data.token, data.user);
-        Alert.alert('Compte créé !', 'Bienvenue sur ReVibe FliP.', [
-          { text: 'Commencer', onPress: () => navigation.navigate('MainTabs') },
-        ]);
-      } else {
-        Alert.alert('Inscription réussie', 'Vous pouvez maintenant vous connecter.', [
-          { text: 'Se connecter', onPress: () => navigation.navigate('Login') },
-        ]);
-      }
+      setFullPhoneForOtp(fullPhone);
+      setIsOtpStep(true);
     } catch (err: any) {
       Alert.alert('Erreur', err.response?.data?.message || "L'inscription a échoué.");
     } finally {
@@ -73,9 +72,64 @@ export const RegisterScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    const cleanOtp = otpCode.trim();
+    if (cleanOtp.length < 4) {
+      Alert.alert('Code requis', 'Veuillez saisir le code OTP reçu par SMS.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await authService.verifyOtp({
+        phone: fullPhoneForOtp,
+        otpCode: cleanOtp,
+      });
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
+      navigation.navigate('MainTabs');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Code OTP invalide ou expiré.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipOtp = async () => {
+    setLoading(true);
+    try {
+      const data = await authService.skipOtp(fullPhoneForOtp);
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
+      navigation.navigate('MainTabs');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de passer la vérification OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await authService.resendOtp(fullPhoneForOtp);
+      Alert.alert('Code envoyé', 'Un nouveau code OTP a été envoyé par SMS.');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de renvoyer le code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header showBack onBack={() => navigation.goBack()} title="Créer un compte" />
+      <Header
+        showBack
+        onBack={() => (isOtpStep ? setIsOtpStep(false) : navigation.goBack())}
+        title={isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
+      />
 
       <KeyboardAvoidingView
         style={styles.keyboardArea}
@@ -136,7 +190,6 @@ export const RegisterScreen = ({ navigation }: any) => {
                 keyboardType="phone-pad"
               />
             </View>
-          </View>
 
           <View style={styles.formGroup}>
             <Text style={styles.label}>Email (optionnel)</Text>
@@ -220,6 +273,15 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  otpIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: '#f3e8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',
@@ -231,13 +293,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfCol: {
-    flex: 1,
-  },
   formGroup: {
     marginBottom: 16,
   },
@@ -246,6 +301,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
+  },
+  phoneInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  prefixBadge: {
+    backgroundColor: '#f1f5f9',
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  prefixText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
   inputWrap: {
     flexDirection: 'row',
@@ -257,13 +333,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    marginLeft: 10,
+    marginRight: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 14,
+    paddingRight: 12,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 8,
   },
   button: {
     backgroundColor: colors.primary,
@@ -272,13 +356,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  twoBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  skipButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  validateButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+  },
+  resendWrap: {
+    alignItems: 'center',
+    marginTop: 18,
   },
   footerRow: {
     flexDirection: 'row',

@@ -33,8 +33,8 @@ public class OrderAutoConfirmScheduler {
     @Value("${revibeflip.order.auto-confirm-days:7}")
     private int autoConfirmDays;
 
+    // SEC-03 : Pas de @Transactional global sur le planificateur afin qu'un échec sur une commande ne bloque pas les autres
     @Scheduled(cron = "0 0 * * * *")
-    @Transactional
     public void autoConfirmDeliveredOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(Math.max(1, autoConfirmDays));
         List<Order> candidates = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.DELIVERED);
@@ -48,11 +48,12 @@ public class OrderAutoConfirmScheduler {
                 continue;
             }
 
+            // Point d'intégration : Preuve de livraison avant auto-confirmation à valider avec les transporteurs
+            // Point d'intégration : Rattachement de Report à Order à modéliser (actuellement Report cible Product/User sans lien direct Order).
+
             try {
-                OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.COMPLETED);
-                order.setStatus(OrderStatus.COMPLETED);
-                Order saved = orderRepository.save(order);
-                paymentService.releaseFundsToSeller(saved);
+                // SEC-03 : Libération unitaire sécurisée en 3 temps dans sa propre transaction isolée
+                paymentService.releaseFundsToSeller(order.getId());
 
                 notificationService.createNotification(
                         order.getSeller(),

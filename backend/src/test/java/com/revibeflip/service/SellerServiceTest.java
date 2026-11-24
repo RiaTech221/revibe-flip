@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Spy;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -45,6 +46,8 @@ class SellerServiceTest {
     @InjectMocks
     private SellerService sellerService;
 
+    private ProductModificationPolicyService policyService;
+
     private User sellerA;
     private User sellerB;
     private Category category;
@@ -52,6 +55,9 @@ class SellerServiceTest {
 
     @BeforeEach
     void setUp() {
+        policyService = new ProductModificationPolicyService(orderRepository);
+        org.springframework.test.util.ReflectionTestUtils.setField(sellerService, "policyService", policyService);
+
         sellerA = User.builder()
                 .id(1L)
                 .firstName("Aminata")
