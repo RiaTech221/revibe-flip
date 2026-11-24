@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isStaff, logout } = useAuth();
   const { totalCount, toggleCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -223,7 +223,7 @@ export const Navbar: React.FC = () => {
                           <span>Vos ventes & Dressing</span>
                         </Link>
 
-                        {isAdmin && (
+                        {isStaff && (
                           <Link
                             to="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
