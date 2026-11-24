@@ -119,6 +119,7 @@ class BuyerOrderReviewServiceTest {
     @DisplayName("Acheteur : création de commande avec calcul exact de l'escrow 1% et livraison")
     void testCreateOrderSuccess() {
         when(productRepository.findById(501L)).thenReturn(Optional.of(product));
+        when(productRepository.reserveProductIfActive(501L)).thenReturn(1);
         when(orderRepository.existsByProductIdAndStatusIn(eq(501L), any())).thenReturn(false);
         when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(setting));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {

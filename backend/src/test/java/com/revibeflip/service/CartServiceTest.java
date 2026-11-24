@@ -266,6 +266,7 @@ class CartServiceTest {
 
         when(productRepository.findById(101L)).thenReturn(Optional.of(product1));
         when(productRepository.findById(102L)).thenReturn(Optional.of(product2));
+        when(productRepository.reserveProductIfActive(anyLong())).thenReturn(1);
         when(orderRepository.existsByProductIdAndStatusIn(anyLong(), any())).thenReturn(false);
 
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
@@ -312,6 +313,7 @@ class CartServiceTest {
 
         when(productRepository.findById(101L)).thenReturn(Optional.of(product1));
         when(productRepository.findById(102L)).thenReturn(Optional.of(product2));
+        when(productRepository.reserveProductIfActive(101L)).thenReturn(1);
 
         CreateOrderFromCartRequest req = new CreateOrderFromCartRequest();
         req.setDeliveryMode(DeliveryMode.HOME_DELIVERY);

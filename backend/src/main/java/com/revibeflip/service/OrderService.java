@@ -85,6 +85,18 @@ public class OrderService {
             throw new IllegalArgumentException("Vous ne pouvez pas acheter votre propre article.");
         }
 
+        // SEC-09 : Verrou atomique en base pour réserver l'article (RESERVED)
+        int reserved = productRepository.reserveProductIfActive(product.getId());
+        if (reserved == 0) {
+            throw new IllegalStateException("Cet article n'est plus disponible à l'achat (déjà réservé ou vendu).");
+        }
+        product.setStatus(ProductStatus.RESERVED);
+
+        int reservationHours = platformSettingRepository.findFirstByOrderByIdAsc()
+                .map(PlatformSetting::getReservationDurationHours)
+                .orElse(24);
+        LocalDateTime reservationExpiresAt = LocalDateTime.now().plusHours(reservationHours);
+
         // Point 4 : Taux configurables lus depuis la base de données (PlatformSetting)
         BigDecimal currentCommissionRate = platformSettingRepository.findFirstByOrderByIdAsc()
                 .map(PlatformSetting::getCommissionRate)
@@ -131,6 +143,7 @@ public class OrderService {
                 .deliveryPhone(request.getDeliveryPhone() != null ? request.getDeliveryPhone() : buyer.getPhone())
                 .deliveryNotes(request.getDeliveryNotes())
                 .status(OrderStatus.PENDING_PAYMENT)
+                .reservationExpiresAt(reservationExpiresAt)
                 .build();
 
         Order savedOrder = orderRepository.save(order);
