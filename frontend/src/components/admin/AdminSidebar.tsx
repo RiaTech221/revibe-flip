@@ -17,11 +17,12 @@ import {
   Settings,
   FileText,
   History,
+  ShieldCheck,
   LogOut,
   Menu,
   X,
 } from 'lucide-react';
-import { AdminDashboard, User } from '../../types';
+import { AdminDashboard, User, AdminPermission } from '../../types';
 import { Logo } from '../Logo';
 
 export type AdminTabType =
@@ -29,6 +30,7 @@ export type AdminTabType =
   | 'products'
   | 'categories'
   | 'users'
+  | 'team'
   | 'orders'
   | 'payments'
   | 'reports'
@@ -53,19 +55,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navItems: Array<{
+  const allNavItems: Array<{
     id: AdminTabType;
     label: string;
     shortLabel: string;
     icon: React.ReactNode;
     badge?: number | null;
     alert?: boolean;
+    permission?: AdminPermission;
+    adminOnly?: boolean;
   }> = [
     {
       id: 'kpi',
       label: 'Tableau de bord',
       shortLabel: 'Accueil',
       icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+      permission: 'DASHBOARD',
     },
     {
       id: 'users',
@@ -73,6 +78,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       shortLabel: 'Utilisateurs',
       icon: <Users className="w-4 h-4 shrink-0" />,
       badge: dashboard?.totalUsers || 0,
+      permission: 'USERS',
     },
     {
       id: 'products',
@@ -80,12 +86,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       shortLabel: 'Annonces',
       icon: <ShoppingBag className="w-4 h-4 shrink-0" />,
       badge: dashboard?.totalProducts || 0,
+      permission: 'PRODUCTS',
     },
     {
       id: 'categories',
       label: 'Rayons & Catégories',
       shortLabel: 'Catégories',
       icon: <Layers className="w-4 h-4 shrink-0" />,
+      permission: 'CATEGORIES',
     },
     {
       id: 'orders',
@@ -93,12 +101,14 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       shortLabel: 'Commandes',
       icon: <Truck className="w-4 h-4 shrink-0" />,
       badge: dashboard?.totalOrders || 0,
+      permission: 'ORDERS_PAYMENTS',
     },
     {
       id: 'payments',
       label: 'Fonds & Transactions',
       shortLabel: 'Fonds',
       icon: <CreditCard className="w-4 h-4 shrink-0" />,
+      permission: 'ORDERS_PAYMENTS',
     },
     {
       id: 'reports',
@@ -110,26 +120,38 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           ? dashboard.pendingReports
           : null,
       alert: true,
+      permission: 'REPORTS',
     },
     {
       id: 'content',
       label: 'Gestionnaire CMS',
       shortLabel: 'CMS',
       icon: <FileText className="w-4 h-4 shrink-0" />,
+      adminOnly: true,
     },
     {
       id: 'audit',
       label: "Journal d'Audit",
       shortLabel: 'Audit',
       icon: <History className="w-4 h-4 shrink-0" />,
+      adminOnly: true,
     },
     {
       id: 'settings',
       label: 'Paramètres Plateforme',
       shortLabel: 'Paramètres',
       icon: <Settings className="w-4 h-4 shrink-0" />,
+      adminOnly: true,
     },
   ];
+
+  const isAdmin = currentUser?.role === 'ROLE_ADMIN';
+  const navItems = allNavItems.filter((item) => {
+    if (isAdmin) return true;
+    if (item.adminOnly) return false;
+    if (!item.permission) return false;
+    return currentUser?.adminPermissions?.includes(item.permission);
+  });
 
   const activeItem = navItems.find((item) => item.id === activeTab) || navItems[0];
 

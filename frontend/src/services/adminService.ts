@@ -29,6 +29,8 @@ import {
   AnnouncementBanner,
   ContactMessage,
   MediaAsset,
+  Collaborator,
+  AdminPermission,
 } from '../types';
 
 /**
@@ -75,6 +77,27 @@ export const adminApi = {
     api.get<{ success: boolean; data: PageResponse<AdminActionLog> }>('/admin/audit-logs', { params }),
   auditViewConversation: (id: number) =>
     api.get<{ success: boolean; data: { conversation: Conversation; messages: Message[] } }>(`/admin/conversations/${id}/audit-view`),
+
+  // Collaborateurs (US-36)
+  getCollaborators: (params?: { query?: string; isSuspended?: boolean; page?: number; size?: number }) =>
+    api.get<{ success: boolean; data: PageResponse<Collaborator> }>('/admin/collaborators', { params }),
+  getCollaborator: (id: number) =>
+    api.get<{ success: boolean; data: Collaborator }>(`/admin/collaborators/${id}`),
+  createCollaborator: (data: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email?: string;
+    password?: string;
+    permissions: AdminPermission[];
+  }) => api.post<{ success: boolean; data: Collaborator }>('/admin/collaborators', data),
+  updateCollaborator: (
+    id: number,
+    data: { firstName?: string; lastName?: string; email?: string; permissions: AdminPermission[] }
+  ) => api.put<{ success: boolean; data: Collaborator }>(`/admin/collaborators/${id}`, data),
+  toggleCollaboratorSuspension: (id: number, suspend: boolean) =>
+    api.put<{ success: boolean; data: Collaborator }>(`/admin/collaborators/${id}/suspend?suspend=${suspend}`),
+  deleteCollaborator: (id: number) => api.delete<{ success: boolean; data: null }>(`/admin/collaborators/${id}`),
 };
 
 /**
