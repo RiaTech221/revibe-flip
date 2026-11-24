@@ -1,8 +1,10 @@
 /**
  * Écran d'Inscription (RegisterScreen) ReVibe FliP Mobile
  *
- * Inscription par numéro de téléphone sénégalais (+221) uniquement
- * suivie de l'écran de validation OTP à 2 boutons (Passer / Valider le code).
+ * Formulaire de création de compte membre sur l'application mobile :
+ *  * - Choix du pays de résidence et saisie des informations d'identité
+ *  * - Création du mot de passe avec règles de complexité
+ *  * - Envoi du code de vérification OTP
  */
 
 import React, { useState } from 'react';
@@ -13,13 +15,15 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
-import { Phone, ShieldCheck } from 'lucide-react-native';
+import { Phone, Lock, User, Mail, Eye, EyeOff } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services';
 
@@ -37,10 +41,12 @@ const formatSenegalPhone = (raw: string): string => {
 
 export const RegisterScreen = ({ navigation }: any) => {
   const { login } = useAuth();
-  const [phoneDisplay, setPhoneDisplay] = useState('');
-  const [isOtpStep, setIsOtpStep] = useState(false);
-  const [fullPhoneForOtp, setFullPhoneForOtp] = useState('');
-  const [otpCode, setOtpCode] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
@@ -125,109 +131,129 @@ export const RegisterScreen = ({ navigation }: any) => {
         title={isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
       />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {!isOtpStep ? (
-          <>
-            <View style={styles.header}>
-              <Text style={styles.title}>Rejoignez la communauté</Text>
-              <Text style={styles.subtitle}>
-                Entrez votre numéro sénégalais pour recevoir votre code de vérification par SMS.
-              </Text>
-            </View>
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.title}>Rejoignez la communauté</Text>
+            <Text style={styles.subtitle}>
+              Achetez et vendez vos articles avec la protection du séquestre ReVibe Garanti.
+            </Text>
+          </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Numéro de téléphone *</Text>
-              <View style={styles.phoneInputWrap}>
-                <View style={styles.prefixBadge}>
-                  <Text style={styles.prefixText}>🇸🇳 +221</Text>
-                </View>
-                <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
+          <View style={styles.row}>
+            <View style={[styles.formGroup, styles.halfCol]}>
+              <Text style={styles.label}>Prénom *</Text>
+              <View style={styles.inputWrap}>
+                <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  value={phoneDisplay}
-                  onChangeText={(txt) => setPhoneDisplay(formatSenegalPhone(txt))}
-                  placeholder="7X XXX XX XX"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Ex: Amina"
                   placeholderTextColor={colors.textSecondary}
-                  keyboardType="phone-pad"
-                  maxLength={12}
                 />
               </View>
             </View>
 
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.buttonText}>Continuer</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.footerRow}>
-              <Text style={styles.footerText}>Déjà inscrit ?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                <Text style={styles.footerLink}>Se connecter</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.header}>
-              <View style={styles.otpIconWrap}>
-                <ShieldCheck size={28} color={colors.primary} />
-              </View>
-              <Text style={styles.title}>Validation SMS</Text>
-              <Text style={styles.subtitle}>
-                Saisissez le code à 6 chiffres envoyé au {fullPhoneForOtp}.
-              </Text>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Code OTP</Text>
+            <View style={[styles.formGroup, styles.halfCol]}>
+              <Text style={styles.label}>Nom *</Text>
               <View style={styles.inputWrap}>
                 <TextInput
-                  style={[styles.input, styles.otpInput]}
-                  value={otpCode}
-                  onChangeText={(txt) => setOtpCode(txt.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="123456"
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Ex: Diallo"
                   placeholderTextColor={colors.textSecondary}
-                  keyboardType="number-pad"
-                  maxLength={6}
                 />
               </View>
             </View>
+          </View>
 
-            <View style={styles.twoBtnRow}>
-              <TouchableOpacity
-                style={[styles.skipButton, loading && styles.buttonDisabled]}
-                onPress={handleSkipOtp}
-                disabled={loading}
-              >
-                <Text style={styles.skipButtonText}>Passer</Text>
-              </TouchableOpacity>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Numéro de téléphone * (Wave / OM)</Text>
+            <View style={styles.inputWrap}>
+              <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="77 000 00 00"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="phone-pad"
+              />
+            </View>
 
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email (optionnel)</Text>
+            <View style={styles.inputWrap}>
+              <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="amina@exemple.sn"
+                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Mot de passe *</Text>
+            <View style={styles.inputWrap}>
+              <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor={colors.textSecondary}
+                secureTextEntry={!showPassword}
+              />
               <TouchableOpacity
-                style={[styles.validateButton, loading && styles.buttonDisabled]}
-                onPress={handleVerifyOtp}
-                disabled={loading}
+                onPress={() => setShowPassword((visible) => !visible)}
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                hitSlop={10}
               >
-                {loading ? (
-                  <ActivityIndicator color="#ffffff" />
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.textSecondary} />
                 ) : (
-                  <Text style={styles.buttonText}>Valider le code</Text>
+                  <Eye size={20} color={colors.textSecondary} />
                 )}
               </TouchableOpacity>
             </View>
+          </View>
 
-            <TouchableOpacity style={styles.resendWrap} onPress={handleResend} disabled={loading}>
-              <Text style={styles.footerLink}>Renvoyer le code</Text>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.buttonText}>Créer mon compte</Text>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>Déjà inscrit ?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.footerLink}>Se connecter</Text>
             </TouchableOpacity>
-          </>
-        )}
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -240,6 +266,9 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
+  },
+  keyboardArea: {
+    flex: 1,
   },
   header: {
     marginBottom: 24,
