@@ -46,8 +46,11 @@ public class NotificationController {
 
     @PutMapping("/{id}/read")
     @Operation(summary = "Marquer une notification spécifique comme lue")
-    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Long id) {
-        notificationService.markAsRead(id);
+    public ResponseEntity<ApiResponse<Void>> markAsRead(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        notificationService.markAsRead(id, user);
         return ResponseEntity.ok(ApiResponse.ok(null));
     }
 }

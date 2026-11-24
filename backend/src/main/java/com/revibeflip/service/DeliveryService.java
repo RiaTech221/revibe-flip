@@ -27,32 +27,74 @@ public class DeliveryService {
     private final OrderRepository orderRepository;
     private final NotificationService notificationService;
 
+    public DeliveryDto getDeliveryByOrderId(Long orderId, User currentUser) {
+        Delivery delivery = deliveryRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Informations de livraison non trouvées pour la commande : " + orderId));
+        validateDeliveryAccess(delivery, currentUser);
+        return DeliveryDto.fromEntity(delivery);
+    }
+
     public DeliveryDto getDeliveryByOrderId(Long orderId) {
         Delivery delivery = deliveryRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Informations de livraison non trouvées pour cette commande."));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Informations de livraison non trouvées pour cette commande : " + orderId));
+        return DeliveryDto.fromEntity(delivery);
+    }
+
+    public DeliveryDto getDeliveryByTrackingNumber(String trackingNumber, User currentUser) {
+        Delivery delivery = deliveryRepository.findByTrackingNumber(trackingNumber)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Numéro de suivi introuvable : " + trackingNumber));
+        validateDeliveryAccess(delivery, currentUser);
         return DeliveryDto.fromEntity(delivery);
     }
 
     public DeliveryDto getDeliveryByTrackingNumber(String trackingNumber) {
         Delivery delivery = deliveryRepository.findByTrackingNumber(trackingNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Numéro de suivi introuvable : " + trackingNumber));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Numéro de suivi introuvable : " + trackingNumber));
         return DeliveryDto.fromEntity(delivery);
+    }
+
+    public DeliveryDto getDeliveryById(Long deliveryId, User currentUser) {
+        Delivery delivery = deliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Livraison non trouvée avec l'id : " + deliveryId));
+        validateDeliveryAccess(delivery, currentUser);
+        return DeliveryDto.fromEntity(delivery);
+    }
+
+    private void validateDeliveryAccess(Delivery delivery, User currentUser) {
+        if (currentUser == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Authentification requise pour accéder aux informations de livraison.");
+        }
+        Order order = delivery.getOrder();
+        if (order == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Commande introuvable pour cette livraison.");
+        }
+
+        boolean isBuyer = order.getBuyer() != null && order.getBuyer().getId().equals(currentUser.getId());
+        boolean isSeller = order.getSeller() != null && order.getSeller().getId().equals(currentUser.getId());
+
+        if (!isBuyer && !isSeller) {
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé : cette livraison ne concerne aucune de vos commandes.");
+        }
     }
 
     @Transactional
     public DeliveryDto updateDeliveryStatus(Long deliveryId, UpdateDeliveryStatusRequest request, User currentUser) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new IllegalArgumentException("Livraison non trouvée."));
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Livraison non trouvée avec l'id : " + deliveryId));
 
         Order order = delivery.getOrder();
-
-        // Allowed: Seller or Admin or Courier
-        boolean isSeller = order.getSeller().getId().equals(currentUser.getId());
-        boolean isAdmin = "ROLE_ADMIN".equals(currentUser.getRole().name());
-
-        if (!isSeller && !isAdmin) {
-            throw new org.springframework.security.access.AccessDeniedException("Non autorisé à mettre à jour la livraison.");
+        if (order == null || currentUser == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Accès non autorisé.");
         }
+
+        // SEC-04 : Seul le vendeur de la commande peut faire évoluer le statut de livraison
+        boolean isSeller = order.getSeller() != null && order.getSeller().getId().equals(currentUser.getId());
+        if (!isSeller) {
+            throw new org.springframework.security.access.AccessDeniedException("Seul le vendeur de la commande peut mettre à jour le statut de livraison.");
+        }
+
+        // SEC-04 : Validation de la machine à états logistique (ordre strict des 5 statuts)
+        DeliveryStateMachine.validateTransition(delivery.getStatus(), request.getStatus());
 
         delivery.setStatus(request.getStatus());
         if (request.getCarrierName() != null) delivery.setCarrierName(request.getCarrierName());
