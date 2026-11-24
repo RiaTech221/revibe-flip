@@ -265,7 +265,7 @@ public class PaymentService {
 
         OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.PAID_ESCROW_LOCKED);
 
-        // Verrou pessimiste sur les articles pour empêcher toute double vente concurrente
+        // Verrou atomique en base anti-double-vente (SEC-09)
         lockAndMarkProductsSold(order);
 
         payment.setStatus(PaymentStatus.SUCCESS);
