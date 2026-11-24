@@ -231,12 +231,25 @@ public class OrderService {
      * @param buyer   Acheteur confirmant la commande.
      * @return OrderDto Commande mise à jour.
      */
-    @Transactional
+    /**
+     * Confirme la réception de l'article par l'acheteur et débloque le séquestre vendeur (SEC-03).
+     *
+     * <p>Règles de sécurité :</p>
+     * <ul>
+     *   <li>Seul l'acheteur authentifié de la commande peut confirmer la réception (exclusion de tout rôle tiers ou admin).</li>
+     *   <li>Ce point d'entrée n'est pas @Transactional afin de garantir le protocole de libération en 3 temps sans verrou réseau.</li>
+     * </ul>
+     *
+     * @param orderId Identifiant de la commande à valider.
+     * @param buyer   Acheteur confirmant la commande.
+     * @return OrderDto Commande mise à jour.
+     */
     public OrderDto confirmReceipt(Long orderId, User buyer) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Commande non trouvée."));
 
-        if (!order.getBuyer().getId().equals(buyer.getId()) && !"ROLE_ADMIN".equals(buyer.getRole().name())) {
+        // SEC-03 : Seul l'acheteur propriétaire de la commande peut confirmer la réception
+        if (buyer == null || order.getBuyer() == null || !order.getBuyer().getId().equals(buyer.getId())) {
             throw new org.springframework.security.access.AccessDeniedException("Seul l'acheteur peut confirmer la réception.");
         }
 
@@ -244,41 +257,15 @@ public class OrderService {
             throw new IllegalStateException("La confirmation de réception n'est possible qu'une fois la commande livrée (statut actuel : " + order.getStatus() + ").");
         }
 
-        OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.COMPLETED);
-        order.setStatus(OrderStatus.COMPLETED);
-        Order savedOrder = orderRepository.save(order);
+        // Point d'intégration : Rattachement de Report à Order à modéliser (actuellement Report cible Product/User sans lien direct Order).
 
-        // Update Delivery status to DELIVERED
-        deliveryRepository.findByOrderId(orderId).ifPresent(d -> {
-            d.setStatus(DeliveryStatus.DELIVERED);
-            if (d.getDeliveredAt() == null) {
-                d.setDeliveredAt(LocalDateTime.now());
-            }
-            deliveryRepository.save(d);
-        });
+        // SEC-03 : Déclenchement du protocole de libération sécurisé en 3 temps (unique et protégé contre la concurrence)
+        paymentService.releaseFundsToSeller(orderId);
 
-        // Déclenchement du versement net vendeur et écriture immuable au grand livre
-        paymentService.releaseFundsToSeller(savedOrder);
-
-        // Notify seller that funds are released
-        notificationService.createNotification(
-                order.getSeller(),
-                "Paiement libéré !",
-                "L'acheteur a confirmé la bonne réception de l'article. Le versement de " + order.getSellerPayout() + " FCFA a été déclenché.",
-                NotificationType.ORDER_DELIVERED,
-                "/orders/" + order.getId()
-        );
-
-        // Prompt buyer to leave a review
-        notificationService.createNotification(
-                order.getBuyer(),
-                "Donnez votre avis !",
-                "Comment s'est passée votre transaction avec " + order.getSeller().getFullName() + " ? Laissez une note pour aider la communauté.",
-                NotificationType.NEW_REVIEW,
-                "/orders/" + order.getId()
-        );
-
-        return enrichOrderDto(savedOrder);
+        Order updatedOrder = orderRepository.findByIdWithDetails(orderId)
+                .orElseGet(() -> orderRepository.findById(orderId)
+                        .orElseThrow(() -> new IllegalArgumentException("Commande non trouvée après libération.")));
+        return enrichOrderDto(updatedOrder);
     }
 
     public OrderDto enrichOrderDto(Order order) {
