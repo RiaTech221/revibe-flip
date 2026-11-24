@@ -293,6 +293,19 @@ export interface Review {
   createdAt: string;
 }
 
+export interface PersonalDashboard {
+  isSeller: boolean;
+  purchasesCount: number;
+  purchases: PageResponse<Order>;
+  salesCount?: number;
+  sales?: PageResponse<Order>;
+  listingsCount?: number;
+  listings?: PageResponse<Product>;
+  averageRating?: number;
+  reviewCount?: number;
+  reviews?: PageResponse<Review>;
+}
+
 export interface Notification {
   id: number;
   title: string;
