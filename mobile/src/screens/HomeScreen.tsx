@@ -63,7 +63,7 @@ export const HomeScreen = ({ navigation }: any) => {
       <Header
         title="ReVibe Sénégal"
         showSearch
-        onSearchPress={() => navigation.navigate('Catalog')}
+        onSearchPress={() => navigation.navigate('Catalogue')}
       />
 
       <ScrollView
@@ -86,7 +86,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Categories Carousel */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Catégories populaires</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Catalog')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
             <Text style={styles.seeAll}>Tout voir</Text>
           </TouchableOpacity>
         </View>
@@ -96,7 +96,7 @@ export const HomeScreen = ({ navigation }: any) => {
             <TouchableOpacity
               key={cat.id}
               style={styles.categoryCard}
-              onPress={() => navigation.navigate('Catalog', { categoryId: cat.id })}
+              onPress={() => navigation.navigate('Catalogue', { categoryId: cat.id })}
             >
               <Text style={styles.categoryName}>{cat.name}</Text>
             </TouchableOpacity>
@@ -106,7 +106,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Feed Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Nouveautés récentes</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Catalog')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
             <Text style={styles.seeAll}>Voir le feed</Text>
           </TouchableOpacity>
         </View>
@@ -138,7 +138,7 @@ export const HomeScreen = ({ navigation }: any) => {
       {/* Floating Sell Button */}
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => navigation.navigate('SellTab')}
+        onPress={() => navigation.navigate('Vendre')}
       >
         <Plus size={24} color="#ffffff" />
         <Text style={styles.floatingButtonText}>Vendre un article</Text>
