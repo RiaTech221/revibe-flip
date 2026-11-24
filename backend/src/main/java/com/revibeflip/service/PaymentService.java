@@ -47,6 +47,7 @@ public class PaymentService {
     private final PaymentGateway paymentGateway;
     private final PayTechProperties payTechProperties;
     private final LedgerService ledgerService;
+    private final EscrowReleaseOperations escrowReleaseOperations;
 
     /**
      * Initie un paiement PayTech pour une commande.
@@ -306,59 +307,65 @@ public class PaymentService {
     }
 
     /**
-     * Déclenche la libération des fonds nets au vendeur (avec idempotence et blocage en cas de litige).
+     * Déclenche la libération du séquestre vendeur selon le protocole sécurisé en 3 temps (SEC-03).
+     *
+     * <p>Règles de sécurité :</p>
+     * <ul>
+     *   <li>Ce point d'entrée n'est volontairement <b>PAS</b> annoté {@code @Transactional} afin que l'appel HTTP externe
+     *       ne maintienne aucun verrou de base de données ni de connexion de pool ouverte.</li>
+     *   <li>Temps 1 (en transaction) : Verrouille la commande et son paiement, valide les conditions (DELIVERED, pas de litige,
+     *       payoutStatus NONE, téléphone présent), passe la commande à COMPLETED, le paiement à PROCESSING avec son identifiant
+     *       unique {@code PAYOUT-{UUID}}, et valide le commit.</li>
+     *   <li>Temps 2 (HORS transaction) : Appel au prestataire PayTech avec l'identifiant persisté. Toute exception est gérée comme un refus.</li>
+     *   <li>Temps 3 (en transaction sous verrou) : Si toujours PROCESSING : si accepté -> séquestre RELEASED_TO_SELLER et grand livre ;
+     *       si refusé -> MANUAL_REQUIRED sans écriture grand livre. Si déjà COMPLETED (IPN reçu avant) -> ne pas écraser COMPLETED,
+     *       séquestre RELEASED_TO_SELLER et grand livre idempotent.</li>
+     * </ul>
+     *
+     * @param orderId Identifiant de la commande dont le séquestre doit être libéré.
      */
-    @Transactional
+    public void releaseFundsToSeller(Long orderId) {
+        if (orderId == null) {
+            return;
+        }
+
+        // SEC-03 : Temps 1 (transactionnel) : verrouillage, contrôles et persistance préalable du statut PROCESSING
+        java.util.Optional<EscrowReleaseOperations.PayoutPreparation> prepOpt = escrowReleaseOperations.prepareAndLockPayout(orderId);
+        if (prepOpt.isEmpty()) {
+            return;
+        }
+
+        EscrowReleaseOperations.PayoutPreparation prep = prepOpt.get();
+
+        // SEC-03 : Temps 2 (HORS transaction) : appel HTTP externe sans verrou de base de données
+        String serviceName = mapTransferService(prep.paymentMethod());
+        PaymentGateway.TransferResult transferResult;
+        try {
+            transferResult = paymentGateway.initiateTransfer(
+                    new PaymentGateway.TransferRequest(
+                            prep.amount(),
+                            prep.recipientPhone(),
+                            serviceName,
+                            prep.payoutReference()
+                    )
+            );
+        } catch (Exception ex) {
+            log.warn("Erreur d'initiation de virement pour ref={}: {}",
+                    sanitizeAndTruncateRef(prep.payoutReference()), ex.getMessage());
+            transferResult = new PaymentGateway.TransferResult(false, prep.payoutReference(), "FAILED", ex.getMessage());
+        }
+
+        // SEC-03 : Temps 3 (transactionnel) : finalisation du résultat sous verrou sans écraser payoutReference
+        escrowReleaseOperations.finalizePayout(prep.orderId(), prep.payoutReference(), transferResult.accepted());
+    }
+
+    /**
+     * Surcharge acceptant l'entité Order pour compatibilité avec le reste de l'application.
+     */
     public void releaseFundsToSeller(Order order) {
-        if (order.getStatus() == OrderStatus.DISPUTED) {
-            throw new IllegalStateException("Un litige est ouvert sur cette commande : la libération des fonds est bloquée.");
+        if (order != null && order.getId() != null) {
+            releaseFundsToSeller(order.getId());
         }
-
-        Payment payment = paymentRepository.findByOrderId(order.getId()).orElse(null);
-        if (payment == null) {
-            return;
-        }
-
-        if (payment.getEscrowStatus() == EscrowStatus.RELEASED_TO_SELLER
-                && (payment.getPayoutStatus() == PayoutStatus.COMPLETED || payment.getPayoutStatus() == PayoutStatus.PROCESSING)) {
-            return;
-        }
-
-        User seller = order.getSeller();
-        String recipientPhone = seller != null ? seller.getPhone() : null;
-        if (recipientPhone == null || recipientPhone.isBlank()) {
-            payment.setEscrowStatus(EscrowStatus.RELEASED_TO_SELLER);
-            payment.setEscrowReleasedDate(LocalDateTime.now());
-            payment.setPayoutStatus(PayoutStatus.MANUAL_REQUIRED);
-            paymentRepository.save(payment);
-            ledgerService.recordReleaseToSeller(order, payment.getTransactionReference());
-            return;
-        }
-
-        payment.setEscrowStatus(EscrowStatus.RELEASED_TO_SELLER);
-        payment.setEscrowReleasedDate(LocalDateTime.now());
-        payment.setPayoutRecipientPhone(recipientPhone);
-
-        String externalId = "PAYOUT-" + order.getOrderNumber() + "-" + UUID.randomUUID().toString().substring(0, 8);
-        String serviceName = mapTransferService(payment.getPaymentMethod());
-        PaymentGateway.TransferResult transferResult = paymentGateway.initiateTransfer(
-                new PaymentGateway.TransferRequest(
-                        order.getSellerPayout(),
-                        recipientPhone,
-                        serviceName,
-                        externalId
-                )
-        );
-
-        payment.setPayoutReference(transferResult.transferReference());
-        if (transferResult.accepted()) {
-            payment.setPayoutStatus(PayoutStatus.PROCESSING);
-        } else {
-            payment.setPayoutStatus(PayoutStatus.MANUAL_REQUIRED);
-        }
-        paymentRepository.save(payment);
-
-        ledgerService.recordReleaseToSeller(order, payment.getTransactionReference());
     }
 
     /**

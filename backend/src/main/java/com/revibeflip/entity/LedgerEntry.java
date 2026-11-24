@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_ledger_order_id", columnList = "order_id"),
         @Index(name = "idx_ledger_type", columnList = "entry_type"),
         @Index(name = "idx_ledger_created_at", columnList = "created_at")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uq_ledger_order_entry", columnNames = {"order_id", "entry_type"})
 })
 @Getter
 @NoArgsConstructor
