@@ -6,8 +6,10 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { Heart } from 'lucide-react-native';
 import { Product } from '../../types';
 import { colors, formatPrice } from '../../theme/colors';
+import { useFavorites } from '../../context/FavoritesContext';
 
 interface ProductCardProps {
   product: Product;
@@ -15,6 +17,8 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) => {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const favorite = isFavorite(product.id);
   const imageUrl =
     product.primaryImage ||
     (product.images && product.images.length > 0 ? product.images[0] : null);
@@ -31,6 +35,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
           style={styles.image}
           resizeMode="cover"
         />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={favorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          style={styles.favoriteButton}
+          onPress={(event) => {
+            event.stopPropagation();
+            toggleFavorite(product);
+          }}
+          activeOpacity={0.8}
+        >
+          <Heart size={18} color={favorite ? colors.danger : colors.textSecondary} fill={favorite ? colors.danger : 'transparent'} />
+        </TouchableOpacity>
         {product.locationCity ? (
           <View style={styles.cityBadge}>
             <Text style={styles.cityText}>{product.locationCity}</Text>
@@ -90,6 +106,17 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cityBadge: {
     position: 'absolute',

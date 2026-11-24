@@ -25,6 +25,7 @@ import { colors, formatPrice } from '../theme/colors';
 import { Header } from '../components/common/Header';
 import { EscrowBadge } from '../components/common/EscrowBadge';
 import { productService } from '../services';
+import { useFavorites } from '../context/FavoritesContext';
 import { Heart, MessageCircle, ShoppingBag, ShieldCheck, MapPin } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -33,7 +34,8 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
   const productId = route.params.productId || route.params.id;
   const [product, setProduct] = useState<Product | null>(route.params.product || null);
   const [loading, setLoading] = useState(!route.params.product);
-  const [isLiked, setIsLiked] = useState(false);
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isLiked = product ? isFavorite(product.id) : false;
 
   useEffect(() => {
     if (productId) {
@@ -69,7 +71,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
         onBack={() => navigation.goBack()}
         title={product.title}
         rightAction={
-          <TouchableOpacity onPress={() => setIsLiked(!isLiked)} style={styles.likeBtn}>
+          <TouchableOpacity onPress={() => toggleFavorite(product)} style={styles.likeBtn}>
             <Heart
               size={22}
               color={isLiked ? colors.danger : colors.textPrimary}
