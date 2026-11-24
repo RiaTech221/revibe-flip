@@ -15,7 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +40,7 @@ public class CollaboratorService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final AdminService adminService;
+    private final PlatformTransactionManager transactionManager;
 
     @Transactional(readOnly = true)
     public PageResponseDto<CollaboratorDto> getCollaborators(String query, Boolean isSuspended, Pageable pageable) {
@@ -157,32 +161,44 @@ public class CollaboratorService {
         return CollaboratorDto.fromEntity(saved);
     }
 
-    @Transactional
     public void deleteCollaborator(Long id, User admin) {
-        User collaborator = findCollaboratorOrThrow(id);
-        refreshTokenService.revokeAllForUser(collaborator);
+        TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+        txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
-        adminService.logAdminAction(
-                admin,
-                "COLLABORATOR_DELETE",
-                "COLLABORATOR",
-                String.valueOf(id),
-                "Retrait du collaborateur : " + collaborator.getFullName() + " (" + collaborator.getPhone() + ")"
-        );
+        txTemplate.executeWithoutResult(status -> {
+            User collaborator = findCollaboratorOrThrow(id);
+            refreshTokenService.revokeAllForUser(collaborator);
+
+            adminService.logAdminAction(
+                    admin,
+                    "COLLABORATOR_DELETE",
+                    "COLLABORATOR",
+                    String.valueOf(id),
+                    "Retrait du collaborateur : " + collaborator.getFullName() + " (" + collaborator.getPhone() + ")"
+            );
+        });
 
         try {
-            userRepository.delete(collaborator);
-            userRepository.flush();
+            txTemplate.executeWithoutResult(status -> {
+                User collaborator = findCollaboratorOrThrow(id);
+                collaborator.setAdminPermissions(new HashSet<>());
+                userRepository.saveAndFlush(collaborator);
+                userRepository.delete(collaborator);
+                userRepository.flush();
+            });
         } catch (DataIntegrityViolationException ex) {
             log.info("Suppression physique impossible en raison de contraintes relationnelles, désactivation du collaborateur ID: {}", id);
-            collaborator.setAdminPermissions(Collections.emptySet());
-            collaborator.setRole(Role.ROLE_USER);
-            collaborator.setIsSuspended(true);
-            collaborator.setEmail(null);
-            collaborator.setFirstName("Collaborateur");
-            collaborator.setLastName("Supprimé");
-            collaborator.setPhone("DELETED-" + collaborator.getId() + "-" + UUID.randomUUID().toString().substring(0, 8));
-            userRepository.save(collaborator);
+            txTemplate.executeWithoutResult(status -> {
+                User collaborator = findCollaboratorOrThrow(id);
+                collaborator.setAdminPermissions(new HashSet<>());
+                collaborator.setRole(Role.ROLE_USER);
+                collaborator.setIsSuspended(true);
+                collaborator.setEmail(null);
+                collaborator.setFirstName("Collaborateur");
+                collaborator.setLastName("Supprimé");
+                collaborator.setPhone("DELETED-" + collaborator.getId() + "-" + UUID.randomUUID().toString().substring(0, 8));
+                userRepository.saveAndFlush(collaborator);
+            });
         }
     }
 
