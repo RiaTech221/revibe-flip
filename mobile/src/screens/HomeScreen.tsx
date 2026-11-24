@@ -63,7 +63,7 @@ export const HomeScreen = ({ navigation }: any) => {
       <Header
         title="ReVibe Sénégal"
         showSearch
-        onSearchPress={() => navigation.navigate('Catalog')}
+        onSearchPress={() => navigation.navigate('Catalogue')}
       />
 
       <ScrollView
@@ -86,7 +86,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Categories Carousel */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Catégories populaires</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Catalog')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
             <Text style={styles.seeAll}>Tout voir</Text>
           </TouchableOpacity>
         </View>
@@ -96,7 +96,7 @@ export const HomeScreen = ({ navigation }: any) => {
             <TouchableOpacity
               key={cat.id}
               style={styles.categoryCard}
-              onPress={() => navigation.navigate('Catalog', { categoryId: cat.id })}
+              onPress={() => navigation.navigate('Catalogue', { categoryId: cat.id })}
             >
               <Text style={styles.categoryName}>{cat.name}</Text>
             </TouchableOpacity>
@@ -106,7 +106,7 @@ export const HomeScreen = ({ navigation }: any) => {
         {/* Feed Section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Nouveautés récentes</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Catalog')}>
+          <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
             <Text style={styles.seeAll}>Voir le feed</Text>
           </TouchableOpacity>
         </View>
@@ -115,13 +115,22 @@ export const HomeScreen = ({ navigation }: any) => {
           <ActivityIndicator size="large" color={colors.primary} style={{ marginVertical: 32 }} />
         ) : (
           <View style={styles.grid}>
-            {products.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onPress={() => navigation.navigate('ProductDetail', { productId: p.id })}
-              />
-            ))}
+            {Array.from({ length: Math.ceil(products.length / 2) }, (_, rowIndex) => {
+              const rowProducts = products.slice(rowIndex * 2, rowIndex * 2 + 2);
+
+              return (
+                <View key={`product-row-${rowIndex}`} style={styles.gridRow}>
+                  {rowProducts.map((p) => (
+                    <ProductCard
+                      key={p.id}
+                      product={p}
+                      onPress={() => navigation.navigate('ProductDetail', { productId: p.id })}
+                    />
+                  ))}
+                  {rowProducts.length === 1 ? <View style={styles.emptyGridCell} /> : null}
+                </View>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -129,7 +138,7 @@ export const HomeScreen = ({ navigation }: any) => {
       {/* Floating Sell Button */}
       <TouchableOpacity
         style={styles.floatingButton}
-        onPress={() => navigation.navigate('SellTab')}
+        onPress={() => navigation.navigate('Vendre')}
       >
         <Plus size={24} color="#ffffff" />
         <Text style={styles.floatingButtonText}>Vendre un article</Text>
@@ -211,10 +220,15 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     paddingHorizontal: 10,
     paddingBottom: 80,
+  },
+  gridRow: {
+    flexDirection: 'row',
+  },
+  emptyGridCell: {
+    flex: 1,
+    margin: 6,
   },
   floatingButton: {
     position: 'absolute',

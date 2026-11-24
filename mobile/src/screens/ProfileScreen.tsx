@@ -97,7 +97,7 @@ export const ProfileScreen = ({ navigation }: any) => {
         <ProfileMenuItem
           icon={<Heart size={20} color="#EC4899" />}
           label="Mes Favoris"
-          onPress={() => navigation.navigate('Catalog')}
+          onPress={() => navigation.navigate('Favorites')}
         />
 
         {/* Menu Section: Paramètres & Aide */}

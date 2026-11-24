@@ -13,6 +13,8 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
   ActivityIndicator,
   ScrollView,
@@ -125,7 +127,16 @@ export const RegisterScreen = ({ navigation }: any) => {
         title={isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
       />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          showsVerticalScrollIndicator={false}
+        >
         {!isOtpStep ? (
           <>
             <View style={styles.header}>
@@ -227,7 +238,8 @@ export const RegisterScreen = ({ navigation }: any) => {
             </TouchableOpacity>
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -240,6 +252,9 @@ const styles = StyleSheet.create({
   container: {
     padding: 24,
     paddingBottom: 40,
+  },
+  keyboardArea: {
+    flex: 1,
   },
   header: {
     marginBottom: 24,
