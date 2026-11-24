@@ -39,7 +39,7 @@ jobs:
         working-directory: backend
         run: |
           chmod +x mvnw
-          ./mvnw clean package -Pprod -DskipTests
+          mvn clean package -Pprod -DskipTests || ./mvnw clean package -Pprod -DskipTests
 
       - name: Archivage de l'artefact JAR
         uses: actions/upload-artifact@v4

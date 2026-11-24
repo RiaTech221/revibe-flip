@@ -52,7 +52,7 @@ jobs:
 
       - name: Compilation et Tests Unitaires / Intégration
         working-directory: backend
-        run: ./mvnw clean test
+        run: mvn clean test || ./mvnw clean test
 
   # ============================================================================
   # 2. FRONTEND - React 18 / TypeScript / Vite
