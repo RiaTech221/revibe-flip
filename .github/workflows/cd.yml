@@ -35,11 +35,14 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Installation de Maven 3.9
+        run: sudo apt-get install -y maven
+
       - name: Build Backend Executable JAR (Spring Boot - Profil Prod)
         working-directory: backend
         run: |
           chmod +x mvnw
-          mvn clean package -Pprod -DskipTests || ./mvnw clean package -Pprod -DskipTests
+          mvn clean package -Pprod -DskipTests
 
       - name: Archivage de l'artefact JAR
         uses: actions/upload-artifact@v4

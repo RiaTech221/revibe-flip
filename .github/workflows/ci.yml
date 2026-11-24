@@ -47,12 +47,15 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Installation de Maven 3.9
+        run: sudo apt-get install -y maven
+
       - name: Droits d'exécution sur le Maven Wrapper
         run: chmod +x backend/mvnw
 
       - name: Compilation et Tests Unitaires / Intégration
         working-directory: backend
-        run: mvn clean test || ./mvnw clean test
+        run: mvn clean test
 
   # ============================================================================
   # 2. FRONTEND - React 18 / TypeScript / Vite
