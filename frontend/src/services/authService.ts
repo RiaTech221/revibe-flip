@@ -9,7 +9,7 @@
  */
 
 import api, { turnstileConfig } from './httpClient';
-import { User } from '../types';
+import { PersonalDashboard, User } from '../types';
 
 /**
  * Service d'authentification et gestion des sessions utilisateurs (JWT, OTP, Profil).
@@ -33,6 +33,14 @@ export const authApi = {
 };
 
 export const userApi = {
+  getPersonalDashboard: (params?: {
+    purchasesPage?: number;
+    salesPage?: number;
+    listingsPage?: number;
+    reviewsPage?: number;
+    size?: number;
+  }) =>
+    api.get<{ success: boolean; data: PersonalDashboard }>('/users/me/dashboard', { params }),
   updateProfile: (data: Partial<User>) =>
     api.put<{ success: boolean; data: User; message?: string }>('/users/profile', data),
   uploadProfilePicture: (file: File) => {
