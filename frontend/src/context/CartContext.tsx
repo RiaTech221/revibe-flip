@@ -155,9 +155,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
               seller: {
                 id: cartData.sellerId || i.sellerId,
                 fullName: cartData.sellerName || i.sellerName || 'Vendeur ReVibe',
-                phone: '',
+                isVerified: false,
+                rating: 0,
+                reviewCount: 0,
+                trustScore: 0,
               },
-            } as Product,
+            } as unknown as Product,
             quantity: 1,
           }));
           setItems(mappedItems);
@@ -199,7 +202,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const itemSellerId = product.seller?.id ? Number(product.seller.id) : null;
-    const itemSellerName = product.seller?.fullName || product.seller?.firstName || 'Ce vendeur';
+    const itemSellerName = product.seller?.fullName || 'Ce vendeur';
 
     // 4. Règle seconde main : rejet doublon (quantité = 1 stricte)
     const alreadyInCart = items.some((item) => item.product.id === product.id);

@@ -2,7 +2,9 @@ package com.revibeflip.config;
 
 import com.revibeflip.security.CustomUserDetailsService;
 import com.revibeflip.security.JwtAuthenticationFilter;
+import com.revibeflip.security.PathNormalizationFilter;
 import com.revibeflip.security.RateLimitFilter;
+import com.revibeflip.security.TurnstileFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -50,11 +53,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final PathNormalizationFilter pathNormalizationFilter;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final TurnstileFilter turnstileFilter;
     private final CustomUserDetailsService userDetailsService;
 
-    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}")
     private String allowedOrigins;
 
     @Bean
@@ -69,7 +74,7 @@ public class SecurityConfig {
                                 .includeSubDomains(true)
                                 .maxAgeInSeconds(31536000))
                         .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"))
+                                .policyDirectives("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://res.cloudinary.com https:; connect-src 'self' wss: https:; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"))
                         .referrerPolicy(ref -> ref.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                         .permissionsPolicyHeader(perm -> perm.policy("camera=(), microphone=(), geolocation=()"))
                 )
@@ -87,6 +92,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/verify-otp",
+                                "/api/auth/skip-otp",
                                 "/api/auth/resend-otp",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
@@ -115,13 +121,15 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/ws/**"
                         ).permitAll()
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Admin endpoints (SEC-13 & US-36 : normalisation et protection des variantes)
+                        .requestMatchers("/api/admin/**", "/api/v1/admin/**", "/admin/**").hasAnyRole("ADMIN", "COLLABORATOR")
                         // Any other endpoint requires authentication
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(pathNormalizationFilter, CorsFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(turnstileFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -136,7 +144,7 @@ public class SecurityConfig {
                 .collect(Collectors.toList());
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "X-Turnstile-Token"));
         config.setAllowCredentials(true);
         config.setExposedHeaders(List.of("Authorization"));
 

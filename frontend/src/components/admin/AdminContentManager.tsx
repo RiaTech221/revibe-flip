@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { adminCmsApi } from '../../services/api';
 import { sanitizeHtml } from '../../utils/sanitizeHtml';
+import { ConfirmModal } from '../common/ConfirmModal';
 import {
   CmsPage,
   PageVersion,
@@ -64,6 +65,15 @@ export const AdminContentManager: React.FC = () => {
     setErrorMessage(msg);
     setTimeout(() => setErrorMessage(null), 5000);
   };
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void> | void;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // ==========================================
   // 1. ÉTAT : PAGES CMS
@@ -170,31 +180,30 @@ export const AdminContentManager: React.FC = () => {
     }
   };
 
-  const handleDeletePage = async (page: CmsPage) => {
+  const handleDeletePage = (page: CmsPage) => {
     if (page.isSystemPage) {
-      alert("Cette page légale système (CGU, Confidentialité, Mentions Légales) est essentielle et ne peut pas être supprimée.");
+      showError("Cette page légale système (CGU, Confidentialité, Mentions Légales) est essentielle et ne peut pas être supprimée.");
       return;
     }
 
-    let force = false;
-    if (page.showInFooter) {
-      if (!window.confirm(`⚠️ Attention : La page "${page.title}" est actuellement affichée dans le footer public. Voulez-vous vraiment la supprimer ?`)) {
-        return;
-      }
-      force = true;
-    } else {
-      if (!window.confirm(`Confirmez-vous la suppression définitive de la page "${page.title}" ?`)) {
-        return;
-      }
-    }
-
-    try {
-      await adminCmsApi.deletePage(page.id, force);
-      showToast('Page supprimée avec succès.');
-      fetchPages();
-    } catch (err: any) {
-      showError(err.response?.data?.message || 'Erreur lors de la suppression.');
-    }
+    const force = Boolean(page.showInFooter);
+    setConfirmDialog({
+      title: force ? 'Supprimer une page affichée dans le footer ?' : 'Supprimer cette page ?',
+      message: force
+        ? `Attention : la page « ${page.title} » est actuellement affichée dans le footer public. Voulez-vous vraiment la supprimer définitivement ?`
+        : `Confirmez-vous la suppression définitive de la page « ${page.title} » ?`,
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminCmsApi.deletePage(page.id, force);
+          showToast('Page supprimée avec succès.');
+          fetchPages();
+        } catch (err: any) {
+          showError(err.response?.data?.message || 'Erreur lors de la suppression.');
+        }
+      },
+    });
   };
 
   const handleViewVersions = async (page: CmsPage) => {
@@ -211,20 +220,26 @@ export const AdminContentManager: React.FC = () => {
     }
   };
 
-  const handleRestoreVersion = async (versionNumber: number) => {
+  const handleRestoreVersion = (versionNumber: number) => {
     if (!currentVersionPage) return;
-    if (!window.confirm(`Restaurer le contenu de la version ${versionNumber} pour la page "${currentVersionPage.title}" ? Une nouvelle version de sauvegarde sera créée.`)) {
-      return;
-    }
-
-    try {
-      await adminCmsApi.restoreVersion(currentVersionPage.id, versionNumber);
-      showToast(`Version ${versionNumber} restaurée avec succès.`);
-      setIsVersionModalOpen(false);
-      fetchPages();
-    } catch (err: any) {
-      showError(err.response?.data?.message || 'Erreur lors de la restauration.');
-    }
+    const pageId = currentVersionPage.id;
+    const pageTitle = currentVersionPage.title;
+    setConfirmDialog({
+      title: `Restaurer la version ${versionNumber} ?`,
+      message: `Voulez-vous restaurer le contenu de la version ${versionNumber} pour la page « ${pageTitle} » ? Une nouvelle version de sauvegarde sera créée.`,
+      confirmLabel: 'Restaurer',
+      variant: 'warning',
+      onConfirm: async () => {
+        try {
+          await adminCmsApi.restoreVersion(pageId, versionNumber);
+          showToast(`Version ${versionNumber} restaurée avec succès.`);
+          setIsVersionModalOpen(false);
+          fetchPages();
+        } catch (err: any) {
+          showError(err.response?.data?.message || 'Erreur lors de la restauration.');
+        }
+      },
+    });
   };
 
   // Helper pour insérer du balisage dans l'éditeur
@@ -290,15 +305,22 @@ export const AdminContentManager: React.FC = () => {
     }
   };
 
-  const handleDeleteFaq = async (id: number) => {
-    if (!window.confirm('Supprimer cette question FAQ ?')) return;
-    try {
-      await adminCmsApi.deleteFaq(id);
-      showToast('Question supprimée.');
-      fetchFaq();
-    } catch (err: any) {
-      showError(err.response?.data?.message || 'Erreur suppression.');
-    }
+  const handleDeleteFaq = (id: number) => {
+    setConfirmDialog({
+      title: 'Supprimer cette question FAQ ?',
+      message: 'Cette question et sa réponse seront définitivement supprimées de la FAQ publique.',
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminCmsApi.deleteFaq(id);
+          showToast('Question supprimée.');
+          fetchFaq();
+        } catch (err: any) {
+          showError(err.response?.data?.message || 'Erreur suppression.');
+        }
+      },
+    });
   };
 
   // ==========================================
@@ -458,17 +480,22 @@ export const AdminContentManager: React.FC = () => {
     }
   };
 
-  const handleDeleteMedia = async (id: number) => {
-    if (!window.confirm('Supprimer ce fichier média ? Les pages utilisant ce lien afficheront une image brisée.')) {
-      return;
-    }
-    try {
-      await adminCmsApi.deleteMedia(id);
-      showToast('Média supprimé.');
-      fetchMedia();
-    } catch (err: any) {
-      showError(err.response?.data?.message || 'Erreur suppression média.');
-    }
+  const handleDeleteMedia = (id: number) => {
+    setConfirmDialog({
+      title: 'Supprimer ce fichier média ?',
+      message: 'Les pages utilisant ce lien afficheront une image brisée. Cette action est irréversible.',
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminCmsApi.deleteMedia(id);
+          showToast('Média supprimé.');
+          fetchMedia();
+        } catch (err: any) {
+          showError(err.response?.data?.message || 'Erreur suppression média.');
+        }
+      },
+    });
   };
 
   const handleCopyLink = (url: string) => {
@@ -1618,6 +1645,28 @@ export const AdminContentManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+        onCancel={() => {
+          if (!confirmLoading) setConfirmDialog(null);
+        }}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          setConfirmLoading(true);
+          try {
+            await confirmDialog.onConfirm();
+          } finally {
+            setConfirmLoading(false);
+            setConfirmDialog(null);
+          }
+        }}
+      />
     </div>
   );
 };

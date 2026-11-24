@@ -18,6 +18,7 @@ import { OrderEscrowCard } from '../components/order/OrderEscrowCard';
 import { OrderDeliveryCard } from '../components/order/OrderDeliveryCard';
 import { OrderSummaryCard } from '../components/order/OrderSummaryCard';
 import { OrderReviewModal } from '../components/order/OrderReviewModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +29,7 @@ export const OrderDetailPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [confirmingReceipt, setConfirmingReceipt] = useState(false);
+  const [isReceiptConfirmOpen, setIsReceiptConfirmOpen] = useState(false);
 
   // Review modal state
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -67,15 +69,18 @@ export const OrderDetailPage: React.FC = () => {
     fetchOrder();
   }, [id]);
 
-  const handleConfirmReceipt = async () => {
+  const handleConfirmReceipt = () => {
     if (!order) return;
-    if (!confirm("Avez-vous bien reçu l'article conforme ? Cette action débloquera les fonds sous séquestre au vendeur.")) {
-      return;
-    }
+    setIsReceiptConfirmOpen(true);
+  };
+
+  const confirmReceiptAction = async () => {
+    if (!order) return;
     try {
       setConfirmingReceipt(true);
       await orderApi.confirmReceipt(order.id);
       fetchOrder();
+      setIsReceiptConfirmOpen(false);
       setIsReviewModalOpen(true);
     } catch (err: any) {
       alert(err.response?.data?.message || "Erreur lors de la confirmation de réception.");
@@ -187,6 +192,19 @@ export const OrderDetailPage: React.FC = () => {
         reviewSubmitting={reviewSubmitting}
         reviewSubmitted={reviewSubmitted}
         onSubmit={handleSubmitReview}
+      />
+
+      <ConfirmModal
+        isOpen={isReceiptConfirmOpen}
+        title="Confirmer la réception conforme ?"
+        message="Avez-vous bien reçu l'article conforme à la description ? Cette action libérera définitivement les fonds sous séquestre au vendeur."
+        confirmLabel="Confirmer la réception"
+        variant="primary"
+        loading={confirmingReceipt}
+        onCancel={() => {
+          if (!confirmingReceipt) setIsReceiptConfirmOpen(false);
+        }}
+        onConfirm={confirmReceiptAction}
       />
     </div>
   );

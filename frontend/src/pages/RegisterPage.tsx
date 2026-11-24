@@ -28,12 +28,12 @@ export const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleRegisterSubmit = async (formData: any) => {
+  const handleRegisterSubmit = async (formData: any, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
 
     try {
-      await authApi.register(formData);
+      await authApi.register(formData, turnstileToken);
       setPhoneForOtp(formData.phone);
       setIsOtpStep(true);
     } catch (err: any) {
@@ -54,6 +54,21 @@ export const RegisterPage: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Code OTP invalide.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipOtp = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authApi.skipOtp(phoneForOtp);
+      const data = res.data.data;
+      login(data.token, data.user);
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Impossible de passer la vérification OTP.');
     } finally {
       setLoading(false);
     }
@@ -112,6 +127,7 @@ export const RegisterPage: React.FC = () => {
               error={error}
               onSubmit={handleVerifyOtpSubmit}
               onBack={() => setIsOtpStep(false)}
+              onSkip={handleSkipOtp}
             />
           )}
         </div>

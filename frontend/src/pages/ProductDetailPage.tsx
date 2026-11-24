@@ -14,6 +14,7 @@ import { Product, ReportReason } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { EscrowShield } from '../components/EscrowShield';
+import { formatImageUrl } from '../utils/imageUrl';
 import {
   ShieldCheck,
   MapPin,
@@ -95,7 +96,7 @@ export const ProductDetailPage: React.FC = () => {
     try {
       const res = await chatApi.startConversation({
         productId: product.id,
-        initialMessage: `Bonjour ! Cet article "${product.title}" est-il toujours disponible ?`,
+        initialMessage: 'Je suis intéressé',
       });
       navigate(`/messages?conversationId=${res.data.data.id}`);
     } catch (err) {
@@ -166,8 +167,8 @@ export const ProductDetailPage: React.FC = () => {
       {/* Navigation retour & Catégorie moderne */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-all shadow-2xs hover:border-purple-300"
+          onClick={() => navigate('/catalog')}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-100 border border-gray-200 text-xs font-bold text-gray-700 transition-all shadow-2xs hover:border-purple-300 cursor-pointer"
         >
           <ChevronLeft className="w-3.5 h-3.5 text-purple-700" />
           <span>Retour</span>
@@ -195,7 +196,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-7 space-y-4">
           <div className="relative aspect-[4/5] sm:aspect-square bg-slate-100 rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
             <img
-              src={images[activeImageIndex]}
+              src={formatImageUrl(images[activeImageIndex])}
               alt={product.title}
               className="w-full h-full object-cover"
             />
@@ -244,7 +245,7 @@ export const ProductDetailPage: React.FC = () => {
                     idx === activeImageIndex ? 'border-purple-700 shadow-sm scale-105' : 'border-slate-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <img src={formatImageUrl(img)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -351,7 +352,7 @@ export const ProductDetailPage: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
-                  src={product.seller?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller?.fullName || 'Vendeur')}&background=9333ea&color=fff`}
+                  src={product.seller?.profilePicture ? formatImageUrl(product.seller.profilePicture) : `https://ui-avatars.com/api/?name=${encodeURIComponent(product.seller?.fullName || 'Vendeur')}&background=9333ea&color=fff`}
                   alt={product.seller?.fullName}
                   className="w-12 h-12 rounded-full object-cover border border-purple-100 shadow-sm"
                 />
@@ -366,12 +367,14 @@ export const ProductDetailPage: React.FC = () => {
               </div>
 
               {/* Trust badge */}
-              <div className="text-right">
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Score {Math.round(product.seller?.trustScore || 100)}%
-                </span>
-              </div>
+              {product.seller?.trustScore != null && (
+                <div className="text-right">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    Score {Math.round(product.seller.trustScore)}%
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">

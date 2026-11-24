@@ -24,6 +24,9 @@ public class MessageDto {
     private String content;
     private String messageType;
     private String imageUrl;
+    private Long productId;
+    private String productTitle;
+    private String productImageUrl;
     private ChatOfferDto offer;
     private Boolean isRead;
     private LocalDateTime sentAt;
@@ -39,6 +42,9 @@ public class MessageDto {
                 .content(message.getContent())
                 .messageType(message.getMessageType() != null ? message.getMessageType().name() : "TEXT")
                 .imageUrl(message.getImageUrl())
+                .productId(message.getProductId())
+                .productTitle(message.getProductTitle())
+                .productImageUrl(message.getProductImageUrl())
                 .offer(message.getOffer() != null ? ChatOfferDto.fromEntity(message.getOffer()) : null)
                 .isRead(message.getIsRead())
                 .sentAt(message.getSentAt())

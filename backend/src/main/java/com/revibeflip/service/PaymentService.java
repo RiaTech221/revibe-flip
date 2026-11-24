@@ -47,6 +47,7 @@ public class PaymentService {
     private final PaymentGateway paymentGateway;
     private final PayTechProperties payTechProperties;
     private final LedgerService ledgerService;
+    private final EscrowReleaseOperations escrowReleaseOperations;
 
     /**
      * Initie un paiement PayTech pour une commande.
@@ -95,6 +96,9 @@ public class PaymentService {
         OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.PAID_ESCROW_LOCKED);
 
         String itemName = order.getProduct() != null ? order.getProduct().getTitle() : "Commande " + order.getOrderNumber();
+        String customerPhone = (request.getPhoneNumber() != null && !request.getPhoneNumber().isBlank())
+                ? request.getPhoneNumber()
+                : buyer.getPhone();
         PaymentGateway.PaymentInitiationResult result = paymentGateway.initiatePayment(
                 new PaymentGateway.PaymentInitiationRequest(
                         order.getOrderNumber(),
@@ -103,7 +107,9 @@ public class PaymentService {
                         order.getTotalAmount(),
                         "XOF",
                         request.getPaymentMethod(),
-                        "{\"orderId\":" + order.getId() + "}"
+                        "{\"orderId\":" + order.getId() + "}",
+                        customerPhone,
+                        buyer.getFullName()
                 )
         );
 
@@ -259,7 +265,7 @@ public class PaymentService {
 
         OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.PAID_ESCROW_LOCKED);
 
-        // Verrou pessimiste sur les articles pour empêcher toute double vente concurrente
+        // Verrou atomique en base anti-double-vente (SEC-09)
         lockAndMarkProductsSold(order);
 
         payment.setStatus(PaymentStatus.SUCCESS);
@@ -301,80 +307,156 @@ public class PaymentService {
     }
 
     /**
-     * Déclenche la libération des fonds nets au vendeur (avec idempotence et blocage en cas de litige).
+     * Déclenche la libération du séquestre vendeur selon le protocole sécurisé en 3 temps (SEC-03).
+     *
+     * <p>Règles de sécurité :</p>
+     * <ul>
+     *   <li>Ce point d'entrée n'est volontairement <b>PAS</b> annoté {@code @Transactional} afin que l'appel HTTP externe
+     *       ne maintienne aucun verrou de base de données ni de connexion de pool ouverte.</li>
+     *   <li>Temps 1 (en transaction) : Verrouille la commande et son paiement, valide les conditions (DELIVERED, pas de litige,
+     *       payoutStatus NONE, téléphone présent), passe la commande à COMPLETED, le paiement à PROCESSING avec son identifiant
+     *       unique {@code PAYOUT-{UUID}}, et valide le commit.</li>
+     *   <li>Temps 2 (HORS transaction) : Appel au prestataire PayTech avec l'identifiant persisté. Toute exception est gérée comme un refus.</li>
+     *   <li>Temps 3 (en transaction sous verrou) : Si toujours PROCESSING : si accepté -> séquestre RELEASED_TO_SELLER et grand livre ;
+     *       si refusé -> MANUAL_REQUIRED sans écriture grand livre. Si déjà COMPLETED (IPN reçu avant) -> ne pas écraser COMPLETED,
+     *       séquestre RELEASED_TO_SELLER et grand livre idempotent.</li>
+     * </ul>
+     *
+     * @param orderId Identifiant de la commande dont le séquestre doit être libéré.
      */
-    @Transactional
-    public void releaseFundsToSeller(Order order) {
-        if (order.getStatus() == OrderStatus.DISPUTED) {
-            throw new IllegalStateException("Un litige est ouvert sur cette commande : la libération des fonds est bloquée.");
-        }
-
-        Payment payment = paymentRepository.findByOrderId(order.getId()).orElse(null);
-        if (payment == null) {
+    public void releaseFundsToSeller(Long orderId) {
+        if (orderId == null) {
             return;
         }
 
-        if (payment.getEscrowStatus() == EscrowStatus.RELEASED_TO_SELLER
-                && (payment.getPayoutStatus() == PayoutStatus.COMPLETED || payment.getPayoutStatus() == PayoutStatus.PROCESSING)) {
+        // SEC-03 : Temps 1 (transactionnel) : verrouillage, contrôles et persistance préalable du statut PROCESSING
+        java.util.Optional<EscrowReleaseOperations.PayoutPreparation> prepOpt = escrowReleaseOperations.prepareAndLockPayout(orderId);
+        if (prepOpt.isEmpty()) {
             return;
         }
 
-        User seller = order.getSeller();
-        String recipientPhone = seller != null ? seller.getPhone() : null;
-        if (recipientPhone == null || recipientPhone.isBlank()) {
-            payment.setEscrowStatus(EscrowStatus.RELEASED_TO_SELLER);
-            payment.setEscrowReleasedDate(LocalDateTime.now());
-            payment.setPayoutStatus(PayoutStatus.MANUAL_REQUIRED);
-            paymentRepository.save(payment);
-            ledgerService.recordReleaseToSeller(order, payment.getTransactionReference());
-            return;
+        EscrowReleaseOperations.PayoutPreparation prep = prepOpt.get();
+
+        // SEC-03 : Temps 2 (HORS transaction) : appel HTTP externe sans verrou de base de données
+        String serviceName = mapTransferService(prep.paymentMethod());
+        PaymentGateway.TransferResult transferResult;
+        try {
+            transferResult = paymentGateway.initiateTransfer(
+                    new PaymentGateway.TransferRequest(
+                            prep.amount(),
+                            prep.recipientPhone(),
+                            serviceName,
+                            prep.payoutReference()
+                    )
+            );
+        } catch (Exception ex) {
+            log.warn("Erreur d'initiation de virement pour ref={}: {}",
+                    sanitizeAndTruncateRef(prep.payoutReference()), ex.getMessage());
+            transferResult = new PaymentGateway.TransferResult(false, prep.payoutReference(), "FAILED", ex.getMessage());
         }
 
-        payment.setEscrowStatus(EscrowStatus.RELEASED_TO_SELLER);
-        payment.setEscrowReleasedDate(LocalDateTime.now());
-        payment.setPayoutRecipientPhone(recipientPhone);
-
-        String externalId = "PAYOUT-" + order.getOrderNumber() + "-" + UUID.randomUUID().toString().substring(0, 8);
-        String serviceName = mapTransferService(payment.getPaymentMethod());
-        PaymentGateway.TransferResult transferResult = paymentGateway.initiateTransfer(
-                new PaymentGateway.TransferRequest(
-                        order.getSellerPayout(),
-                        recipientPhone,
-                        serviceName,
-                        externalId
-                )
-        );
-
-        payment.setPayoutReference(transferResult.transferReference());
-        if (transferResult.accepted()) {
-            payment.setPayoutStatus(PayoutStatus.PROCESSING);
-        } else {
-            payment.setPayoutStatus(PayoutStatus.MANUAL_REQUIRED);
-        }
-        paymentRepository.save(payment);
-
-        ledgerService.recordReleaseToSeller(order, payment.getTransactionReference());
+        // SEC-03 : Temps 3 (transactionnel) : finalisation du résultat sous verrou sans écraser payoutReference
+        escrowReleaseOperations.finalizePayout(prep.orderId(), prep.payoutReference(), transferResult.accepted());
     }
 
+    /**
+     * Surcharge acceptant l'entité Order pour compatibilité avec le reste de l'application.
+     */
+    public void releaseFundsToSeller(Order order) {
+        if (order != null && order.getId() != null) {
+            releaseFundsToSeller(order.getId());
+        }
+    }
+
+    /**
+     * Traite le retour asynchrone (IPN) de virement vendeur transmis par PayTech.
+     *
+     * <p>Règle : Seul un virement à l'état {@link PayoutStatus#PROCESSING} peut changer d'état par ce canal.
+     * Les virements dans un état initial (PENDING), d'intervention (MANUAL_REQUIRED) ou terminaux (COMPLETED, FAILED)
+     * ne peuvent en aucun cas être modifiés via cet endpoint.
+     * <p>Pourquoi : Empêcher le contournement des blocages manuels (ex: absence de numéro ou litige),
+     * la réactivation frauduleuse d'un virement échoué et les attaques par rejeu sur des virements déjà clos.
+     * Hypothèse de travail (à confirmer avec le prestataire) : le prestataire transmet la référence externe ainsi que l'issue finale (success/completed ou failed/canceled).
+     *
+     * @param externalId Référence externe du virement (ex: PAYOUT-RF-...)
+     * @param status Statut renvoyé par le prestataire
+     */
     @Transactional
     public void handleTransferIpn(String externalId, String status) {
         if (externalId == null || externalId.isBlank()) {
+            // SEC-02 : Ignorer les requêtes sans référence externe pour éviter les requêtes SQL invalides
+            log.warn("Transfer IPN ignoré : référence externe absente ou vide.");
             return;
         }
-        Payment payment = paymentRepository.findByPayoutReference(externalId).orElse(null);
+
+        String sanitizedRef = sanitizeAndTruncateRef(externalId);
+
+        Payment payment = paymentRepository.findByPayoutReference(externalId.trim()).orElse(null);
         if (payment == null) {
+            // SEC-02 : Tracer les références introuvables sans divulguer la référence complète dans les logs
+            log.warn("Transfer IPN ignoré : référence inconnue (ref: {}).", sanitizedRef);
             return;
         }
-        if (payment.getPayoutStatus() == PayoutStatus.COMPLETED) {
+
+        // SEC-02 : Règle d'or : seul un virement en cours (PROCESSING) est autorisé à transiter vers un état terminal
+        if (payment.getPayoutStatus() != PayoutStatus.PROCESSING) {
+            log.warn("Transfer IPN ignoré : transition interdite depuis l'état {} (ref: {}).",
+                    payment.getPayoutStatus(), sanitizedRef);
             return;
         }
-        if ("success".equalsIgnoreCase(status) || "completed".equalsIgnoreCase(status)) {
+
+        if (status == null || status.isBlank()) {
+            // SEC-02 : Un statut vide ne doit provoquer aucune transition d'état
+            log.warn("Transfer IPN ignoré : statut manquant ou vide (ref: {}).", sanitizedRef);
+            return;
+        }
+
+        // SEC-02 : Remplacement de tous les caractères de contrôle (\p{Cntrl}) pour prévenir l'injection de logs
+        String cleanStatus = status.replaceAll("[\\p{Cntrl}]", " ").trim();
+        String normalizedStatus = cleanStatus.toLowerCase();
+        boolean isSuccess = "success".equals(normalizedStatus) || "completed".equals(normalizedStatus);
+        boolean isFailed = "failed".equals(normalizedStatus) || "canceled".equals(normalizedStatus);
+
+        if (!isSuccess && !isFailed) {
+            // SEC-02 : Tronquer le statut inconnu à 32 caractères dans le journal
+            String truncatedStatus = cleanStatus.length() > 32 ? cleanStatus.substring(0, 32) + "..." : cleanStatus;
+            log.warn("Transfer IPN ignoré : statut inconnu '{}' (ref: {}).", truncatedStatus, sanitizedRef);
+            return;
+        }
+
+        if (isSuccess) {
+            // SEC-02 : Clôture du versement vendeur avec horodatage de validation
             payment.setPayoutStatus(PayoutStatus.COMPLETED);
             payment.setPayoutDate(LocalDateTime.now());
-        } else if ("failed".equalsIgnoreCase(status) || "canceled".equalsIgnoreCase(status)) {
+            paymentRepository.save(payment);
+            log.info("Virement vendeur confirmé avec succès via IPN (ref: {}).", sanitizedRef);
+
+            // Point d'intégration : notifier le vendeur du succès du versement des fonds (SMS / notification in-app)
+        } else {
+            // SEC-02 : Enregistrement de l'échec de versement sans modifier le statut de la commande
             payment.setPayoutStatus(PayoutStatus.FAILED);
+            paymentRepository.save(payment);
+            log.warn("Virement vendeur marqué comme échoué via IPN (ref: {}).", sanitizedRef);
+
+            // Point d'intégration : alerter l'administrateur ou basculer en MANUAL_REQUIRED pour reprise du virement
         }
-        paymentRepository.save(payment);
+
+        // Point d'intégration : rapprochement périodique des virements restés bloqués en PROCESSING via l'API du prestataire si elle existe (à confirmer dans sa documentation)
+    }
+
+    /**
+     * Nettoie et tronque une référence externe pour les journaux d'audit.
+     * Conserve les 8 derniers caractères précédés de « ... » afin d'identifier la transaction
+     * sans exposer l'identifiant complet et sans permettre d'injection de logs (CRLF).
+     *
+     * @param ref Référence externe brute
+     * @return Référence assainie et tronquée (ex: "...abcd1234") ou "N/A"
+     */
+    public static String sanitizeAndTruncateRef(String ref) {
+        if (ref == null) return "N/A";
+        // SEC-02 : Remplacement de tous les caractères de contrôle (\p{Cntrl}) pour bloquer l'injection de log (CRLF)
+        String sanitized = ref.replaceAll("[\\p{Cntrl}]", " ").trim();
+        return sanitized.length() > 8 ? "..." + sanitized.substring(sanitized.length() - 8) : sanitized;
     }
 
     @Transactional

@@ -7,7 +7,7 @@
  *  * - Lien direct vers la création de compte pour les nouveaux utilisateurs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/authService';
@@ -19,19 +19,25 @@ import { AuthSplitHero, AuthLoginForm } from '../components/auth';
  * Architecture modulaire encapsulée dans `components/auth/`.
  */
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, isAdmin, isStaff } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(isStaff ? '/admin' : '/', { replace: true });
+    }
+  }, [isAuthenticated, isStaff, navigate]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLoginSubmit = async (identifier: string, password: string) => {
+  const handleLoginSubmit = async (identifier: string, password: string, turnstileToken?: string) => {
     setError(null);
     setLoading(true);
 
     try {
-      const res = await authApi.login({ identifier, password });
+      const res = await authApi.login({ identifier, password }, turnstileToken);
       const data = res.data.data;
 
       if (data.token) {
@@ -40,14 +46,14 @@ export const LoginPage: React.FC = () => {
         const redirectParam = searchParams.get('redirect');
         const from = (location.state as any)?.from?.pathname;
 
-        if (data.user.role === 'ROLE_ADMIN') {
-          navigate('/admin');
+        if (data.user.role === 'ROLE_ADMIN' || data.user.role === 'ROLE_COLLABORATOR') {
+          navigate('/admin', { replace: true });
         } else if (redirectParam) {
-          navigate(redirectParam);
+          navigate(redirectParam, { replace: true });
         } else if (from) {
-          navigate(from);
+          navigate(from, { replace: true });
         } else {
-          navigate('/');
+          navigate('/', { replace: true });
         }
       } else {
         navigate(`/verify-otp?phone=${encodeURIComponent(identifier)}`);

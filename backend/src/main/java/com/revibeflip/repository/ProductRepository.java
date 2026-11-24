@@ -26,12 +26,21 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     java.util.Optional<Product> findByIdForUpdate(@Param("id") Long id);
 
     @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.status = com.revibeflip.entity.enums.ProductStatus.RESERVED WHERE p.id = :id AND p.status = com.revibeflip.entity.enums.ProductStatus.ACTIVE")
+    int reserveProductIfActive(@Param("id") Long id);
+
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
     @Query("UPDATE Product p SET p.status = com.revibeflip.entity.enums.ProductStatus.SOLD WHERE p.id = :id AND p.status <> com.revibeflip.entity.enums.ProductStatus.SOLD")
     int markSoldIfNotSold(@Param("id") Long id);
 
     List<Product> findByStatusOrderByCreatedAtDesc(ProductStatus status);
 
-    @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' AND (" +
+    @Query("SELECT p FROM Product p WHERE p.status = 'ACTIVE' AND " +
+           "NOT EXISTS (SELECT 1 FROM Order o WHERE o.product.id = p.id AND o.status IN (" +
+           "com.revibeflip.entity.enums.OrderStatus.PAID_ESCROW_LOCKED, " +
+           "com.revibeflip.entity.enums.OrderStatus.SHIPPED, " +
+           "com.revibeflip.entity.enums.OrderStatus.DELIVERED, " +
+           "com.revibeflip.entity.enums.OrderStatus.COMPLETED)) AND (" +
            "(:categoryId IS NULL OR p.category.id = :categoryId) AND " +
            "(:condition IS NULL OR p.condition = :condition) AND " +
            "(:minPrice IS NULL OR p.price >= :minPrice) AND " +

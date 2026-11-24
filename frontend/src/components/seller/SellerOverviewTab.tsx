@@ -19,11 +19,7 @@ import {
   SellerFinanceSummaryCard,
   SellerMetricCard,
   SellerSalesChart,
-  SellerOrderFunnelChart,
   SellerTopAndStagnantListings,
-  SellerRatingBreakdown,
-  SellerQuickLists,
-  SellerContextualTips,
 } from './dashboard';
 
 interface SellerOverviewTabProps {
@@ -168,54 +164,24 @@ export const SellerOverviewTab: React.FC<SellerOverviewTabProps> = ({
         />
       </div>
 
-      {/* 6. Conseils contextuels (sans IA, règles simples) */}
-      <SellerContextualTips
-        tips={dashboard?.contextualTips}
-        onNavigateTab={onNavigateTab}
-        disabled={isSuspended}
-      />
-
-      {/* 7. Graphique des ventes sur la période */}
-      <SellerSalesChart
-        data={dashboard?.salesTrends}
-        formatPrice={formatPrice}
-      />
-
-      {/* 8. Entonnoir des commandes + Top & Stagnant annonces */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SellerOrderFunnelChart
-          funnel={dashboard?.orderFunnel}
-          onNavigateTab={onNavigateTab}
-          disabled={isSuspended}
-        />
-
-        <SellerTopAndStagnantListings
-          topProducts={dashboard?.topProducts}
-          stagnantProducts={dashboard?.stagnantProducts}
-          formatPrice={formatPrice}
-          onNavigateTab={onNavigateTab}
-          disabled={isSuspended}
-        />
+      {/* 7. Activité & Performance des annonces côte à côte (compact, 1 écran) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div className="lg:col-span-7">
+          <SellerSalesChart
+            data={dashboard?.salesTrends}
+            formatPrice={formatPrice}
+          />
+        </div>
+        <div className="lg:col-span-5">
+          <SellerTopAndStagnantListings
+            topProducts={dashboard?.topProducts}
+            stagnantProducts={dashboard?.stagnantProducts}
+            formatPrice={formatPrice}
+            onNavigateTab={onNavigateTab}
+            disabled={isSuspended}
+          />
+        </div>
       </div>
-
-      {/* 9. Répartition des avis par étoiles */}
-      <SellerRatingBreakdown
-        rating={dashboard?.rating}
-        onNavigateTab={onNavigateTab}
-        disabled={isSuspended}
-      />
-
-      {/* 10. Listes courtes (5 dernières commandes à préparer, offres, avis, notifications) */}
-      <SellerQuickLists
-        ordersToPrepare={dashboard?.ordersToPrepare}
-        activeOffers={dashboard?.activeOffers}
-        recentReviews={dashboard?.recentReviews}
-        recentNotifications={dashboard?.recentNotifications}
-        formatPrice={formatPrice}
-        onNavigateTab={onNavigateTab}
-        onQuickShip={!isSuspended ? onAcceptOrder : undefined}
-        disabled={isSuspended}
-      />
     </div>
   );
 };

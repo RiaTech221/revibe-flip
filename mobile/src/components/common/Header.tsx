@@ -67,6 +67,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 0,
   },
   backButton: {
     marginRight: 12,
@@ -76,6 +77,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: colors.text,
+    flexShrink: 1,
+    minWidth: 0,
   },
   logoRow: {
     flexDirection: 'row',
@@ -88,5 +91,7 @@ const styles = StyleSheet.create({
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
+    marginLeft: 8,
   },
 });

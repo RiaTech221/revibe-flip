@@ -1,7 +1,7 @@
 # Documentation Complète de Bout en Bout — ReVibe FliP
 
 > **Plateforme sénégalaise et sous-régionale de seconde main & mode circulaire**
-> *Stack technique : Spring Boot 3 (Java 17) • PostgreSQL • React 18 (TypeScript, Vite, Tailwind CSS) • WebSocket • Séquestre Mobile Money (Wave, Orange Money)*
+> *Stack technique : Spring Boot 3 (Java 21) • MySQL 8.0 • React 18 (TypeScript, Vite, Tailwind CSS) • WebSocket STOMP • PayTech (Wave, Orange Money, Free Money)*
 
 ---
 
@@ -26,7 +26,7 @@
 ReVibe FliP est une marketplace C2C/B2C dédiée à la mode de seconde main en Afrique de l'Ouest (Sénégal en tête). Son architecture repose sur :
 - **Un Backend Spring Boot 3 robuste** : API RESTful sécurisée par JWT, WebSocket STOMP pour la messagerie instantanée, services d'escrow (paiement sous séquestre avec libération conditionnelle), et gestion CMS/Back-office.
 - **Un Frontend React 18 / Vite ultra-rapide** : Typage TypeScript strict, design system Tailwind CSS inspiré des leaders internationaux (Vinted, Vestiaire Collective), panier mono-vendeur sécurisé, et parcours d'achat sans friction.
-- **Paiements Locaux** : Intégration simulée et prête pour Wave et Orange Money avec frais de protection sous séquestre (1%).
+- **Paiements Locaux (PayTech)** : Intégration serveur réelle via **PayTech** (`Wave`, `Orange Money`, `Free Money`) avec vérification IPN SHA-256, contrôle de statut serveur, grand livre immuable (`ledger_entries`) et frais de validation (1%).
 
 ```mermaid
 flowchart LR
@@ -46,10 +46,10 @@ flowchart LR
     end
 
     subgraph Database ["Base de Données"]
-        PG[("PostgreSQL")]
+        DB[("MySQL 8.0")]
     end
 
-    UI --> Context --> Axios --> SecFilter --> Controllers --> Services --> Repos --> PG
+    UI --> Context --> Axios --> SecFilter --> Controllers --> Services --> Repos --> DB
     UI --> WSClient --> WSHandler --> Services
 ```
 
@@ -114,7 +114,7 @@ Toutes les entités se trouvent dans `backend/src/main/java/com/revibeflip/entit
   - Intercepteur HTTP `OncePerRequestFilter`.
   - Extrait le header `Authorization: Bearer <token>`, valide la signature et peuple le `SecurityContextHolder`.
 - [`CustomUserDetailsService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/security/CustomUserDetailsService.java) :
-  - Charge l'utilisateur depuis PostgreSQL par son identifiant unique (téléphone ou email).
+  - Charge l'utilisateur depuis MySQL (ou H2 en profil `dev`) par son identifiant unique (téléphone ou email).
 - [`WebSocketAuthInterceptor.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/security/WebSocketAuthInterceptor.java) :
   - Intercepteur de handshake WebSocket pour authentifier les sessions STOMP via token JWT.
 
@@ -153,7 +153,9 @@ Situés dans `backend/src/main/java/com/revibeflip/service/` :
 - [`ProductService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/ProductService.java) : Création d'annonces, filtres multi-critères (prix min/max, ville, état, catégorie, mot-clé), incrémentation du compteur de vues, suppression logique.
 - [`CartService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/CartService.java) : Gestion du panier mono-vendeur, détection de conflits entre vendeurs, transition directe vers discussion ou commande groupée.
 - [`OrderService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/OrderService.java) : Création de la commande, calcul strict des frais de protection sous séquestre (1%), verrouillage de l'article (`RESERVED`), transition des statuts (`SHIPPED` -> `DELIVERED` -> `COMPLETED`).
-- [`PaymentService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/PaymentService.java) : Simulation & traitement des paiements Mobile Money (Wave, Orange Money). Verrouille les fonds sous séquestre (`ESCROW_LOCKED`). Libère les fonds au vendeur dès confirmation de conformité par l'acheteur (`RELEASED_TO_SELLER`).
+- [`PaymentService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/PaymentService.java) & `PayTechGateway.java` : Traitement des paiements réels via **PayTech** (`Wave`, `Orange Money`, `Free Money`), vérification IPN SHA-256, enregistrement dans le grand livre immuable (`LedgerService` / `ledger_entries`) et libération des fonds au vendeur après confirmation de réception (ou auto-confirmation planifiée par `OrderAutoConfirmScheduler`).
+- `SmsProvider.java` & `ConfigurableHttpSmsProvider.java` : Envoi réel des codes OTP SMS à 6 chiffres (`SecureRandom` haché en base) avec rate limiting et réinitialisation de mot de passe.
+- `AdminBootstrapRunner.java` : Initialisation sécurisée du premier compte administrateur en production via `REVIBE_BOOTSTRAP_ADMIN_*` (sans aucun compte par défaut).
 - [`ChatService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/ChatService.java) : Initialisation de conversation contextuelle liée à un produit, distribution des messages en direct via Spring WebSocket.
 - [`ChatOfferService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/ChatOfferService.java) : Gestion des propositions d'offres de prix et validation automatique dans le fil de discussion.
 - [`SellerService.java`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/java/com/revibeflip/service/SellerService.java) : Agrégation des métriques vendeurs (ventes terminées, fonds en attente de déblocage, note moyenne, trust score).
@@ -222,11 +224,11 @@ flowchart TD
 ```
 
 - [`HomePage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/HomePage.tsx) : Page d'accueil dynamique avec bannières promotionnelles, carrousel de catégories circulaires aérées, sélections *Coups de cœur* et *Pépites à petits prix*.
-- [`CatalogPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/CatalogPage.tsx) : Moteur de recherche et d'exploration avec tri par prix, filtres de catégories, états d'usure, et fallback automatique vers des données curatées si la base est en cours d'initialisation.
+- [`CatalogPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/CatalogPage.tsx) : Moteur de recherche et d'exploration avec tri par prix, filtres de catégories et états d'usure connecté directement à l'API backend (aucun catalogue statique fictif).
 - [`ProductDetailPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/ProductDetailPage.tsx) : Fiche produit détaillée avec carrousel photo, profil vendeur vérifié avec score de confiance, boutons d'action rapide *Acheter*, *Ajouter au panier* et *Discuter avec le vendeur*.
-- [`CheckoutPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/CheckoutPage.tsx) : **Passage en caisse sécurisé**. Formulaire d'adresse à Dakar ou en région, choix du mode de livraison (Livraison à domicile par coursier moto ou Remise en main propre gratuite), sélection Wave ou Orange Money, paiement sous séquestre immédiat.
+- [`CheckoutPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/CheckoutPage.tsx) : **Passage en caisse sécurisé**. Formulaire d'adresse à Dakar ou en région, choix du mode de livraison (Livraison à domicile par coursier moto ou Remise en main propre gratuite), sélection Wave, Orange Money ou Free Money, et redirection vers **PayTech** avec confirmation par IPN.
 - [`OrderDetailPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/OrderDetailPage.tsx) : Suivi en direct du cycle de vie de la commande et du séquestre, avec bouton de confirmation de réception pour libérer les fonds au vendeur.
-- [`MessagesPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/MessagesPage.tsx) : **Messagerie instantanée**. Gestion des discussions actives, prévisualisation de l'article négocié, formulaire d'offres de prix et simulation de réponses vendeur fluides.
+- [`MessagesPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/MessagesPage.tsx) : **Messagerie instantanée**. Gestion des discussions actives en temps réel via WebSocket STOMP authentifié par JWT, prévisualisation de l'article négocié et formulaire d'offres de prix (aucune réponse simulée).
 - [`SellPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/SellPage.tsx) : Formulaire de mise en vente d'articles (téléversement multi-photos, sélection d'état, description, prix en FCFA).
 - [`LoginPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/LoginPage.tsx) : Page de connexion moderne en split-screen (panneau de présentation sombre avec logo épuré à gauche, formulaire épuré à droite).
 - [`RegisterPage.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/pages/RegisterPage.tsx) : Page d'inscription en deux étapes (informations personnelles puis validation par code OTP).
@@ -244,22 +246,20 @@ flowchart TD
 
 - [`context/AuthContext.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/context/AuthContext.tsx) :
   - Conserve l'état de l'utilisateur connecté (`user`), le statut d'authentification (`isAuthenticated`), les méthodes `login`, `register`, `logout` et `updateUser`.
-  - Persistance dans `localStorage` (`revibe_token`, `revibe_user`).
+  - Token d'accès JWT court (15 min) conservé en mémoire et renouvelé automatiquement via cookie `HttpOnly` rotatif (`/api/auth/refresh`).
 - [`context/CartContext.tsx`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/context/CartContext.tsx) :
   - Gère les articles sélectionnés, le calcul du sous-total, l'ouverture/fermeture du tiroir de sélection.
   - Applique la règle mono-vendeur et déclenche la modale de confirmation en cas de changement de vendeur.
-  - Synchronise les articles avec le backend pour les utilisateurs authentifiés tout en assurant un fonctionnement local fluide hors-ligne.
-- [`data/curatedProducts.ts`](file:///c:/Users/falla/Desktop/revibe-flip/frontend/src/data/curatedProducts.ts) :
-  - Référentiel de 21 articles sénégalais authentiques (Bazin Getzner, Woodin, Nike, maroquinerie de Ngaye Mékhé) et profils vendeurs de démonstration (Aminata Diallo, Moussa Ndiaye, Fatou Sow).
+  - Synchronise les articles avec le backend pour les utilisateurs authentifiés.
 
 ---
 
 ## 11. Configuration, DevOps & Conception UML
 
-- [`docker-compose.yml`](file:///c:/Users/falla/Desktop/revibe-flip/docker-compose.yml) : Déploiement multi-conteneurs (PostgreSQL 16, Backend Spring Boot, Frontend Nginx).
+- [`docker-compose.yml`](file:///c:/Users/falla/Desktop/revibe-flip/docker-compose.yml) : Déploiement multi-conteneurs (MySQL 8.0, Backend Spring Boot, Frontend Nginx, profil `prod` et `dev`).
 - [`.gitignore`](file:///c:/Users/falla/Desktop/revibe-flip/.gitignore) : Configuration d'exclusion Git complète, organisée par modules (Maven/Java, React/Vite/Node, IDEs, OS, Uploads, Logs).
-- [`backend/pom.xml`](file:///c:/Users/falla/Desktop/revibe-flip/backend/pom.xml) : Dépendances Maven (Spring Boot Starter Web, Data JPA, Security, Validation, WebSocket, JJWT, PostgreSQL Driver, Lombok, Springdoc OpenAPI Swagger).
-- [`backend/src/main/resources/application.properties`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/resources/application.properties) : Paramètres de connexion PostgreSQL (`jdbc:postgresql://localhost:5432/revibeflip`), clé secrète JWT, port serveur 8080, configuration des téléversements (max 10MB).
+- [`backend/pom.xml`](file:///c:/Users/falla/Desktop/revibe-flip/backend/pom.xml) : Dépendances Maven (Spring Boot Starter Web, Data JPA, Security, Validation, WebSocket, JJWT, MySQL Connector/J, Flyway, Lombok, Springdoc OpenAPI Swagger) et profil `-Pprod` excluant `DevDataSeeder`.
+- [`backend/src/main/resources/application.properties`](file:///c:/Users/falla/Desktop/revibe-flip/backend/src/main/resources/application.properties) : Paramètres de connexion (`dev` H2 ou `prod` MySQL 8.0 via `application-prod.properties`), configuration JWT, port serveur 8080, configuration des téléversements.
 - [`conception-uml/`](file:///c:/Users/falla/Desktop/revibe-flip/conception-uml/) :
   - `DOSSIER_COMPLET_UML_REVIBE_FLIP_V1.html` : Diagrammes de cas d'utilisation, de classes, de séquence (achat sous séquestre, négociation in-chat).
   - `DESCRIPTIONS_TEXTUELLES_USE_CASES_V1.md` : Spécifications textuelles détaillées de chaque use case.
@@ -303,12 +303,12 @@ Ce guide est spécialement rédigé pour permettre à **n'importe quel développ
 
 ```mermaid
 flowchart TD
-    Step0["0. Vérifier les Prérequis (Java 17, Node 18)"]
+    Step0["0. Vérifier les Prérequis (Java 21, Node 18+)"]
     Step1["1. Cloner le Projet (git clone)"]
     Step2["2. Démarrer le Backend (mvnw spring-boot:run)"]
     Step3["3. Démarrer le Frontend (npm run dev)"]
     Step4["4. Ouvrir le Navigateur (http://localhost:5173)"]
-    Step5["5. Se connecter avec un Compte de Démo"]
+    Step5["5. S'inscrire (/register + OTP SMS) ou tester en profil dev"]
 
     Step0 --> Step1 --> Step2 --> Step3 --> Step4 --> Step5
 ```
@@ -321,12 +321,12 @@ Avant de commencer, vérifiez que vous avez ces outils installés en ouvrant un 
 
 | Outil | Version Requise | Commande pour Tester | Lien de Téléchargement si Absent |
 |---|---|---|---|
-| **Java JDK** | 17 ou 21 | `java -version` | [Adoptium Eclipse Temurin 17+](https://adoptium.net/) |
+| **Java JDK** | 21 | `java -version` | [Adoptium Eclipse Temurin 21](https://adoptium.net/) |
 | **Node.js & npm** | Node 18+ (LTS recommandé) | `node -v` et `npm -v` | [Nodejs.org](https://nodejs.org/) |
 | **Git** | 2.x+ | `git --version` | [Git-scm.com](https://git-scm.com/) |
 
 > [!TIP]
-> **Bonne nouvelle :** Vous n'avez **pas besoin** d'installer PostgreSQL manuellement pour démarrer ! Le backend intègre une base H2 automatisée avec données sénégalaises pré-remplies (`DataInitializer`), prête à l'emploi dès la première seconde.
+> **Bonne nouvelle :** Vous pouvez utiliser votre instance **MySQL 8.0** locale (profil `prod` / Docker) ou démarrer sans installation manuelle en profil `dev` grâce à la base H2 en mémoire et `DevDataSeeder` (exclu du JAR de production `-Pprod`).
 
 ---
 
@@ -361,9 +361,9 @@ cd backend
 Vous verrez la ligne suivante dans le terminal :
 `Started RevibeFlipBackendApplication in X.XXX seconds`
 
-- 🌐 **API REST active sur** : `http://localhost:8080/api/v1`
-- 📑 **Swagger UI (Documentation interactive)** : `http://localhost:8080/swagger-ui.html`
-- 🗄️ **Console Base de Données H2** : `http://localhost:8080/h2-console` *(JDBC URL: `jdbc:h2:mem:revibeflipdb`, utilisateur: `sa`, mot de passe vide)*
+- 🌐 **API REST active sur** : `http://localhost:8080/api`
+- 📑 **Swagger UI *(désactivé en prod)*** : `http://localhost:8080/swagger-ui.html`
+- 🗄️ **Console Base de Données H2 *(désactivée en prod)*** : `http://localhost:8080/h2-console` *(JDBC URL: `jdbc:h2:mem:revibeflip_db`, utilisateur: `sa`, mot de passe vide)*
 
 ---
 
@@ -391,50 +391,19 @@ La marketplace s'affiche avec son catalogue complet, son logo épuré et ses cat
 
 ---
 
-### 13.5 Comptes de Démonstration Pré-configurés (Connexion Immédiate)
+### 13.5 Données de Développement & Bootstrap Admin en Production
 
-Le projet initialise automatiquement 4 comptes de test prêts à l'emploi :
-
-| Rôle & Nom | Numéro de Téléphone | Mot de Passe | Ce que vous pouvez tester |
-|---|---|---|---|
-| 👑 **Super Administrateur** | `+221770000000` | `Admin1234!` | Accès au Back-Office (`/admin`), modération des annonces, gestion des litiges, modification des bannières CMS. |
-| 👗 **Vendeuse Aminata Diallo** | `+221771112233` | `Passer123!` | Vendeuse populaire à Dakar (Note 4.9 ★). Son dressing contient des Boubous, Robes Wax et créations locales. |
-| 👔 **Vendeur Moussa Ndiaye** | `+221774445566` | `Passer123!` | Vendeur certifié (Note 4.8 ★). Son dressing contient des Chemises en lin, Sneakers Nike et Sandales en cuir. |
-| 🛍️ **Acheteuse Fatou Sow** | `+221778889900` | `Passer123!` | Acheteuse aux Almadies. Idéale pour simuler un achat, payer par Wave et échanger par message. |
+En environnement local (`dev`), `DevDataSeeder` (exclu du JAR de production `-Pprod`) initialise des données de test. En production, aucun compte par défaut ni donnée fictive n'est créé : utilisez `REVIBE_BOOTSTRAP_ADMIN_PHONE`, `REVIBE_BOOTSTRAP_ADMIN_EMAIL` et `REVIBE_BOOTSTRAP_ADMIN_PASSWORD` pour créer le premier administrateur (`AdminBootstrapRunner`, changement de mot de passe requis à la première connexion), et inscrivez vos comptes via `/register` + OTP SMS.
 
 ---
 
-### 13.6 Cinq Scénarios Pratiques de Découverte (Pas-à-Pas)
+### 13.6 Parcours Fonctionnels Clés (Pas-à-Pas)
 
-Pour tester la plateforme de bout en bout en moins de 10 minutes :
-
-#### Scénario 1 : Explorer le Catalogue et les Filtres
-1. Sur la page d'accueil (`http://localhost:5173`), cliquez sur une bulle de catégorie (ex: *Wax & Bazin*, *Chaussures* ou *Hommes*).
-2. Utilisez la barre de recherche en tapant `Lin` ou `Nike`.
-3. Cliquez sur un article pour voir la fiche produit détaillée, les photos et le badge de confiance du vendeur.
-
-#### Scénario 2 : Ajouter au Panier et Passer Commande avec Séquestre Wave
-1. Sur la fiche de l'article *Chemise Casual Homme en Lin Écru*, cliquez sur **Ajouter au panier**.
-2. Un toast de confirmation discret s'affiche en bas à droite : cliquez sur **Voir mon panier**.
-3. Dans le tiroir latéral, cliquez sur **Valider la commande & Payer (11 000 FCFA)**.
-4. Choisissez *Livraison à domicile (+ 2 000 FCFA)* ou *Remise en main propre (Gratuit)*.
-5. Sélectionnez **Wave** et cliquez sur **Confirmer le Paiement sous Séquestre**.
-6. Vous êtes redirigé vers le reçu : les fonds sont bloqués sous séquestre (`ESCROW_LOCKED`).
-
-#### Scénario 3 : Négocier un Prix par Chat Instantané
-1. Sur une fiche article, cliquez sur **Discuter d'abord avec le vendeur**.
-2. La messagerie s'ouvre avec la miniature de l'article pré-chargée.
-3. Envoyez une offre de prix ou un message : le vendeur virtuel vous répond automatiquement !
-
-#### Scénario 4 : Publier une Annonce Vendeur
-1. Cliquez sur le bouton violet **+ Vendre** dans la barre de navigation.
-2. Si vous n'êtes pas connecté, connectez-vous avec le compte d'Aminata (`+221771112233` / `Passer123!`).
-3. Téléversez une photo, donnez un titre (ex: *Robe Soirée Satin*), fixez le prix en FCFA et validez : l'annonce apparaît instantanément dans le catalogue.
-
-#### Scénario 5 : Administrer la Plateforme
-1. Connectez-vous avec le compte Administrateur (`+221770000000` / `Admin1234!`).
-2. Rendez-vous sur `/admin` via le menu profil.
-3. Visualisez les KPIs financiers (GMV, volume sous séquestre), suspendez un utilisateur malveillant en un clic ou modifiez la bannière d'annonce du site.
+1. **Catalogue & Filtres** : explorez les catégories sur `http://localhost:5173` ou utilisez la barre de recherche.
+2. **Panier & Paiement PayTech** : ajoutez un article, choisissez le mode de livraison et le moyen de paiement (Wave, Orange Money, Free Money) ; l'application redirige vers PayTech et valide la commande uniquement après réception/vérification de l'IPN.
+3. **Messagerie & Offres** : négociez directement avec le vendeur via WebSocket STOMP authentifié par JWT.
+4. **Publication d'Annonce** : cliquez sur **+ Vendre**, téléversez une photo (validée côté serveur par signature réelle) et publiez.
+5. **Administration (`/admin`)** : suivez les KPIs financiers, le grand livre, les litiges, le CMS et le **Journal d'Audit** dédié.
 
 ---
 

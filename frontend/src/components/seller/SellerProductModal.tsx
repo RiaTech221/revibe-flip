@@ -89,7 +89,7 @@ export const SellerProductModal: React.FC<SellerProductModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-gray-700 mb-1">Rayon / Catégorie *</label>
               <select
@@ -134,7 +134,7 @@ export const SellerProductModal: React.FC<SellerProductModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-gray-700 mb-1">État de l'article *</label>
               <select
@@ -162,7 +162,7 @@ export const SellerProductModal: React.FC<SellerProductModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-gray-700 mb-1">Marque / Atelier</label>
               <input

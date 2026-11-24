@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, RefreshCw } from 'lucide-react';
 import { authApi } from '../../services/authService';
+import { TurnstileWidget, isTurnstileEnabled } from '../security/TurnstileWidget';
 
 interface AuthOtpFormProps {
   phone: string;
@@ -14,6 +15,7 @@ interface AuthOtpFormProps {
   error: string | null;
   onSubmit: (otpCode: string) => void;
   onBack?: () => void;
+  onSkip?: () => void;
 }
 
 /**
@@ -25,10 +27,13 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
   error,
   onSubmit,
   onBack,
+  onSkip,
 }) => {
   const [otpCode, setOtpCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileReset, setTurnstileReset] = useState(0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,12 +44,13 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
     setResending(true);
     setResendMessage(null);
     try {
-      await authApi.resendOtp(phone);
+      await authApi.resendOtp(phone, turnstileToken || undefined);
       setResendMessage('Nouveau code envoyé par SMS.');
     } catch {
       setResendMessage('Erreur lors du renvoi du code.');
     } finally {
       setResending(false);
+      setTurnstileReset((n) => n + 1);
     }
   };
 
@@ -88,13 +94,25 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
         />
       </div>
 
-      <button
-        type="submit"
-        disabled={loading || otpCode.length < 4}
-        className="w-full h-11 rounded-2xl bg-gradient-to-r from-purple-700 to-pink-600 hover:from-purple-800 hover:to-pink-700 text-white font-black text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-      >
-        {loading ? 'Validation...' : 'Valider et continuer'}
-      </button>
+      <div className="grid grid-cols-2 gap-3">
+        {onSkip && (
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={loading}
+            className="w-full h-11 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Passer
+          </button>
+        )}
+        <button
+          type="submit"
+          disabled={loading || otpCode.length < 4}
+          className={`${onSkip ? '' : 'col-span-2 '}w-full h-11 rounded-2xl bg-gradient-to-r from-purple-700 to-pink-600 hover:from-purple-800 hover:to-pink-700 text-white font-black text-xs sm:text-sm shadow-md shadow-purple-600/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2`}
+        >
+          {loading ? 'Validation...' : 'Valider le code'}
+        </button>
+      </div>
 
       <div className="flex items-center justify-between pt-2 text-xs">
         {onBack && (
@@ -110,13 +128,15 @@ export const AuthOtpForm: React.FC<AuthOtpFormProps> = ({
         <button
           type="button"
           onClick={handleResend}
-          disabled={resending}
+          disabled={resending || (isTurnstileEnabled && !turnstileToken)}
           className="text-purple-700 hover:text-purple-800 font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50 ml-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
           <span>Renvoyer le code</span>
         </button>
       </div>
+
+      <TurnstileWidget onToken={setTurnstileToken} resetSignal={turnstileReset} />
     </form>
   );
 };

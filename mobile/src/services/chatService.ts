@@ -18,14 +18,24 @@ export const chatService = {
     return res.data?.data || [];
   },
 
-  getOrCreateConversation: async (productId: number): Promise<Conversation> => {
-    const res = await api.post('/messages/conversations', { productId });
+  getOrCreateConversation: async (productId: number, initialMessage = 'Je suis intéressé'): Promise<Conversation> => {
+    const res = await api.post('/messages/conversations', { productId, initialMessage });
     return res.data?.data;
   },
 
   getMessages: async (conversationId: number): Promise<Message[]> => {
     const res = await api.get(`/messages/conversations/${conversationId}`);
     return res.data?.data || [];
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    const res = await api.get('/messages/unread-count');
+    return res.data?.data ?? 0;
+  },
+
+  markAsRead: async (conversationId: number): Promise<number> => {
+    const res = await api.post(`/messages/conversations/${conversationId}/read`);
+    return res.data?.data ?? 0;
   },
 
   sendMessage: async (conversationId: number, content: string): Promise<Message> => {

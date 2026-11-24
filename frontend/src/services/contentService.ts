@@ -8,7 +8,7 @@
  *  * - Téléversement d'images produits vers le stockage de la plateforme
  */
 
-import api from './httpClient';
+import api, { turnstileConfig } from './httpClient';
 import {
   FooterConfig,
   AnnouncementBanner,
@@ -33,8 +33,10 @@ export const contentApi = {
     api.get<{ success: boolean; data: CmsPage }>(`/pages/${slug}`),
   getFaq: () =>
     api.get<{ success: boolean; data: FaqItem[] }>('/faq'),
-  submitContact: (data: { fullName: string; email?: string; phone?: string; subject: string; message: string }) =>
-    api.post<{ success: boolean; data: ContactMessage; message: string }>('/contact', data),
+  submitContact: (
+    data: { fullName: string; email?: string; phone?: string; subject: string; message: string },
+    turnstileToken?: string
+  ) => api.post<{ success: boolean; data: ContactMessage; message: string }>('/contact', data, turnstileConfig(turnstileToken)),
 };
 
 export const reviewApi = {
@@ -57,10 +59,13 @@ export const notificationApi = {
   markAsRead: (id: number) => api.put(`/notifications/${id}/read`),
 };
 
+export type UploadContext = 'products' | 'avatars' | 'cms' | 'disputes' | 'general';
+
 export const uploadApi = {
-  uploadFile: (file: File) => {
+  uploadFile: (file: File, context: UploadContext = 'products') => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('context', context);
     return api.post<{ success: boolean; data: string }>('/uploads', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });

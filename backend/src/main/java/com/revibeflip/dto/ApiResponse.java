@@ -1,5 +1,6 @@
 package com.revibeflip.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,9 @@ public class ApiResponse<T> {
     @Builder.Default
     private LocalDateTime timestamp = LocalDateTime.now();
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String trackingId;
+
     public static <T> ApiResponse<T> ok(T data, String message) {
         return ApiResponse.<T>builder()
                 .success(true)
@@ -37,6 +41,14 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
+                .build();
+    }
+
+    public static <T> ApiResponse<T> error(String message, String trackingId) {
+        return ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .trackingId(trackingId)
                 .build();
     }
 }

@@ -45,7 +45,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     private final UserRepository userRepository;
     private final ConversationRepository conversationRepository;
 
-    private static final Pattern CONVERSATION_TOPIC_PATTERN = Pattern.compile("^/topic/conversations/(\\d+)$");
+    private static final Pattern CONVERSATION_TOPIC_PATTERN = Pattern.compile("^/topic/conversations/(\\d+)(?:/read)?$");
+    private static final Pattern NOTIFICATION_TOPIC_PATTERN = Pattern.compile("^/topic/user\\.(\\d+)\\.notifications$");
     private final Map<String, Deque<Instant>> sendBuckets = new ConcurrentHashMap<>();
 
     @Override
@@ -141,6 +142,29 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                     if (!isBuyer && !isSeller && !isAdmin) {
                         log.warn("Tentative d'espionnage WebSocket par {} sur la conversation #{}", user.getPhone(), conversationId);
                         throw new AccessDeniedException("Accès refusé : vous n'êtes pas participant de cette conversation.");
+                    }
+                }
+
+                // SEC-04 : Sécurisation stricte de l'écoute du topic de notifications privé
+                Matcher notifMatcher = NOTIFICATION_TOPIC_PATTERN.matcher(destination);
+                if (notifMatcher.matches()) {
+                    Long targetUserId = Long.parseLong(notifMatcher.group(1));
+                    Principal principal = accessor.getUser();
+                    if (principal == null) {
+                        log.warn("Abonnement non authentifié refusé pour {}", destination);
+                        throw new AccessDeniedException("Authentification requise pour s'abonner aux notifications.");
+                    }
+
+                    User user = userRepository.findByIdentifier(principal.getName())
+                            .orElseThrow(() -> new AccessDeniedException("Utilisateur non trouvé."));
+
+                    if (Boolean.TRUE.equals(user.getIsSuspended())) {
+                        throw new AccessDeniedException("Votre compte est actuellement suspendu.");
+                    }
+
+                    if (!user.getId().equals(targetUserId)) {
+                        log.warn("Tentative d'espionnage WebSocket des notifications de user #{} par user #{}", targetUserId, user.getId());
+                        throw new AccessDeniedException("Accès refusé : vous ne pouvez écouter que vos propres notifications.");
                     }
                 }
             }

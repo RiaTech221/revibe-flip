@@ -314,22 +314,11 @@ export const CartDrawer: React.FC = () => {
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  closeCart();
-                                  navigate(`/checkout/${product.id}`);
-                                }}
-                                className="px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
-                                title="Commander cet article"
-                              >
-                                Payer
-                              </button>
+                            <div className="flex items-center">
                               <button
                                 onClick={() => removeFromCart(product.id)}
-                                className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
-                                title="Retirer"
+                                className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                                title="Retirer du panier"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>

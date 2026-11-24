@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { chatApi, chatOfferApi, paymentApi, uploadApi } from '../services/api';
+import { createStompClient } from '../services/wsClient';
 import { Conversation, Message, ChatOffer, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
@@ -20,6 +21,7 @@ import { ChatMessageItem } from '../components/messages/ChatMessageItem';
 import { ChatInputBar } from '../components/messages/ChatInputBar';
 import { MakeOfferModal } from '../components/messages/MakeOfferModal';
 import { OfferPaymentModal } from '../components/messages/OfferPaymentModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const MessagesPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -32,6 +34,15 @@ export const MessagesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Offres dans la conversation
   const [conversationOffers, setConversationOffers] = useState<ChatOffer[]>([]);
@@ -53,7 +64,7 @@ export const MessagesPage: React.FC = () => {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const isSeller = activeConversation?.seller?.id === user?.id;
   const isBuyer = activeConversation?.buyer?.id === user?.id;
@@ -62,23 +73,27 @@ export const MessagesPage: React.FC = () => {
     return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
   };
 
-  const fetchConversations = async (targetId?: number) => {
+  const fetchConversations = async (targetId?: number, silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await chatApi.getConversations();
       const list = res?.data?.data || [];
       setConversations(list);
-      if (list.length > 0) {
-        const selected = targetId ? list.find((c: Conversation) => c.id === targetId) || list[0] : list[0];
-        setActiveConversation(selected);
-      } else {
-        setActiveConversation(null);
+      if (!silent) {
+        if (list.length > 0) {
+          const selected = targetId ? list.find((c: Conversation) => c.id === targetId) || list[0] : list[0];
+          setActiveConversation(selected);
+        } else {
+          setActiveConversation(null);
+        }
       }
     } catch {
-      setConversations([]);
-      setActiveConversation(null);
+      if (!silent) {
+        setConversations([]);
+        setActiveConversation(null);
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -86,6 +101,10 @@ export const MessagesPage: React.FC = () => {
     try {
       const res = await chatApi.getMessages(convId);
       setMessages(res?.data?.data || []);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+      );
+      window.dispatchEvent(new CustomEvent('revibe:messages-read'));
     } catch {
       setMessages([]);
     }
@@ -104,19 +123,58 @@ export const MessagesPage: React.FC = () => {
     if (isAuthenticated) {
       const targetId = searchParams.get('id');
       const convId = targetId ? parseInt(targetId, 10) : undefined;
+      if (convId) setMobileShowChat(true);
       fetchConversations(convId);
     }
   }, [isAuthenticated, searchParams]);
 
   useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation.id);
-      fetchOffers(activeConversation.id);
-    }
-  }, [activeConversation]);
+    if (!activeConversation) return;
+    const convId = activeConversation.id;
+    fetchMessages(convId);
+    fetchOffers(convId);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/conversations/${convId}`, (frame) => {
+        try {
+          const incoming: Message = JSON.parse(frame.body);
+          setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
+          if (incoming.senderId !== user?.id) {
+            chatApi.markAsRead(convId).then(() => {
+              window.dispatchEvent(new CustomEvent('revibe:messages-read'));
+            }).catch(() => {});
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+
+      stomp.subscribe(`/topic/conversations/${convId}/read`, (frame) => {
+        try {
+          const payload = JSON.parse(frame.body) as { conversationId: number; readerId: number };
+          if (payload.readerId !== user?.id) {
+            setMessages((prev) =>
+              prev.map((m) => (m.senderId === user?.id ? { ...m, isRead: true } : m))
+            );
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      client?.deactivate();
+    };
+  }, [activeConversation?.id, user?.id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, [messages, conversationOffers]);
 
   const handleSendMessage = async (e?: React.FormEvent, customContent?: string) => {
@@ -131,19 +189,9 @@ export const MessagesPage: React.FC = () => {
         setMessages(prev => [...prev, res.data.data]);
       }
       if (!customContent) setNewMessage('');
-      fetchConversations(activeConversation.id);
+      fetchConversations(activeConversation.id, true);
     } catch {
-      const localMsg: Message = {
-        id: Date.now(),
-        conversationId: activeConversation.id,
-        senderId: user?.id || 0,
-        senderName: user?.fullName || 'Moi',
-        content,
-        sentAt: new Date().toISOString(),
-        isRead: false,
-      };
-      setMessages(prev => [...prev, localMsg]);
-      if (!customContent) setNewMessage('');
+      alert("Impossible d'envoyer le message pour le moment. Veuillez réessayer.");
     } finally {
       setSending(false);
     }
@@ -204,47 +252,68 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleAcceptOffer = async (offer: ChatOffer) => {
-    if (!confirm(`Accepter l'offre à ${formatPrice(offer.agreedPrice)} ?`)) return;
-    try {
-      const res = await chatOfferApi.acceptOffer(offer.id);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-      if (res?.data?.data) {
-        setAcceptedOfferToPay(res.data.data);
-      }
-      setIsPaymentModalOpen(true);
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
-    }
+  const handleAcceptOffer = (offer: ChatOffer) => {
+    setConfirmDialog({
+      title: "Accepter cette offre ?",
+      message: `Voulez-vous accepter l'offre de prix à ${formatPrice(offer.agreedPrice)} ? Vous pourrez ensuite procéder au paiement sécurisé.`,
+      confirmLabel: "Accepter l'offre",
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          const res = await chatOfferApi.acceptOffer(offer.id);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+          if (res?.data?.data) {
+            setAcceptedOfferToPay(res.data.data);
+          }
+          setIsPaymentModalOpen(true);
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
+        }
+      },
+    });
   };
 
-  const handleDeclineOffer = async (offerId: number) => {
-    if (!confirm("Refuser cette offre de prix ?")) return;
-    try {
-      await chatOfferApi.declineOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
-    }
+  const handleDeclineOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Refuser cette offre ?',
+      message: "L'acheteur sera informé que vous avez décliné sa proposition de prix.",
+      confirmLabel: 'Refuser',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.declineOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
+        }
+      },
+    });
   };
 
-  const handleCancelOffer = async (offerId: number) => {
-    if (!confirm("Annuler votre offre envoyée ?")) return;
-    try {
-      await chatOfferApi.cancelOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'annulation.");
-    }
+  const handleCancelOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Annuler votre offre ?',
+      message: 'Cette offre de prix sera annulée et ne pourra plus être acceptée par le vendeur.',
+      confirmLabel: "Annuler l'offre",
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.cancelOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'annulation.");
+        }
+      },
+    });
   };
 
   const handleProcessPayment = async (e: React.FormEvent) => {
@@ -317,19 +386,23 @@ export const MessagesPage: React.FC = () => {
         </span>
       </div>
 
-      <div className="bg-white rounded-3xl border border-gray-150 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 min-h-[640px] max-h-[800px]">
+      <div className="bg-white rounded-3xl border border-gray-150 shadow-sm overflow-hidden grid grid-cols-1 md:grid-cols-12 h-[calc(100dvh-140px)] min-h-[500px] md:h-[700px] md:max-h-[800px]">
         {/* LISTE DES CONVERSATIONS (4 cols) */}
         <ConversationSidebar
           conversations={conversations}
           activeConversation={activeConversation}
-          onSelectConversation={setActiveConversation}
-          onRefresh={() => fetchConversations(activeConversation?.id)}
+          onSelectConversation={(conv) => {
+            setActiveConversation(conv);
+            setMobileShowChat(true);
+          }}
+          onRefresh={() => fetchConversations(activeConversation?.id, true)}
           loading={loading}
           currentUser={user}
+          className={mobileShowChat ? 'hidden md:flex' : 'flex'}
         />
 
         {/* DISCUSSION ACTIVE (8 cols) */}
-        <div className="md:col-span-8 flex flex-col bg-gray-50/40">
+        <div className={`${mobileShowChat ? 'flex' : 'hidden md:flex'} md:col-span-8 flex-col bg-gray-50/40 min-h-0`}>
           {activeConversation ? (
             <>
               <ChatHeader
@@ -342,10 +415,11 @@ export const MessagesPage: React.FC = () => {
                   setIsPaymentModalOpen(true);
                 }}
                 formatPrice={formatPrice}
+                onBackMobile={() => setMobileShowChat(false)}
               />
 
               {/* MESSAGES & OFFRES */}
-              <div className="flex-1 p-5 overflow-y-auto space-y-4">
+              <div ref={messagesContainerRef} className="flex-1 min-h-0 p-4 sm:p-5 overflow-y-auto space-y-4">
                 {conversationOffers.map((offer) => (
                   <ChatOfferCard
                     key={`offer-${offer.id}`}
@@ -372,7 +446,6 @@ export const MessagesPage: React.FC = () => {
                     <ChatMessageItem key={m.id} message={m} currentUserId={user?.id} />
                   ))
                 )}
-                <div ref={messagesEndRef} />
               </div>
 
               <ChatInputBar
@@ -426,6 +499,28 @@ export const MessagesPage: React.FC = () => {
         paymentError={paymentError}
         onSubmit={handleProcessPayment}
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+        onCancel={() => {
+          if (!confirmLoading) setConfirmDialog(null);
+        }}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          setConfirmLoading(true);
+          try {
+            await confirmDialog.onConfirm();
+          } finally {
+            setConfirmLoading(false);
+            setConfirmDialog(null);
+          }
+        }}
       />
     </div>
   );

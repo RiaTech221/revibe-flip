@@ -11,7 +11,9 @@ import com.revibeflip.entity.enums.ProductCondition;
 import com.revibeflip.entity.enums.ProductStatus;
 import com.revibeflip.repository.CategoryRepository;
 import com.revibeflip.repository.ProductRepository;
+import com.revibeflip.security.SafeMediaService;
 import lombok.RequiredArgsConstructor;
+import com.revibeflip.security.PaginationValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +35,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductModificationPolicyService policyService;
 
     public Page<ProductDto> searchProducts(
             String query,
@@ -48,9 +51,10 @@ public class ProductService {
             String sortBy,
             String sortDirection
     ) {
-        Sort sort = Sort.by("asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC,
-                sortBy != null ? sortBy : "createdAt");
-        Pageable pageable = PageRequest.of(page, sizeLimit, sort);
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, sizeLimit, sortBy, sortDirection,
+                PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
 
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String cleanSize = (size != null && !size.trim().isEmpty()) ? size.trim() : null;
@@ -100,18 +104,7 @@ public class ProductService {
                 .build();
 
         if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
-            int order = 0;
-            for (String url : request.getImageUrls()) {
-                if (url != null && !url.isBlank()) {
-                    ProductImage img = ProductImage.builder()
-                            .product(product)
-                            .imageUrl(url.trim())
-                            .isPrimary(order == 0)
-                            .displayOrder(order++)
-                            .build();
-                    product.getImages().add(img);
-                }
-            }
+            addValidatedImages(product, request.getImageUrls());
         }
 
         Product saved = productRepository.save(product);
@@ -123,8 +116,18 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
 
-        if (!product.getSeller().getId().equals(user.getId()) && !user.getRole().name().equals("ROLE_ADMIN")) {
-            throw new org.springframework.security.access.AccessDeniedException("Vous n'êtes pas autorisé à modifier cet article.");
+        policyService.validateProductModification(
+                product,
+                user,
+                request.getPrice(),
+                request.getTitle(),
+                request.getCategoryId(),
+                request.getCondition()
+        );
+
+        if (request.getStatus() != null && request.getStatus() != product.getStatus()) {
+            policyService.validateStatusChange(product, user, request.getStatus());
+            product.setStatus(request.getStatus());
         }
 
         if (request.getTitle() != null) product.setTitle(request.getTitle().trim());
@@ -135,7 +138,6 @@ public class ProductService {
         if (request.getSize() != null) product.setSize(request.getSize().trim());
         if (request.getColor() != null) product.setColor(request.getColor().trim());
         if (request.getCondition() != null) product.setCondition(request.getCondition());
-        if (request.getStatus() != null) product.setStatus(request.getStatus());
         if (request.getLocationCity() != null) product.setLocationCity(request.getLocationCity().trim());
 
         if (request.getCategoryId() != null) {
@@ -146,18 +148,7 @@ public class ProductService {
 
         if (request.getImageUrls() != null) {
             product.getImages().clear();
-            int order = 0;
-            for (String url : request.getImageUrls()) {
-                if (url != null && !url.isBlank()) {
-                    ProductImage img = ProductImage.builder()
-                            .product(product)
-                            .imageUrl(url.trim())
-                            .isPrimary(order == 0)
-                            .displayOrder(order++)
-                            .build();
-                    product.getImages().add(img);
-                }
-            }
+            addValidatedImages(product, request.getImageUrls());
         }
 
         Product updated = productRepository.save(product);
@@ -169,9 +160,7 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
 
-        if (!product.getSeller().getId().equals(user.getId()) && !user.getRole().name().equals("ROLE_ADMIN")) {
-            throw new org.springframework.security.access.AccessDeniedException("Vous n'êtes pas autorisé à supprimer cet article.");
-        }
+        policyService.validateProductDeletion(product, user);
 
         productRepository.delete(product);
     }
@@ -181,5 +170,24 @@ public class ProductService {
                 .stream()
                 .map(ProductDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private void addValidatedImages(Product product, List<String> imageUrls) {
+        int order = 0;
+        for (String url : imageUrls) {
+            if (url != null && !url.isBlank()) {
+                String trimmed = url.trim();
+                if (!SafeMediaService.isAllowedImageUrl(trimmed)) {
+                    throw new IllegalArgumentException("URL d'image non autorisée : " + trimmed);
+                }
+                ProductImage img = ProductImage.builder()
+                        .product(product)
+                        .imageUrl(trimmed)
+                        .isPrimary(order == 0)
+                        .displayOrder(order++)
+                        .build();
+                product.getImages().add(img);
+            }
+        }
     }
 }

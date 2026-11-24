@@ -2,6 +2,7 @@ package com.revibeflip.controller;
 
 import com.revibeflip.dto.*;
 import com.revibeflip.entity.User;
+import com.revibeflip.security.SessionOriginValidator;
 import com.revibeflip.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,9 +32,14 @@ public class AuthController {
     private static final String REFRESH_COOKIE_NAME = "revibeflip_refresh_token";
 
     private final AuthService authService;
+    private final SessionOriginValidator sessionOriginValidator;
+    private final org.springframework.core.env.Environment environment;
 
     @Value("${revibeflip.jwt.refresh-expiration-ms:604800000}")
     private long refreshExpirationMs;
+
+    @Value("${revibeflip.cookie.secure:false}")
+    private boolean cookieSecure;
 
     @PostMapping("/register")
     @Operation(summary = "Inscription d'un nouvel utilisateur", description = "Génère un compte et un code OTP envoyé par SMS")
@@ -62,6 +68,17 @@ public class AuthController {
             HttpServletRequest httpRequest) {
         authService.resendOtp(phone, extractClientIp(httpRequest));
         return ResponseEntity.ok(ApiResponse.ok(null, "Si un compte correspond à ce numéro, un nouveau code OTP a été envoyé."));
+    }
+
+    @PostMapping("/skip-otp")
+    @Operation(summary = "Passer l'OTP en environnement de test (hors production)")
+    public ResponseEntity<ApiResponse<AuthResponse>> skipOtp(
+            @RequestParam String phone,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        AuthResponse response = authService.skipOtpForDevTest(phone);
+        attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(response, "Compte activé en mode test."));
     }
 
     @PostMapping("/forgot-password")
@@ -101,6 +118,7 @@ public class AuthController {
             @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        sessionOriginValidator.validateOrigin(httpRequest);
         String rawRefreshToken = extractRefreshToken(httpRequest, body);
         AuthResponse response = authService.refreshToken(rawRefreshToken);
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
@@ -153,7 +171,10 @@ public class AuthController {
     }
 
     private boolean isSecureRequest(HttpServletRequest request) {
-        return request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        return cookieSecure
+                || request.isSecure()
+                || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"))
+                || (environment != null && java.util.Arrays.asList(environment.getActiveProfiles()).contains("prod"));
     }
 
     private String extractRefreshToken(HttpServletRequest request, Map<String, String> body) {

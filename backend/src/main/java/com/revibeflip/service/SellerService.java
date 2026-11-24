@@ -46,6 +46,7 @@ public class SellerService {
     private final CountryRepository countryRepository;
     private final ChatOfferRepository chatOfferRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ProductModificationPolicyService policyService;
 
     private static class SellerDashboardCacheEntry {
         final SellerDashboardDto data;
@@ -110,16 +111,36 @@ public class SellerService {
             seller.setLastName(request.getLastName().trim());
         }
         if (request.getEmail() != null) {
-            seller.setEmail(request.getEmail().trim().toLowerCase());
+            String normalizedEmail = request.getEmail().trim().toLowerCase();
+            if (normalizedEmail.isEmpty()) {
+                seller.setEmail(null);
+            } else {
+                userRepository.findByEmail(normalizedEmail).ifPresent(existing -> {
+                    if (!existing.getId().equals(seller.getId())) {
+                        throw new IllegalStateException("Cette adresse email est déjà utilisée par un autre compte.");
+                    }
+                });
+                seller.setEmail(normalizedEmail);
+            }
         }
         if (request.getCity() != null) {
-            seller.setCity(request.getCity().trim());
+            String trimmed = request.getCity().trim();
+            seller.setCity(trimmed.isEmpty() ? null : trimmed);
         }
         if (request.getAddress() != null) {
-            seller.setAddress(request.getAddress().trim());
+            String trimmed = request.getAddress().trim();
+            seller.setAddress(trimmed.isEmpty() ? null : trimmed);
         }
         if (request.getProfilePicture() != null) {
-            seller.setProfilePicture(request.getProfilePicture());
+            String trimmed = request.getProfilePicture().trim();
+            if (trimmed.isEmpty()) {
+                seller.setProfilePicture(null);
+            } else {
+                if (!com.revibeflip.security.SafeMediaService.isAllowedImageUrl(trimmed)) {
+                    throw new IllegalArgumentException("URL de photo de profil non autorisée.");
+                }
+                seller.setProfilePicture(trimmed);
+            }
         }
 
         userRepository.save(seller);
@@ -794,14 +815,15 @@ public class SellerService {
         checkSellerNotSuspended(seller);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
-        checkProductOwnership(seller, product);
 
-        // RÈGLE MÉTIER : Impossible de modifier le prix d'une annonce ayant une commande en cours
-        boolean hasActiveOrders = orderRepository.existsByProductIdAndStatusIn(productId,
-                List.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID_ESCROW_LOCKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED));
-        if (hasActiveOrders && request.getPrice() != null && request.getPrice().compareTo(product.getPrice()) != 0) {
-            throw new IllegalStateException("Impossible de modifier le prix d'une annonce faisant actuellement l'objet d'une commande en cours.");
-        }
+        policyService.validateProductModification(
+                product,
+                seller,
+                request.getPrice(),
+                request.getTitle(),
+                request.getCategoryId(),
+                request.getCondition()
+        );
 
         if (request.getCategoryId() != null) {
             Category category = categoryRepository.findById(request.getCategoryId())
@@ -854,11 +876,8 @@ public class SellerService {
         checkSellerNotSuspended(seller);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
-        checkProductOwnership(seller, product);
 
-        if (product.getStatus() == ProductStatus.SOLD) {
-            throw new IllegalStateException("Une annonce vendue ne peut pas changer de statut manuellement.");
-        }
+        policyService.validateStatusChange(product, seller, newStatus);
 
         product.setStatus(newStatus);
         return ProductDto.fromEntity(productRepository.save(product));
@@ -869,14 +888,8 @@ public class SellerService {
         checkSellerNotSuspended(seller);
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
-        checkProductOwnership(seller, product);
 
-        // RÈGLE MÉTIER : Impossible de supprimer une annonce ayant une commande en cours
-        boolean hasActiveOrders = orderRepository.existsByProductIdAndStatusIn(productId,
-                List.of(OrderStatus.PENDING_PAYMENT, OrderStatus.PAID_ESCROW_LOCKED, OrderStatus.SHIPPED, OrderStatus.DELIVERED));
-        if (hasActiveOrders) {
-            throw new IllegalStateException("Action impossible : cette annonce est rattachée à une commande en cours de traitement.");
-        }
+        policyService.validateProductDeletion(product, seller);
 
         productImageRepository.deleteByProductId(productId);
         productRepository.delete(product);

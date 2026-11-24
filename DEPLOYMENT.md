@@ -11,12 +11,12 @@ L'application repose sur une architecture conteneurisée **Docker Compose** prê
 | Conteneur | Technologie | Rôle | Port Interne | Exposition |
 | :--- | :--- | :--- | :--- | :--- |
 | **`revibeflip-frontend`** | Nginx Alpine + React 18 | Serveur Web frontal, Reverse-Proxy (`/api`, `/ws`, `/uploads`) | `80` | Public (`80` / `443`) |
-| **`revibeflip-backend`** | Java 21 JRE (Non-root) + Spring Boot 3 | API REST, Séquestre, WebSocket Stomp | `8080` | Réseau interne Docker |
-| **`revibeflip-mysql`** | MySQL 8.0 | Base de données relationnelle persistante | `3306` | Réseau interne Docker |
-| **`revibeflip-adminer`** | Adminer | Interface d'administration BDD (optionnel en prod) | `8080` | `8081` (à restreindre en prod) |
+| **`revibeflip-backend`** | Java 21 JRE (Non-root) + Spring Boot 3 | API REST, Paiements PayTech, Grand livre, WebSocket STOMP | `8080` | Réseau interne Docker |
+| **`revibeflip-mysql`** | MySQL 8.0 | Base de données relationnelle persistante (Flyway) | `3306` | Réseau interne Docker |
+| **`revibeflip-adminer`** | Adminer | Interface d'administration BDD (profil `dev` uniquement) | `8080` | `8081` (désactivé en `prod`) |
 
 ### Volumes Persistants
-- **`mysql_data`** : Conserve toutes les données clients, commandes, transactions séquestre et messages.
+- **`mysql_data`** : Conserve toutes les données clients, commandes, grand livre des transactions et messages.
 - **`uploads_data`** : Conserve toutes les photos d'articles et avatars téléversés par les utilisateurs dans `/app/uploads`.
 
 ---
@@ -88,35 +88,43 @@ openssl rand -hex 32
 nano .env
 ```
 
-Adaptez les valeurs critiques suivantes pour la production :
+Adaptez les valeurs critiques suivantes pour la production (voir aussi `.env.example`) :
 ```dotenv
-APP_ENV=production
 SPRING_PROFILES_ACTIVE=prod
 
-# Base de données MySQL
-MYSQL_DATABASE=revibeflip
-MYSQL_USER=revibeflip_user
-MYSQL_PASSWORD=UnMotDePasseTresRobuste_2026!
-MYSQL_ROOT_PASSWORD=RootMotDePasseUltraRobuste_2026!
+# Base de données MySQL (utilisateur applicatif non-root)
+DB_NAME=revibeflip
+DB_USERNAME=revibeflip_user
+DB_PASSWORD=<MOT_DE_PASSE_BDD_ROBUSTE>
+MYSQL_ROOT_PASSWORD=<MOT_DE_PASSE_ROOT_ROBUSTE>
 
-# Connexion JDBC Backend -> Conteneur MySQL
-SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/revibeflip?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-SPRING_DATASOURCE_USERNAME=root
-SPRING_DATASOURCE_PASSWORD=RootMotDePasseUltraRobuste_2026!
+# Clé secrète JWT (min. 32 octets aléatoires : openssl rand -hex 32)
+JWT_SECRET=<COLLEZ_VOTRE_CLE_SECRETE_ICI>
+JWT_EXPIRATION_MS=900000
+CORS_ALLOWED_ORIGINS=https://revibeflip.com,https://www.revibeflip.com
 
-# Clé secrète JWT générée avec openssl rand -hex 32
-REVIBE_JWT_SECRET=<COLLEZ_VOTRE_CLE_SECRETE_ICI>
-REVIBE_JWT_EXPIRATION_MS=86400000
+# PayTech (https://doc.paytech.sn)
+PAYTECH_API_KEY=<VOTRE_CLE_API_PAYTECH>
+PAYTECH_API_SECRET=<VOTRE_SECRET_PAYTECH>
+PAYTECH_ENV=prod
+PAYTECH_IPN_URL=https://revibeflip.com/api/payments/paytech/ipn
+PAYTECH_SUCCESS_URL=https://revibeflip.com/payment/success
+PAYTECH_CANCEL_URL=https://revibeflip.com/payment/cancel
 
-# Reverse-Proxy Nginx automatique (ne pas mettre localhost en production)
-VITE_API_URL=/api
+# SMS OTP & Bootstrap du 1er Administrateur
+SMS_API_URL=<URL_API_SMS>
+SMS_API_KEY=<CLE_API_SMS>
+SMS_SENDER_ID=ReVibeFliP
+REVIBE_BOOTSTRAP_ADMIN_PHONE=+221XXXXXXXXX
+REVIBE_BOOTSTRAP_ADMIN_EMAIL=admin@revibeflip.com
+REVIBE_BOOTSTRAP_ADMIN_PASSWORD=<MOT_DE_PASSE_ADMIN_12_CHARS_FORT>
 ```
 
 Enregistrez dans `nano` avec `Ctrl+O`, `Entrée`, puis quittez avec `Ctrl+X`.
 
-### 3.3 Construction et démarrage des services
+### 3.3 Construction et démarrage des services (profil `prod`)
 ```bash
-docker compose up -d --build
+docker compose --profile prod up -d --build
 ```
 
 ### 3.4 Vérification de l'état des conteneurs
@@ -157,13 +165,35 @@ cd /opt/revibe-flip
 git pull origin deploy
 
 # 2. Reconstruire et relancer uniquement les conteneurs modifiés sans perte de données
-docker compose up -d --build
+docker compose --profile prod up -d --build
 
 # 3. Nettoyer les anciennes images Docker inutilisées
 docker image prune -f
 ```
 
 > **Note importante** : Vos données MySQL (`mysql_data`) et les photos d'articles (`uploads_data`) sont stockées dans des volumes Docker externes aux conteneurs et sont **intégralement préservées** lors des mises à jour.
+
+---
+
+## 5 bis. Protection Cloudflare (WAF, Anti-Bot, SSL/TLS & Masquage IP)
+
+Pour protéger la plateforme contre les bots, attaques DDoS et scans automatisés tout en masquant l'IP réelle du VPS :
+
+1. **DNS & Proxy Cloudflare (Nuage orange)** :
+   - Ajoutez votre domaine dans Cloudflare, vérifiez les enregistrements DNS (`A` vers l'IP du VPS) avec le **proxy activé (nuage orange)** et basculez les serveurs de noms chez votre registrar.
+2. **SSL/TLS en mode `Full (strict)`** :
+   - Conservez un certificat Let's Encrypt ou un certificat Cloudflare Origin sur votre VPS (Nginx / reverse-proxy) et réglez **SSL/TLS → Full (strict)** sur Cloudflare.
+3. **WAF & Anti-Bot Cloudflare** :
+   - Activez **Bot Fight Mode** et les règles WAF gérées Cloudflare (plan gratuit suffisant pour démarrer).
+   - *(Recommandé)* Activez **Cloudflare Turnstile** en renseignant `REVIBE_TURNSTILE_ENABLED=true` et `REVIBE_TURNSTILE_SECRET_KEY=...` dans `.env` : le backend vérifiera automatiquement le jeton `X-Turnstile-Token` sur `/api/auth/register`, `/api/auth/login`, `/api/auth/forgot-password`, `/api/auth/resend-otp` et `/api/contact`.
+   - `frontend/nginx.conf` et `RateLimitFilter` résolvent déjà l'IP réelle du visiteur via `CF-Connecting-IP` (empêchant le contournement par spoofing `X-Forwarded-For`).
+4. **Pare-feu serveur (UFW) restreint aux IP Cloudflare** :
+   - Pour empêcher toute attaque directe sur l'IP du VPS en contournant Cloudflare, n'autorisez les ports `80` et `443` **que** depuis les plages IPv4/IPv6 officielles de Cloudflare (`https://www.cloudflare.com/ips/`), tout en gardant votre accès SSH sécurisé :
+   ```bash
+   for ip in $(curl -s https://www.cloudflare.com/ips-v4); do ufw allow proto tcp from "$ip" to any port 80,443; done
+   for ip in $(curl -s https://www.cloudflare.com/ips-v6); do ufw allow proto tcp from "$ip" to any port 80,443; done
+   ufw reload
+   ```
 
 ---
 

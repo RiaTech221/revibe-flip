@@ -14,10 +14,12 @@ import {
   sellerApi,
   categoryApi,
   chatOfferApi,
+  uploadApi,
   SellerDashboard,
   SellerProfile,
   SellerTransaction,
 } from '../services/api';
+import { validateProfileImageFile } from '../utils/profileImageValidation';
 import { Product, Order, Review, Category, ChatOffer } from '../types';
 import { SellerSidebar, SellerTabType } from '../components/seller/SellerSidebar';
 import { SellerOverviewTab } from '../components/seller/SellerOverviewTab';
@@ -27,11 +29,14 @@ import { SellerFinancesTab } from '../components/seller/SellerFinancesTab';
 import { SellerReviewsTab } from '../components/seller/SellerReviewsTab';
 import { SellerProfileTab } from '../components/seller/SellerProfileTab';
 import { SellerProductModal } from '../components/seller/SellerProductModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const SellerDashboardPage: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [confirmDeleteProdId, setConfirmDeleteProdId] = useState<number | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   const activeTab = (searchParams.get('tab') as SellerTabType) || 'overview';
   const setActiveTab = (tab: SellerTabType) => {
@@ -84,8 +89,51 @@ export const SellerDashboardPage: React.FC = () => {
     city: 'Dakar',
     phone: '',
     address: '',
+    profilePicture: '',
   });
   const [profileUpdating, setProfileUpdating] = useState(false);
+  const [selectedProfilePhoto, setSelectedProfilePhoto] = useState<File | null>(null);
+  const [profilePhotoPreviewUrl, setProfilePhotoPreviewUrl] = useState<string | null>(null);
+  const [profilePhotoMarkedForRemoval, setProfilePhotoMarkedForRemoval] = useState(false);
+  const [profilePhotoError, setProfilePhotoError] = useState<string | null>(null);
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (profilePhotoPreviewUrl) {
+        URL.revokeObjectURL(profilePhotoPreviewUrl);
+      }
+    };
+  }, [profilePhotoPreviewUrl]);
+
+  const handleSelectProfilePhoto = (file: File) => {
+    if (profilePhotoPreviewUrl) {
+      URL.revokeObjectURL(profilePhotoPreviewUrl);
+    }
+    setProfilePhotoError(null);
+    setProfileError(null);
+    setProfileSuccess(null);
+    setProfilePhotoMarkedForRemoval(false);
+    setSelectedProfilePhoto(file);
+    setProfilePhotoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleClearProfilePhoto = () => {
+    if (profilePhotoPreviewUrl) {
+      URL.revokeObjectURL(profilePhotoPreviewUrl);
+    }
+    setSelectedProfilePhoto(null);
+    setProfilePhotoPreviewUrl(null);
+    setProfilePhotoError(null);
+  };
+
+  const handleRemoveCurrentProfilePhoto = () => {
+    handleClearProfilePhoto();
+    setProfilePhotoMarkedForRemoval(true);
+    setProfilePhotoError(null);
+  };
 
   const formatPrice = (amount?: number) => {
     if (amount === undefined || amount === null) return '0 FCFA';
@@ -137,6 +185,7 @@ export const SellerDashboardPage: React.FC = () => {
           city: p.city || 'Dakar',
           phone: p.phone || '',
           address: p.address || '',
+          profilePicture: p.profilePicture || p.profilePictureUrl || '',
         });
       }
       if (prodsRes.status === 'fulfilled' && prodsRes.value.data?.data?.content) {
@@ -287,13 +336,21 @@ export const SellerDashboardPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = async (prodId: number) => {
-    if (!confirm('Supprimer définitivement cet article ?')) return;
+  const handleDeleteProduct = (prodId: number) => {
+    setConfirmDeleteProdId(prodId);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (confirmDeleteProdId === null) return;
+    setDeletingProduct(true);
     try {
-      await sellerApi.deleteProduct(prodId);
+      await sellerApi.deleteProduct(confirmDeleteProdId);
       loadAllData();
     } catch (err: any) {
       alert(err.response?.data?.message || "Erreur lors de la suppression.");
+    } finally {
+      setDeletingProduct(false);
+      setConfirmDeleteProdId(null);
     }
   };
 
@@ -339,16 +396,81 @@ export const SellerDashboardPage: React.FC = () => {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setProfileSuccess(null);
+    setProfileError(null);
+    setProfilePhotoError(null);
     try {
       setProfileUpdating(true);
-      await sellerApi.updateProfile({
-        city: profileForm.city,
-        address: profileForm.address,
+      let nextProfilePicture = profilePhotoMarkedForRemoval ? '' : profileForm.profilePicture.trim();
+
+      if (selectedProfilePhoto) {
+        const validation = validateProfileImageFile(selectedProfilePhoto);
+        if (!validation.valid) {
+          setProfilePhotoError(validation.error || 'Fichier invalide.');
+          return;
+        }
+        setUploadingProfilePhoto(true);
+        try {
+          const uploadRes = await uploadApi.uploadFile(selectedProfilePhoto, 'avatars');
+          if (!uploadRes.data?.data) {
+            throw new Error("Le serveur n'a pas retourné l'URL de la photo téléversée.");
+          }
+          nextProfilePicture = uploadRes.data.data;
+        } catch (uploadErr: any) {
+          setProfilePhotoError(
+            uploadErr?.response?.data?.message ||
+              uploadErr?.message ||
+              'Erreur lors du téléversement de la photo de profil.'
+          );
+          return;
+        } finally {
+          setUploadingProfilePhoto(false);
+        }
+      }
+
+      const res = await sellerApi.updateProfile({
+        firstName: profileForm.firstName.trim(),
+        lastName: profileForm.lastName.trim(),
+        city: profileForm.city.trim(),
+        address: profileForm.address.trim(),
+        profilePicture: nextProfilePicture,
       });
-      alert("Profil boutique mis à jour avec succès !");
-      loadAllData();
+
+      const updatedSeller = res.data?.data;
+      if (updatedSeller) {
+        setProfile(updatedSeller);
+        setProfileForm((prev) => ({
+          ...prev,
+          firstName: updatedSeller.firstName || prev.firstName,
+          lastName: updatedSeller.lastName || prev.lastName,
+          city: updatedSeller.city || '',
+          address: updatedSeller.address || '',
+          profilePicture: updatedSeller.profilePicture || '',
+        }));
+        if (user) {
+          updateUser({
+            ...user,
+            firstName: updatedSeller.firstName || user.firstName,
+            lastName: updatedSeller.lastName || user.lastName,
+            fullName: updatedSeller.fullName || user.fullName,
+            city: updatedSeller.city,
+            address: updatedSeller.address,
+            profilePicture: updatedSeller.profilePicture,
+          });
+        }
+      }
+
+      const hadNewPhoto = Boolean(selectedProfilePhoto);
+      handleClearProfilePhoto();
+      setProfilePhotoMarkedForRemoval(false);
+      setProfileSuccess(
+        hadNewPhoto
+          ? 'Votre photo et votre profil boutique ont été mis à jour avec succès !'
+          : 'Profil boutique mis à jour avec succès !'
+      );
+      setTimeout(() => setProfileSuccess(null), 4000);
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de la mise à jour du profil.");
+      setProfileError(err.response?.data?.message || 'Erreur lors de la mise à jour du profil.');
     } finally {
       setProfileUpdating(false);
     }
@@ -363,7 +485,7 @@ export const SellerDashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:flex-row text-slate-800">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col lg:block text-slate-800">
       {/* 1. Sidebar modulaire */}
       <SellerSidebar
         activeTab={activeTab}
@@ -375,7 +497,8 @@ export const SellerDashboardPage: React.FC = () => {
       />
 
       {/* 2. Contenu principal par onglet */}
-      <main className="flex-1 p-6 sm:p-10 space-y-6 overflow-y-auto max-h-screen">
+      <div className="lg:pl-72 min-w-0">
+        <main className="p-4 sm:p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
         {activeTab === 'overview' && (
           <SellerOverviewTab
             dashboard={dashboard}
@@ -446,6 +569,17 @@ export const SellerDashboardPage: React.FC = () => {
           <SellerProfileTab
             profileForm={profileForm}
             setProfileForm={setProfileForm}
+            selectedPhotoFile={selectedProfilePhoto}
+            photoPreviewUrl={profilePhotoPreviewUrl}
+            photoMarkedForRemoval={profilePhotoMarkedForRemoval}
+            photoError={profilePhotoError}
+            uploadingPhoto={uploadingProfilePhoto}
+            profileSuccess={profileSuccess}
+            profileError={profileError}
+            onSelectPhotoFile={handleSelectProfilePhoto}
+            onClearSelectedPhoto={handleClearProfilePhoto}
+            onRemoveCurrentPhoto={handleRemoveCurrentProfilePhoto}
+            onPhotoValidationError={(msg) => setProfilePhotoError(msg)}
             onSubmit={handleUpdateProfile}
             updating={profileUpdating}
           />
@@ -466,7 +600,8 @@ export const SellerDashboardPage: React.FC = () => {
             </button>
           </div>
         )}
-      </main>
+        </main>
+      </div>
 
       {/* 3. Modale Produit */}
       <SellerProductModal
@@ -478,6 +613,19 @@ export const SellerDashboardPage: React.FC = () => {
         setProductForm={setProductForm}
         onSubmit={handleSubmitProduct}
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteProdId !== null}
+        title="Supprimer définitivement cet article ?"
+        message="Cette annonce sera définitivement retirée de votre dressing et ne pourra plus être récupérée."
+        confirmLabel="Supprimer"
+        variant="danger"
+        loading={deletingProduct}
+        onCancel={() => {
+          if (!deletingProduct) setConfirmDeleteProdId(null);
+        }}
+        onConfirm={confirmDeleteProduct}
       />
     </div>
   );

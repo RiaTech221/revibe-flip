@@ -19,6 +19,14 @@ export interface PageResponse<T> {
   hasPrevious: boolean;
 }
 
+export type AdminPermission =
+  | 'DASHBOARD'
+  | 'USERS'
+  | 'PRODUCTS'
+  | 'CATEGORIES'
+  | 'ORDERS_PAYMENTS'
+  | 'REPORTS';
+
 export interface User {
   id: number;
   firstName: string;
@@ -26,7 +34,7 @@ export interface User {
   fullName: string;
   phone: string;
   email?: string;
-  role: 'ROLE_USER' | 'ROLE_ADMIN';
+  role: 'ROLE_USER' | 'ROLE_ADMIN' | 'ROLE_COLLABORATOR';
   countryCode: string;
   countryName: string;
   flagEmoji: string;
@@ -38,7 +46,41 @@ export interface User {
   rating: number;
   reviewCount: number;
   isSuspended: boolean;
+  adminPermissions?: AdminPermission[];
   createdAt: string;
+}
+
+export interface Collaborator {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  role: string;
+  isSuspended: boolean;
+  isVerified: boolean;
+  permissions: AdminPermission[];
+  initialPassword?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * SEC-01 — Profil public d'un vendeur exposé sur les endpoints publics.
+ * Ne contient aucune donnée PII (phone, email, address) ni métadonnée de sécurité.
+ */
+export interface PublicUser {
+  id: number;
+  fullName: string;
+  profilePicture?: string;
+  city?: string;
+  countryCode?: string;
+  flagEmoji?: string;
+  isVerified: boolean;
+  rating: number;
+  reviewCount: number;
+  trustScore: number;
 }
 
 export interface Country {
@@ -119,7 +161,7 @@ export interface Product {
   countryName: string;
   currency: string;
   viewCount: number;
-  seller: User;
+  seller: PublicUser;
   images: string[];
   primaryImage?: string;
   createdAt: string;
@@ -214,6 +256,9 @@ export interface Message {
   content: string;
   messageType?: MessageType;
   imageUrl?: string;
+  productId?: number;
+  productTitle?: string;
+  productImageUrl?: string;
   offer?: ChatOffer;
   isRead: boolean;
   sentAt: string;
@@ -246,6 +291,19 @@ export interface Review {
   rating: number;
   comment?: string;
   createdAt: string;
+}
+
+export interface PersonalDashboard {
+  isSeller: boolean;
+  purchasesCount: number;
+  purchases: PageResponse<Order>;
+  salesCount?: number;
+  sales?: PageResponse<Order>;
+  listingsCount?: number;
+  listings?: PageResponse<Product>;
+  averageRating?: number;
+  reviewCount?: number;
+  reviews?: PageResponse<Review>;
 }
 
 export interface Notification {

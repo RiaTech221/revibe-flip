@@ -12,9 +12,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { categoryApi, notificationApi } from '../services/api';
+import { categoryApi, notificationApi, chatApi } from '../services/api';
+import { createStompClient } from '../services/wsClient';
 import { Category, Notification } from '../types';
 import { Logo } from './Logo';
+import { formatImageUrl } from '../utils/imageUrl';
 import {
   Search,
   PlusCircle,
@@ -36,7 +38,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isStaff, logout } = useAuth();
   const { totalCount, toggleCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +46,7 @@ export const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -70,16 +73,55 @@ export const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
+      setUnreadNotifications(0);
+      setUnreadMessages(0);
+      return;
+    }
+
+    const refreshCounts = () => {
       notificationApi.getUnreadCount().then((res) => {
         if (res.data) setUnreadNotifications(res.data.data);
       }).catch(console.error);
 
-      notificationApi.getAll().then((res) => {
-        if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
       }).catch(console.error);
-    }
-  }, [isAuthenticated]);
+    };
+
+    refreshCounts();
+
+    notificationApi.getAll().then((res) => {
+      if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+    }).catch(console.error);
+
+    const handleMessagesRead = () => {
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
+      }).catch(console.error);
+    };
+    window.addEventListener('revibe:messages-read', handleMessagesRead);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/user.${user.id}.notifications`, (frame) => {
+        try {
+          const notif: Notification = JSON.parse(frame.body);
+          setUnreadNotifications((prev) => prev + 1);
+          setNotifications((prev) => [notif, ...prev].slice(0, 5));
+          if (notif.type === 'NEW_MESSAGE') {
+            setUnreadMessages((prev) => prev + 1);
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      window.removeEventListener('revibe:messages-read', handleMessagesRead);
+      client?.deactivate();
+    };
+  }, [isAuthenticated, user?.id, location.pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,6 +187,11 @@ export const Navbar: React.FC = () => {
               title="Messagerie & Discussions"
             >
               <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              {isAuthenticated && unreadMessages > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
             </Link>
 
             {/* 3. Icône Profil Parlante (Ouverture du Menu Compte & Connexion style Amazon / Shein) */}
@@ -155,10 +202,10 @@ export const Navbar: React.FC = () => {
                 className="p-1 sm:p-1.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
                 title={isAuthenticated ? (user?.fullName || 'Mon profil') : 'Compte & Connexion'}
               >
-                {isAuthenticated && user?.profilePicture ? (
+                {isAuthenticated && formatImageUrl(user?.profilePicture) ? (
                   <img
-                    src={user.profilePicture}
-                    alt={user.fullName}
+                    src={formatImageUrl(user?.profilePicture) || ''}
+                    alt={user?.fullName}
                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-purple-200 ring-2 ring-transparent hover:ring-purple-400 transition-all"
                   />
                 ) : (
@@ -176,7 +223,7 @@ export const Navbar: React.FC = () => {
                       {/* En-tête utilisateur connecté */}
                       <div className="px-4 pb-3 border-b border-slate-100 flex items-center gap-3">
                         <img
-                          src={user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
+                          src={formatImageUrl(user?.profilePicture) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
                           alt={user?.fullName}
                           className="w-10 h-10 rounded-full object-cover border border-purple-200"
                         />
@@ -223,7 +270,7 @@ export const Navbar: React.FC = () => {
                           <span>Vos ventes & Dressing</span>
                         </Link>
 
-                        {isAdmin && (
+                        {isStaff && (
                           <Link
                             to="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -252,7 +299,7 @@ export const Navbar: React.FC = () => {
                   ) : (
                     <>
                       {/* Menu non connecté (Exactement le modèle Amazon/Shein de l'image utilisateur) */}
-                      <div className="px-4 pb-3 space-y-2.5 border-b border-slate-100">
+                      <div className="px-4 pb-3 border-b border-slate-100">
                         <Link
                           to="/login"
                           onClick={() => setIsUserMenuOpen(false)}
@@ -260,16 +307,6 @@ export const Navbar: React.FC = () => {
                         >
                           Se connecter
                         </Link>
-                        <p className="text-center text-[11px] text-slate-500">
-                          Nouveau client ?{' '}
-                          <Link
-                            to="/register"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="text-purple-700 font-bold hover:underline"
-                          >
-                            S'inscrire ici
-                          </Link>
-                        </p>
                       </div>
 
                       <div className="py-1.5 px-2 space-y-0.5">
@@ -306,16 +343,16 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            {/* 4. Bouton Panier (Uniquement l'icône parlante avec pastille compteur, SANS écriture) */}
+            {/* 4. Bouton Panier (Icône circulaire moderne avec pastille compteur ronde) */}
             <button
               type="button"
               onClick={toggleCart}
-              className="relative p-2 sm:p-2.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors cursor-pointer active:scale-95"
+              className="relative w-10 h-10 rounded-full bg-slate-100/80 hover:bg-purple-50 text-slate-700 hover:text-purple-700 flex items-center justify-center transition-all cursor-pointer active:scale-95"
               title="Mon Panier"
             >
-              <ShoppingBag className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              <ShoppingBag className="w-5 h-5" />
               {totalCount > 0 && (
-                <span className="absolute top-0.5 right-0.5 bg-purple-700 text-white text-[10px] font-black w-4.5 h-4.5 rounded-full flex items-center justify-center shadow-xs border-2 border-white animate-scale-in">
+                <span className="absolute -top-0.5 -right-0.5 bg-purple-700 text-white text-[10px] font-black min-w-[18px] h-[18px] px-1 rounded-full flex items-center justify-center leading-none shadow-xs ring-2 ring-white animate-scale-in">
                   {totalCount}
                 </span>
               )}
