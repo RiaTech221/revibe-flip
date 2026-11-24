@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.revibeflip.security.PaginationValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -69,10 +72,15 @@ public class OrderController {
             @RequestParam(required = false) OrderStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir,
             Authentication authentication
     ) {
         User buyer = resolveUser(authentication);
-        Page<OrderDto> orderPage = orderService.getBuyerOrdersPaginated(buyer.getId(), status, PageRequest.of(page, size));
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.ORDER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
+        Page<OrderDto> orderPage = orderService.getBuyerOrdersPaginated(buyer.getId(), status, pageable);
         return ResponseEntity.ok(ApiResponse.ok(PageResponseDto.fromPage(orderPage)));
     }
 
