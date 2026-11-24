@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Interface Spring Data JPA pour les messages individuels des conversations.
@@ -16,6 +17,8 @@ import java.util.List;
 public interface MessageRepository extends JpaRepository<Message, Long> {
 
     List<Message> findByConversationIdOrderBySentAtAsc(Long conversationId);
+
+    Optional<Message> findTopByConversationIdOrderBySentAtDescIdDesc(Long conversationId);
 
     long countByConversationIdAndSenderIdNotAndIsReadFalse(Long conversationId, Long senderId);
 

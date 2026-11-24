@@ -18,8 +18,8 @@ export const chatService = {
     return res.data?.data || [];
   },
 
-  getOrCreateConversation: async (productId: number): Promise<Conversation> => {
-    const res = await api.post('/messages/conversations', { productId });
+  getOrCreateConversation: async (productId: number, initialMessage = 'Je suis intéressé'): Promise<Conversation> => {
+    const res = await api.post('/messages/conversations', { productId, initialMessage });
     return res.data?.data;
   },
 

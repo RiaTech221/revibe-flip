@@ -100,50 +100,65 @@ public class ChatService {
             throw new IllegalArgumentException("Vous ne pouvez pas démarrer une conversation sur votre propre article.");
         }
 
-        // Rechercher si une conversation existe déjà pour cet article et cet acheteur/vendeur
-        Conversation conversation = conversationRepository.findByProductAndUsers(
-                product.getId(), buyer.getId(), product.getSeller().getId()
-        ).orElseGet(() -> {
-            List<Conversation> existingBetweenUsers = conversationRepository.findByUsers(buyer.getId(), product.getSeller().getId());
-            if (!existingBetweenUsers.isEmpty()) {
-                return existingBetweenUsers.get(0);
-            }
-            return Conversation.builder()
-                    .product(product)
-                    .buyer(buyer)
-                    .seller(product.getSeller())
-                    .build();
-        });
+        // US-14 : Un seul fil par vendeur, avec reprise de l'historique existant
+        List<Conversation> existingBetweenUsers = conversationRepository.findByUsers(buyer.getId(), product.getSeller().getId());
+        Conversation conversation = !existingBetweenUsers.isEmpty()
+                ? existingBetweenUsers.get(0)
+                : Conversation.builder()
+                        .product(product)
+                        .buyer(buyer)
+                        .seller(product.getSeller())
+                        .build();
 
         boolean isNew = (conversation.getId() == null);
+        conversation.setProduct(product);
 
-        // Référencer tous les articles du panier s'il y en a plusieurs du même vendeur
+        // Référencer tous les articles du panier ou ajouter le produit consulté s'il n'y est pas encore
         if (request.getProductIds() != null && !request.getProductIds().isEmpty()) {
             List<Product> refList = productRepository.findAllById(request.getProductIds());
             conversation.setReferencedProducts(refList);
-        } else if (conversation.getReferencedProducts() == null || conversation.getReferencedProducts().isEmpty()) {
-            conversation.setReferencedProducts(new ArrayList<>(List.of(product)));
+        } else {
+            if (conversation.getReferencedProducts() == null) {
+                conversation.setReferencedProducts(new ArrayList<>());
+            }
+            Long targetId = product.getId();
+            boolean alreadyReferenced = conversation.getReferencedProducts().stream()
+                    .anyMatch(p -> p.getId() != null && p.getId().equals(targetId));
+            if (!alreadyReferenced) {
+                conversation.getReferencedProducts().add(product);
+            }
         }
 
         String messageContent = request.getInitialMessage();
         if (messageContent == null || messageContent.trim().isBlank()) {
-            messageContent = "Bonjour ! Je suis intéressé(e) par votre article \"" + product.getTitle() + "\" et souhaite échanger avec vous.";
+            messageContent = "Je suis intéressé";
+        } else {
+            messageContent = messageContent.trim();
         }
 
-        if (isNew) {
+        boolean shouldInsertProductMessage = isNew || messageRepository
+                .findTopByConversationIdOrderBySentAtDescIdDesc(conversation.getId())
+                .map(lastMsg -> lastMsg.getProductId() == null || !lastMsg.getProductId().equals(product.getId()))
+                .orElse(true);
+
+        if (shouldInsertProductMessage) {
             conversation.setLastMessagePreview(messageContent);
             conversation.setLastMessageAt(LocalDateTime.now());
         }
         Conversation savedConversation = conversationRepository.save(conversation);
 
-        // Créer le message initial UNIQUEMENT s'il s'agit d'une NOUVELLE conversation
-        // Cela évite de répéter le message de salutation à chaque visite ou clic
-        if (isNew) {
+        // Insérer automatiquement la carte produit (photo, nom) et le message « Je suis intéressé »
+        if (shouldInsertProductMessage) {
+            String productImage = product.getPrimaryImageUrl();
             Message message = Message.builder()
                     .conversation(savedConversation)
                     .sender(buyer)
-                    .content(messageContent.trim())
+                    .content(messageContent)
                     .messageType(MessageType.TEXT)
+                    .imageUrl(productImage)
+                    .productId(product.getId())
+                    .productTitle(product.getTitle())
+                    .productImageUrl(productImage)
                     .isRead(false)
                     .build();
             messageRepository.save(message);
@@ -152,7 +167,7 @@ public class ChatService {
             notificationService.createNotification(
                     product.getSeller(),
                     "Nouveau message de " + buyer.getFullName(),
-                    messageContent,
+                    product.getTitle() + " — " + messageContent,
                     NotificationType.NEW_MESSAGE,
                     "/messages/" + savedConversation.getId()
             );

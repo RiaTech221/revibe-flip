@@ -256,6 +256,9 @@ export interface Message {
   content: string;
   messageType?: MessageType;
   imageUrl?: string;
+  productId?: number;
+  productTitle?: string;
+  productImageUrl?: string;
   offer?: ChatOffer;
   isRead: boolean;
   sentAt: string;
