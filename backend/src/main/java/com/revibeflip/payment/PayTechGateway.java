@@ -32,7 +32,14 @@ public class PayTechGateway implements PaymentGateway {
     public PayTechGateway(PayTechProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper;
+
+        // SEC-03 : Configuration stricte des délais d'attente réseau pour éviter de bloquer indéfiniment les threads
+        org.springframework.http.client.SimpleClientHttpRequestFactory requestFactory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(properties.getConnectTimeoutMs());
+        requestFactory.setReadTimeout(properties.getReadTimeoutMs());
+
         this.restClient = RestClient.builder()
+                .requestFactory(requestFactory)
                 .baseUrl(properties.getBaseUrl())
                 .build();
     }
