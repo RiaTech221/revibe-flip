@@ -112,6 +112,7 @@ export const RegisterPage: React.FC = () => {
               error={error}
               onSubmit={handleVerifyOtpSubmit}
               onBack={() => setIsOtpStep(false)}
+              onSkip={() => navigate('/')}
             />
           )}
         </div>

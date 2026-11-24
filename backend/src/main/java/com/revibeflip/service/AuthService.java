@@ -3,8 +3,10 @@ package com.revibeflip.service;
 import com.revibeflip.dto.*;
 import com.revibeflip.entity.Country;
 import com.revibeflip.entity.User;
+import com.revibeflip.entity.enums.AccountStatus;
 import com.revibeflip.entity.enums.NotificationType;
 import com.revibeflip.entity.enums.Role;
+import com.revibeflip.exception.TooManyRequestsException;
 import com.revibeflip.repository.CountryRepository;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.security.JwtUtil;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Service métier d'authentification, inscription, validation OTP par SMS et réinitialisation de mot de passe.
@@ -29,7 +32,7 @@ import java.time.LocalDateTime;
 public class AuthService {
 
     private static final int OTP_TTL_MINUTES = 10;
-    private static final int MAX_OTP_ATTEMPTS = 5;
+    private static final int MAX_OTP_ATTEMPTS = 3;
 
     private final UserRepository userRepository;
     private final CountryRepository countryRepository;
@@ -45,15 +48,21 @@ public class AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request, String clientIp) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
-        validatePasswordStrength(request.getPassword());
+        if (cleanPhone.isBlank()) {
+            throw new IllegalArgumentException("Le numéro de téléphone est obligatoire.");
+        }
+
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            validatePasswordStrength(request.getPassword());
+        }
 
         if (userRepository.existsByPhone(cleanPhone)) {
-            throw new IllegalArgumentException("Ce numéro de téléphone est déjà utilisé.");
+            throw new IllegalStateException("Ce numéro de téléphone est déjà utilisé.");
         }
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             if (userRepository.existsByEmail(request.getEmail().trim().toLowerCase())) {
-                throw new IllegalArgumentException("Cette adresse email est déjà utilisée.");
+                throw new IllegalStateException("Cette adresse email est déjà utilisée.");
             }
         }
 
@@ -67,14 +76,18 @@ public class AuthService {
                 .orElseGet(() -> countryRepository.findByCode("SN").orElse(null));
 
         String rawOtp = generateOtp();
+        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank())
+                ? request.getPassword()
+                : UUID.randomUUID().toString();
 
         User user = User.builder()
-                .firstName(request.getFirstName().trim())
-                .lastName(request.getLastName().trim())
+                .firstName(request.getFirstName() != null ? request.getFirstName().trim() : null)
+                .lastName(request.getLastName() != null ? request.getLastName().trim() : null)
                 .phone(cleanPhone)
                 .email(request.getEmail() != null && !request.getEmail().isBlank() ? request.getEmail().trim().toLowerCase() : null)
-                .password(passwordEncoder.encode(request.getPassword()))
+                .password(passwordEncoder.encode(rawPassword))
                 .role(Role.ROLE_USER)
+                .status(AccountStatus.PENDING_OTP)
                 .country(country)
                 .isVerified(false)
                 .otpCode(passwordEncoder.encode(rawOtp))
@@ -98,12 +111,19 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional(noRollbackFor = IllegalArgumentException.class)
+    @Transactional(noRollbackFor = {IllegalArgumentException.class, TooManyRequestsException.class})
     public AuthResponse verifyOtp(VerifyOtpRequest request) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
 
         User user = userRepository.findByPhone(cleanPhone)
                 .orElseThrow(() -> new IllegalArgumentException("Code OTP invalide ou expiré."));
+
+        int attempts = user.getOtpAttempts() != null ? user.getOtpAttempts() : 0;
+        if (attempts >= MAX_OTP_ATTEMPTS) {
+            clearVerificationOtp(user);
+            userRepository.save(user);
+            throw new TooManyRequestsException("Compte temporairement bloqué après 3 échecs. Veuillez demander un nouveau code.");
+        }
 
         if (user.getOtpCode() == null || user.getOtpExpiresAt() == null) {
             throw new IllegalArgumentException("Aucun code OTP actif. Veuillez en demander un nouveau.");
@@ -115,24 +135,21 @@ public class AuthService {
             throw new IllegalArgumentException("Le code OTP a expiré. Veuillez en demander un nouveau.");
         }
 
-        int attempts = user.getOtpAttempts() != null ? user.getOtpAttempts() : 0;
-        if (attempts >= MAX_OTP_ATTEMPTS) {
-            clearVerificationOtp(user);
-            userRepository.save(user);
-            throw new IllegalArgumentException("Nombre maximal de tentatives atteint. Veuillez demander un nouveau code.");
-        }
-
         String candidate = request.getOtpCode() != null ? request.getOtpCode().trim() : "";
         if (!passwordEncoder.matches(candidate, user.getOtpCode())) {
-            user.setOtpAttempts(attempts + 1);
-            if (user.getOtpAttempts() >= MAX_OTP_ATTEMPTS) {
+            int nextAttempts = attempts + 1;
+            user.setOtpAttempts(nextAttempts);
+            if (nextAttempts >= MAX_OTP_ATTEMPTS) {
                 clearVerificationOtp(user);
+                userRepository.save(user);
+                throw new TooManyRequestsException("Nombre maximal de tentatives atteint (3 échecs). Veuillez demander un nouveau code.");
             }
             userRepository.save(user);
-            throw new IllegalArgumentException("Code OTP invalide ou expiré.");
+            throw new IllegalArgumentException("Code OTP invalide (" + nextAttempts + "/" + MAX_OTP_ATTEMPTS + ").");
         }
 
         user.setIsVerified(true);
+        user.setStatus(AccountStatus.ACTIVE);
         clearVerificationOtp(user);
         User verifiedUser = userRepository.save(user);
 
@@ -357,6 +374,10 @@ public class AuthService {
 
     private String cleanPhoneNumber(String phone) {
         if (phone == null) return "";
-        return phone.replaceAll("[\\s\\-\\(\\)]", "");
+        String cleaned = phone.replaceAll("[\\s\\-\\(\\)]", "");
+        if (cleaned.matches("^7\\d{8}$")) {
+            return "+221" + cleaned;
+        }
+        return cleaned;
     }
 }

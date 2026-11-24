@@ -1,10 +1,8 @@
 /**
  * Écran d'Inscription (RegisterScreen) ReVibe FliP Mobile
- * 
- * Formulaire de création de compte membre sur l'application mobile :
- *  * - Choix du pays de résidence et saisie des informations d'identité
- *  * - Création du mot de passe avec règles de complexité
- *  * - Envoi du code de vérification OTP
+ *
+ * Inscription par numéro de téléphone sénégalais (+221) uniquement
+ * suivie de l'écran de validation OTP à 2 boutons (Passer / Valider le code).
  */
 
 import React, { useState } from 'react';
@@ -21,48 +19,46 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
-import { Phone, Lock, User, Mail } from 'lucide-react-native';
+import { Phone, ShieldCheck } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services';
 
+const formatSenegalPhone = (raw: string): string => {
+  const digits = raw.replace(/\D/g, '').slice(0, 9);
+  return [
+    digits.slice(0, 2),
+    digits.slice(2, 5),
+    digits.slice(5, 7),
+    digits.slice(7, 9),
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
+
 export const RegisterScreen = ({ navigation }: any) => {
   const { login } = useAuth();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [phoneDisplay, setPhoneDisplay] = useState('');
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [fullPhoneForOtp, setFullPhoneForOtp] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!firstName.trim() || !lastName.trim() || !phone.trim() || !password) {
-      Alert.alert('Champs requis', 'Veuillez remplir tous les champs obligatoires.');
+    const digits = phoneDisplay.replace(/\D/g, '');
+    if (!/^7\d{8}$/.test(digits)) {
+      Alert.alert('Numéro invalide', 'Veuillez saisir un numéro sénégalais au format 7X XXX XX XX.');
       return;
     }
 
+    const fullPhone = `+221${digits}`;
     setLoading(true);
     try {
-      const fullPhone = phone.startsWith('+') ? phone.trim() : `+221${phone.replace(/^0+/, '').trim()}`;
-      const data = await authService.register({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+      await authService.register({
         phone: fullPhone,
-        email: email.trim() || undefined,
-        password,
-        confirmPassword: password,
         countryCode: 'SN',
       });
-
-      if (data?.token) {
-        login(data.token, data.user);
-        Alert.alert('Compte créé !', 'Bienvenue sur ReVibe FliP.', [
-          { text: 'Commencer', onPress: () => navigation.navigate('MainTabs') },
-        ]);
-      } else {
-        Alert.alert('Inscription réussie', 'Vous pouvez maintenant vous connecter.', [
-          { text: 'Se connecter', onPress: () => navigation.navigate('Login') },
-        ]);
-      }
+      setFullPhoneForOtp(fullPhone);
+      setIsOtpStep(true);
     } catch (err: any) {
       Alert.alert('Erreur', err.response?.data?.message || "L'inscription a échoué.");
     } finally {
@@ -70,111 +66,152 @@ export const RegisterScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleVerifyOtp = async () => {
+    const cleanOtp = otpCode.trim();
+    if (cleanOtp.length < 4) {
+      Alert.alert('Code requis', 'Veuillez saisir le code OTP reçu par SMS.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await authService.verifyOtp({
+        phone: fullPhoneForOtp,
+        otpCode: cleanOtp,
+      });
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
+      navigation.navigate('MainTabs');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Code OTP invalide ou expiré.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await authService.resendOtp(fullPhoneForOtp);
+      Alert.alert('Code envoyé', 'Un nouveau code OTP a été envoyé par SMS.');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de renvoyer le code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header showBack onBack={() => navigation.goBack()} title="Créer un compte" />
+      <Header
+        showBack
+        onBack={() => (isOtpStep ? setIsOtpStep(false) : navigation.goBack())}
+        title={isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
+      />
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Rejoignez la communauté</Text>
-          <Text style={styles.subtitle}>
-            Achetez et vendez vos articles avec la protection du séquestre ReVibe Garanti.
-          </Text>
-        </View>
-
-        <View style={styles.row}>
-          <View style={[styles.formGroup, styles.halfCol]}>
-            <Text style={styles.label}>Prénom *</Text>
-            <View style={styles.inputWrap}>
-              <User size={18} color={colors.textSecondary} style={styles.inputIcon} />
-              <TextInput
-                style={styles.input}
-                value={firstName}
-                onChangeText={setFirstName}
-                placeholder="Ex: Amina"
-                placeholderTextColor={colors.textSecondary}
-              />
+        {!isOtpStep ? (
+          <>
+            <View style={styles.header}>
+              <Text style={styles.title}>Rejoignez la communauté</Text>
+              <Text style={styles.subtitle}>
+                Entrez votre numéro sénégalais pour recevoir votre code de vérification par SMS.
+              </Text>
             </View>
-          </View>
 
-          <View style={[styles.formGroup, styles.halfCol]}>
-            <Text style={styles.label}>Nom *</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                style={styles.input}
-                value={lastName}
-                onChangeText={setLastName}
-                placeholder="Ex: Diallo"
-                placeholderTextColor={colors.textSecondary}
-              />
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Numéro de téléphone *</Text>
+              <View style={styles.phoneInputWrap}>
+                <View style={styles.prefixBadge}>
+                  <Text style={styles.prefixText}>🇸🇳 +221</Text>
+                </View>
+                <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={phoneDisplay}
+                  onChangeText={(txt) => setPhoneDisplay(formatSenegalPhone(txt))}
+                  placeholder="7X XXX XX XX"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="phone-pad"
+                  maxLength={12}
+                />
+              </View>
             </View>
-          </View>
-        </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Numéro de téléphone * (Wave / OM)</Text>
-          <View style={styles.inputWrap}>
-            <Phone size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={phone}
-              onChangeText={setPhone}
-              placeholder="77 000 00 00"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={styles.buttonText}>Continuer</Text>
+              )}
+            </TouchableOpacity>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email (optionnel)</Text>
-          <View style={styles.inputWrap}>
-            <Mail size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="amina@exemple.sn"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
-        </View>
+            <View style={styles.footerRow}>
+              <Text style={styles.footerText}>Déjà inscrit ?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.footerLink}>Se connecter</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.header}>
+              <View style={styles.otpIconWrap}>
+                <ShieldCheck size={28} color={colors.primary} />
+              </View>
+              <Text style={styles.title}>Validation SMS</Text>
+              <Text style={styles.subtitle}>
+                Saisissez le code à 6 chiffres envoyé au {fullPhoneForOtp}.
+              </Text>
+            </View>
 
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Mot de passe *</Text>
-          <View style={styles.inputWrap}>
-            <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry
-            />
-          </View>
-        </View>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Code OTP</Text>
+              <View style={styles.inputWrap}>
+                <TextInput
+                  style={[styles.input, styles.otpInput]}
+                  value={otpCode}
+                  onChangeText={(txt) => setOtpCode(txt.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="123456"
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              </View>
+            </View>
 
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleRegister}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#ffffff" />
-          ) : (
-            <Text style={styles.buttonText}>Créer mon compte</Text>
-          )}
-        </TouchableOpacity>
+            <View style={styles.twoBtnRow}>
+              <TouchableOpacity
+                style={styles.skipButton}
+                onPress={() => navigation.navigate('MainTabs')}
+                disabled={loading}
+              >
+                <Text style={styles.skipButtonText}>Passer</Text>
+              </TouchableOpacity>
 
-        <View style={styles.footerRow}>
-          <Text style={styles.footerText}>Déjà inscrit ?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.footerLink}>Se connecter</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity
+                style={[styles.validateButton, loading && styles.buttonDisabled]}
+                onPress={handleVerifyOtp}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.buttonText}>Valider le code</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.resendWrap} onPress={handleResend} disabled={loading}>
+              <Text style={styles.footerLink}>Renvoyer le code</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -192,6 +229,15 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
   },
+  otpIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: '#f3e8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
   title: {
     fontSize: 26,
     fontWeight: '800',
@@ -203,13 +249,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  row: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfCol: {
-    flex: 1,
-  },
   formGroup: {
     marginBottom: 16,
   },
@@ -218,6 +257,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
+  },
+  phoneInputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  prefixBadge: {
+    backgroundColor: '#f1f5f9',
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  prefixText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.textPrimary,
   },
   inputWrap: {
     flexDirection: 'row',
@@ -229,13 +289,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   inputIcon: {
-    marginRight: 10,
+    marginLeft: 10,
+    marginRight: 8,
   },
   input: {
     flex: 1,
     paddingVertical: 14,
+    paddingRight: 12,
     fontSize: 15,
     color: colors.textPrimary,
+  },
+  otpInput: {
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: 8,
   },
   button: {
     backgroundColor: colors.primary,
@@ -244,13 +312,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
+  twoBtnRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  skipButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  skipButtonText: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  validateButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     color: '#ffffff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+  },
+  resendWrap: {
+    alignItems: 'center',
+    marginTop: 18,
   },
   footerRow: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
 package com.revibeflip.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.revibeflip.entity.enums.AccountStatus;
 import com.revibeflip.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -28,10 +29,10 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 60)
+    @Column(nullable = true, length = 60)
     private String firstName;
 
-    @Column(nullable = false, length = 60)
+    @Column(nullable = true, length = 60)
     private String lastName;
 
     @Column(nullable = false, unique = true, length = 30)
@@ -41,13 +42,18 @@ public class User implements UserDetails {
     private String email;
 
     @JsonIgnore
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
     private Role role = Role.ROLE_USER;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private AccountStatus status = AccountStatus.ACTIVE;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "country_id")
@@ -137,7 +143,8 @@ public class User implements UserDetails {
     }
 
     public String getFullName() {
-        return firstName + " " + lastName;
+        String full = ((firstName != null ? firstName : "") + " " + (lastName != null ? lastName : "")).trim();
+        return full.isEmpty() ? (phone != null ? phone : "Membre ReVibe") : full;
     }
 
     // --- UserDetails implementation ---
