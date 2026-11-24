@@ -361,25 +361,95 @@ public class PaymentService {
         ledgerService.recordReleaseToSeller(order, payment.getTransactionReference());
     }
 
+    /**
+     * Traite le retour asynchrone (IPN) de virement vendeur transmis par PayTech.
+     *
+     * <p>Règle : Seul un virement à l'état {@link PayoutStatus#PROCESSING} peut changer d'état par ce canal.
+     * Les virements dans un état initial (PENDING), d'intervention (MANUAL_REQUIRED) ou terminaux (COMPLETED, FAILED)
+     * ne peuvent en aucun cas être modifiés via cet endpoint.
+     * <p>Pourquoi : Empêcher le contournement des blocages manuels (ex: absence de numéro ou litige),
+     * la réactivation frauduleuse d'un virement échoué et les attaques par rejeu sur des virements déjà clos.
+     * Hypothèse de travail (à confirmer avec le prestataire) : le prestataire transmet la référence externe ainsi que l'issue finale (success/completed ou failed/canceled).
+     *
+     * @param externalId Référence externe du virement (ex: PAYOUT-RF-...)
+     * @param status Statut renvoyé par le prestataire
+     */
     @Transactional
     public void handleTransferIpn(String externalId, String status) {
         if (externalId == null || externalId.isBlank()) {
+            // SEC-02 : Ignorer les requêtes sans référence externe pour éviter les requêtes SQL invalides
+            log.warn("Transfer IPN ignoré : référence externe absente ou vide.");
             return;
         }
-        Payment payment = paymentRepository.findByPayoutReference(externalId).orElse(null);
+
+        String sanitizedRef = sanitizeAndTruncateRef(externalId);
+
+        Payment payment = paymentRepository.findByPayoutReference(externalId.trim()).orElse(null);
         if (payment == null) {
+            // SEC-02 : Tracer les références introuvables sans divulguer la référence complète dans les logs
+            log.warn("Transfer IPN ignoré : référence inconnue (ref: {}).", sanitizedRef);
             return;
         }
-        if (payment.getPayoutStatus() == PayoutStatus.COMPLETED) {
+
+        // SEC-02 : Règle d'or : seul un virement en cours (PROCESSING) est autorisé à transiter vers un état terminal
+        if (payment.getPayoutStatus() != PayoutStatus.PROCESSING) {
+            log.warn("Transfer IPN ignoré : transition interdite depuis l'état {} (ref: {}).",
+                    payment.getPayoutStatus(), sanitizedRef);
             return;
         }
-        if ("success".equalsIgnoreCase(status) || "completed".equalsIgnoreCase(status)) {
+
+        if (status == null || status.isBlank()) {
+            // SEC-02 : Un statut vide ne doit provoquer aucune transition d'état
+            log.warn("Transfer IPN ignoré : statut manquant ou vide (ref: {}).", sanitizedRef);
+            return;
+        }
+
+        // SEC-02 : Remplacement de tous les caractères de contrôle (\p{Cntrl}) pour prévenir l'injection de logs
+        String cleanStatus = status.replaceAll("[\\p{Cntrl}]", " ").trim();
+        String normalizedStatus = cleanStatus.toLowerCase();
+        boolean isSuccess = "success".equals(normalizedStatus) || "completed".equals(normalizedStatus);
+        boolean isFailed = "failed".equals(normalizedStatus) || "canceled".equals(normalizedStatus);
+
+        if (!isSuccess && !isFailed) {
+            // SEC-02 : Tronquer le statut inconnu à 32 caractères dans le journal
+            String truncatedStatus = cleanStatus.length() > 32 ? cleanStatus.substring(0, 32) + "..." : cleanStatus;
+            log.warn("Transfer IPN ignoré : statut inconnu '{}' (ref: {}).", truncatedStatus, sanitizedRef);
+            return;
+        }
+
+        if (isSuccess) {
+            // SEC-02 : Clôture du versement vendeur avec horodatage de validation
             payment.setPayoutStatus(PayoutStatus.COMPLETED);
             payment.setPayoutDate(LocalDateTime.now());
-        } else if ("failed".equalsIgnoreCase(status) || "canceled".equalsIgnoreCase(status)) {
+            paymentRepository.save(payment);
+            log.info("Virement vendeur confirmé avec succès via IPN (ref: {}).", sanitizedRef);
+
+            // Point d'intégration : notifier le vendeur du succès du versement des fonds (SMS / notification in-app)
+        } else {
+            // SEC-02 : Enregistrement de l'échec de versement sans modifier le statut de la commande
             payment.setPayoutStatus(PayoutStatus.FAILED);
+            paymentRepository.save(payment);
+            log.warn("Virement vendeur marqué comme échoué via IPN (ref: {}).", sanitizedRef);
+
+            // Point d'intégration : alerter l'administrateur ou basculer en MANUAL_REQUIRED pour reprise du virement
         }
-        paymentRepository.save(payment);
+
+        // Point d'intégration : rapprochement périodique des virements restés bloqués en PROCESSING via l'API du prestataire si elle existe (à confirmer dans sa documentation)
+    }
+
+    /**
+     * Nettoie et tronque une référence externe pour les journaux d'audit.
+     * Conserve les 8 derniers caractères précédés de « ... » afin d'identifier la transaction
+     * sans exposer l'identifiant complet et sans permettre d'injection de logs (CRLF).
+     *
+     * @param ref Référence externe brute
+     * @return Référence assainie et tronquée (ex: "...abcd1234") ou "N/A"
+     */
+    public static String sanitizeAndTruncateRef(String ref) {
+        if (ref == null) return "N/A";
+        // SEC-02 : Remplacement de tous les caractères de contrôle (\p{Cntrl}) pour bloquer l'injection de log (CRLF)
+        String sanitized = ref.replaceAll("[\\p{Cntrl}]", " ").trim();
+        return sanitized.length() > 8 ? "..." + sanitized.substring(sanitized.length() - 8) : sanitized;
     }
 
     @Transactional
