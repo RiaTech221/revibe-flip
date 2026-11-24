@@ -1,8 +1,8 @@
 package com.revibeflip.controller;
 
 import com.revibeflip.dto.ApiResponse;
-import com.revibeflip.security.SafeMediaService;
 import com.revibeflip.service.storage.ImageStorageService;
+import com.revibeflip.service.storage.ImageUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +34,7 @@ import java.nio.file.Paths;
 public class UploadController {
 
     private final ImageStorageService imageStorageService;
+    private final ImageUploadService imageUploadService;
 
     @Value("${revibeflip.upload.dir:uploads/}")
     private String uploadDir;
@@ -44,30 +45,8 @@ public class UploadController {
     public ResponseEntity<ApiResponse<String>> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "context", required = false, defaultValue = "products") String context) {
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Le fichier envoyé est vide."));
-        }
-
-        // Limite de taille stricte : 5 Mo max
-        if (file.getSize() > 5 * 1024 * 1024) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("La taille du fichier dépasse la limite autorisée de 5 Mo."));
-        }
-
-        // Contrôle du type déclaré du fichier (JPG, PNG, WebP uniquement)
-        String contentType = file.getContentType();
-        if (contentType == null || (!contentType.equalsIgnoreCase("image/jpeg")
-                && !contentType.equalsIgnoreCase("image/png")
-                && !contentType.equalsIgnoreCase("image/webp"))) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Format de fichier non autorisé. Formats acceptés : JPG, PNG, WebP."));
-        }
-
         try {
-            byte[] rawBytes = file.getBytes();
-            SafeMediaService.DetectedType detected = SafeMediaService.detectType(rawBytes, false);
-            SafeMediaService.verifyImageWithTika(rawBytes, detected);
-            byte[] cleanBytes = SafeMediaService.sanitizeImage(rawBytes, detected);
-
-            String fileUrl = imageStorageService.store(cleanBytes, context, detected.extension, detected.mimeType);
+            String fileUrl = imageUploadService.uploadImage(file, context);
             return ResponseEntity.ok(ApiResponse.ok(fileUrl, "Image téléversée avec succès."));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ApiResponse.error(ex.getMessage()));
