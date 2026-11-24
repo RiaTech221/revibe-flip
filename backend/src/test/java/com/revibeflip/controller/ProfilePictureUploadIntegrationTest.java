@@ -4,6 +4,7 @@ import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.Role;
 import com.revibeflip.payment.PaymentGateway;
 import com.revibeflip.repository.UserRepository;
+import com.revibeflip.security.JwtUtil;
 import com.revibeflip.service.storage.ImageStorageService;
 import com.revibeflip.service.storage.ImageUploadService;
 import com.revibeflip.sms.SmsProvider;
@@ -55,6 +56,7 @@ class ProfilePictureUploadIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JwtUtil jwtUtil;
 
     @MockitoBean private SmsProvider smsProvider;
     @MockitoBean private PaymentGateway paymentGateway;
@@ -108,22 +110,7 @@ class ProfilePictureUploadIntegrationTest {
                         .build())
         );
 
-        authToken = loginAndGetToken(USER_PHONE, PASSWORD);
-    }
-
-    private String loginAndGetToken(String phone, String password) throws Exception {
-        String body = String.format("{\"identifier\":\"%s\",\"password\":\"%s\"}", phone, password);
-        MvcResult result = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andReturn();
-        Matcher m = Pattern.compile("\"token\"\\s*:\\s*\"([^\"]+)\"")
-                .matcher(result.getResponse().getContentAsString());
-        if (!m.find()) {
-            throw new IllegalStateException("Token JWT introuvable");
-        }
-        return m.group(1);
+        authToken = jwtUtil.generateToken(user, user.getId(), user.getRole().name(), user.getFullName());
     }
 
     private static byte[] createValidImageBytes(String format) throws Exception {
