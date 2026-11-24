@@ -36,10 +36,11 @@ import { AdminReportsSection } from '../components/admin/AdminReportsSection';
 import { AdminSettingsSection } from '../components/admin/AdminSettingsSection';
 import { AdminAuditSection } from '../components/admin/AdminAuditSection';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
+import { AdminTeamSection } from '../components/admin/AdminTeamSection';
 import { AdminModals } from '../components/admin/AdminModals';
 
 export const AdminPage: React.FC = () => {
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, isStaff, hasPermission, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -47,6 +48,27 @@ export const AdminPage: React.FC = () => {
   const setActiveTab = (tab: AdminTabType) => {
     setSearchParams({ tab });
   };
+
+  // Redirection automatique pour les collaborateurs vers leur premier onglet autorisé
+  useEffect(() => {
+    if (!isAdmin && user?.role === 'ROLE_COLLABORATOR') {
+      const perms = user.adminPermissions || [];
+      const allowed: AdminTabType[] = [];
+      if (perms.includes('DASHBOARD')) allowed.push('kpi');
+      if (perms.includes('USERS')) allowed.push('users');
+      if (perms.includes('PRODUCTS')) allowed.push('products');
+      if (perms.includes('CATEGORIES')) allowed.push('categories');
+      if (perms.includes('ORDERS_PAYMENTS')) {
+        allowed.push('orders');
+        allowed.push('payments');
+      }
+      if (perms.includes('REPORTS')) allowed.push('reports');
+
+      if (allowed.length > 0 && !allowed.includes(activeTab)) {
+        setActiveTab(allowed[0]);
+      }
+    }
+  }, [isAdmin, user, activeTab]);
 
   // State: Dashboard
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
@@ -181,12 +203,12 @@ export const AdminPage: React.FC = () => {
 
   // Auto-refresh toutes les 2 minutes (désactivable)
   useEffect(() => {
-    if (!autoRefresh) return;
+    if (!autoRefresh || !hasPermission('DASHBOARD')) return;
     const timer = setInterval(() => {
       fetchDashboard(period, customFrom, customTo);
     }, 120_000);
     return () => clearInterval(timer);
-  }, [autoRefresh, period, customFrom, customTo]);
+  }, [autoRefresh, period, customFrom, customTo, isStaff, user]);
 
   const fetchUsers = async () => {
     try {
@@ -307,53 +329,56 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Initial load
+  // Initial load selon les permissions de l'utilisateur
   useEffect(() => {
-    if (isAdmin) {
-      fetchDashboard();
-      fetchUsers();
-      fetchProducts();
-      fetchCategories();
+    if (!isStaff) return;
+    if (hasPermission('DASHBOARD')) fetchDashboard();
+    if (hasPermission('USERS')) fetchUsers();
+    if (hasPermission('PRODUCTS')) fetchProducts();
+    if (hasPermission('CATEGORIES')) fetchCategories();
+    if (hasPermission('ORDERS_PAYMENTS')) {
       fetchOrders();
       fetchPayments();
-      fetchReports();
-      fetchSettingsAndAudit();
     }
-  }, [isAdmin]);
+    if (hasPermission('REPORTS')) fetchReports();
+    if (isAdmin) fetchSettingsAndAudit();
+  }, [isStaff, isAdmin, user]);
 
   // Tab-specific pagination & filters
   useEffect(() => {
-    if (activeTab === 'users') fetchUsers();
+    if (activeTab === 'users' && hasPermission('USERS')) fetchUsers();
   }, [userPage, userFilter, userSearch]);
 
   useEffect(() => {
-    if (activeTab === 'orders') fetchOrders();
+    if (activeTab === 'orders' && hasPermission('ORDERS_PAYMENTS')) fetchOrders();
   }, [orderPage, orderStatusFilter, orderSearch]);
 
   useEffect(() => {
-    if (activeTab === 'payments') fetchPayments();
+    if (activeTab === 'payments' && hasPermission('ORDERS_PAYMENTS')) fetchPayments();
   }, [paymentPage, paymentMethodFilter, paymentSearch]);
 
   useEffect(() => {
-    if (activeTab === 'reports') fetchReports();
+    if (activeTab === 'reports' && hasPermission('REPORTS')) fetchReports();
   }, [reportPage, reportFilter]);
 
   useEffect(() => {
-    if (activeTab === 'audit' || activeTab === 'settings') fetchSettingsAndAudit();
+    if ((activeTab === 'audit' || activeTab === 'settings') && isAdmin) fetchSettingsAndAudit();
   }, [auditPage, activeTab]);
 
   const handleRefreshAll = async () => {
     setRefreshing(true);
-    await Promise.all([
-      fetchDashboard(),
-      fetchUsers(),
-      fetchProducts(),
-      fetchCategories(),
-      fetchOrders(),
-      fetchPayments(),
-      fetchReports(),
-      fetchSettingsAndAudit(),
-    ]);
+    const tasks: Promise<void>[] = [];
+    if (hasPermission('DASHBOARD')) tasks.push(fetchDashboard());
+    if (hasPermission('USERS')) tasks.push(fetchUsers());
+    if (hasPermission('PRODUCTS')) tasks.push(fetchProducts());
+    if (hasPermission('CATEGORIES')) tasks.push(fetchCategories());
+    if (hasPermission('ORDERS_PAYMENTS')) {
+      tasks.push(fetchOrders());
+      tasks.push(fetchPayments());
+    }
+    if (hasPermission('REPORTS')) tasks.push(fetchReports());
+    if (isAdmin) tasks.push(fetchSettingsAndAudit());
+    await Promise.all(tasks);
     setRefreshing(false);
   };
 
@@ -586,7 +611,7 @@ export const AdminPage: React.FC = () => {
     );
   };
 
-  if (!isAdmin) {
+  if (!isStaff) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4 bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-150 shadow-lg text-center space-y-4">
@@ -595,11 +620,7 @@ export const AdminPage: React.FC = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900">Accès Administrateur Restreint</h2>
           <p className="text-xs text-gray-500 leading-relaxed">
-            Cette interface de gestion back-office est strictement réservée aux comptes{' '}
-            <code className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-bold">
-              ROLE_ADMIN
-            </code>
-            .
+            Cette interface de gestion back-office est réservée aux administrateurs et collaborateurs autorisés.
           </p>
           <button
             onClick={() => {
@@ -633,7 +654,17 @@ export const AdminPage: React.FC = () => {
       {/* 2. ZONE DE CONTENU PRINCIPAL */}
       <div className="lg:pl-72 min-w-0">
         <main className="p-3 sm:p-5 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
-        {activeTab === 'kpi' && (
+        {!isAdmin && (!user?.adminPermissions || user.adminPermissions.length === 0) && (
+          <div className="bg-white rounded-3xl p-8 border border-gray-150 shadow-xs text-center space-y-3">
+            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+            <h2 className="text-lg font-black text-gray-900">Aucune permission attribuée</h2>
+            <p className="text-xs text-gray-500 max-w-md mx-auto">
+              Votre compte collaborateur est actif, mais aucun module du Back-Office ne vous a encore été autorisé. Veuillez contacter un administrateur.
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'kpi' && hasPermission('DASHBOARD') && (
           <AdminKpiSection
             dashboard={dashboard}
             currentUser={user}
@@ -657,7 +688,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'products' && (
+        {activeTab === 'products' && hasPermission('PRODUCTS') && (
           <AdminProductsSection
             products={products}
             productSearch={productSearch}
@@ -670,7 +701,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'categories' && (
+        {activeTab === 'categories' && hasPermission('CATEGORIES') && (
           <AdminCategoriesSection
             categories={categories}
             onOpenModal={handleOpenCategoryModal}
@@ -678,7 +709,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'users' && (
+        {(activeTab === 'users' || (activeTab === 'team' && isAdmin)) && hasPermission('USERS') && (
           <AdminUsersSection
             users={users}
             userSearch={userSearch}
@@ -688,10 +719,11 @@ export const AdminPage: React.FC = () => {
             onToggleSuspend={handleToggleSuspendUser}
             onUpdateRole={handleUpdateUserRole}
             onViewDetail={handleViewUserDetail}
+            initialSubTab={activeTab === 'team' ? 'collaborators' : 'marketplace'}
           />
         )}
 
-        {activeTab === 'orders' && (
+        {activeTab === 'orders' && hasPermission('ORDERS_PAYMENTS') && (
           <AdminOrdersSection
             orders={orders}
             orderStatusFilter={orderStatusFilter}
@@ -708,7 +740,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'payments' && (
+        {activeTab === 'payments' && hasPermission('ORDERS_PAYMENTS') && (
           <AdminPaymentsSection
             payments={payments}
             paymentMethodFilter={paymentMethodFilter}
@@ -725,7 +757,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'reports' && (
+        {activeTab === 'reports' && hasPermission('REPORTS') && (
           <AdminReportsSection
             reports={reports}
             reportFilter={reportFilter}
@@ -739,7 +771,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'audit' && (
+        {activeTab === 'audit' && isAdmin && (
           <AdminAuditSection
             auditLogs={auditLogs}
             auditPage={auditPage}
@@ -751,7 +783,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'settings' && (
+        {activeTab === 'settings' && isAdmin && (
           <AdminSettingsSection
             platformSettings={platformSettings}
             commissionRate={commissionRate}
@@ -776,7 +808,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'content' && <AdminContentManager />}
+        {activeTab === 'content' && isAdmin && <AdminContentManager />}
         </main>
       </div>
 

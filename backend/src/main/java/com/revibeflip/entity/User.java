@@ -2,6 +2,7 @@ package com.revibeflip.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.revibeflip.entity.enums.AccountStatus;
+import com.revibeflip.entity.enums.AdminPermission;
 import com.revibeflip.entity.enums.Role;
 import jakarta.persistence.*;
 import lombok.*;
@@ -10,8 +11,11 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Entité JPA représentant un utilisateur inscrit (acheteur, vendeur, administrateur).
@@ -54,6 +58,13 @@ public class User implements UserDetails {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private AccountStatus status = AccountStatus.ACTIVE;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Enumerated(EnumType.STRING)
+    @CollectionTable(name = "user_admin_permissions", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "permission", length = 40)
+    @Builder.Default
+    private Set<AdminPermission> adminPermissions = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "country_id")
@@ -151,7 +162,21 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority(role.name()));
+        if (adminPermissions != null) {
+            for (AdminPermission perm : adminPermissions) {
+                authorities.add(new SimpleGrantedAuthority("PERMISSION_" + perm.name()));
+            }
+        }
+        return authorities;
+    }
+
+    public boolean hasAdminPermission(AdminPermission permission) {
+        if (role == Role.ROLE_ADMIN) {
+            return true;
+        }
+        return role == Role.ROLE_COLLABORATOR && adminPermissions != null && adminPermissions.contains(permission);
     }
 
     @Override

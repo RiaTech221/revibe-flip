@@ -65,6 +65,25 @@ public class NotificationService {
         notificationRepository.markAllAsReadForUser(userId);
     }
 
+    /**
+     * Marque une notification comme lue en validant son appartenance à l'utilisateur connecté (SEC-04).
+     *
+     * @param notificationId Identifiant de la notification.
+     * @param currentUser    Utilisateur connecté effectuant la requête.
+     */
+    @Transactional
+    public void markAsRead(Long notificationId, User currentUser) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Notification non trouvée avec l'id : " + notificationId));
+
+        if (currentUser == null || !notification.getUser().getId().equals(currentUser.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("Accès refusé : vous ne pouvez marquer que vos propres notifications.");
+        }
+
+        notification.setIsRead(true);
+        notificationRepository.save(notification);
+    }
+
     @Transactional
     public void markAsRead(Long notificationId) {
         notificationRepository.findById(notificationId).ifPresent(n -> {

@@ -20,6 +20,7 @@ import com.revibeflip.entity.enums.OrderStatus;
 import com.revibeflip.entity.enums.ProductStatus;
 import com.revibeflip.repository.UserRepository;
 import com.revibeflip.service.SellerService;
+import com.revibeflip.security.PaginationValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -134,10 +135,14 @@ public class SellerController {
             @Parameter(description = "Recherche textuelle") @RequestParam(required = false) String query,
             @Parameter(description = "Filtrer par statut") @RequestParam(required = false) ProductStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Nombre d'annonces par page") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Nombre d'annonces par page") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
         User seller = resolveSeller(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerProducts(seller, query, status, pageable)));
     }
 
@@ -239,10 +244,14 @@ public class SellerController {
             @Parameter(description = "Recherche par numéro de commande") @RequestParam(required = false) String query,
             @Parameter(description = "Statut de la commande") @RequestParam(required = false) OrderStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Nombre par page") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Nombre par page") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
         User seller = resolveSeller(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.ORDER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerOrders(seller, query, status, pageable)));
     }
 
@@ -317,10 +326,14 @@ public class SellerController {
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<SellerTransactionDto>>> getTransactions(
             Authentication authentication,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
         User seller = resolveSeller(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PAYMENT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerTransactions(seller, pageable)));
     }
 
@@ -349,10 +362,14 @@ public class SellerController {
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<ReviewDto>>> getReviews(
             Authentication authentication,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
         User seller = resolveSeller(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.REVIEW_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getSellerReviews(seller, pageable)));
     }
 
@@ -432,10 +449,14 @@ public class SellerController {
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<NotificationDto>>> getNotifications(
             Authentication authentication,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
         User user = resolveSeller(authentication);
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.NOTIFICATION_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerService.getUserNotifications(user, pageable)));
     }
 

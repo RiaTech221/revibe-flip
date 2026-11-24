@@ -74,7 +74,7 @@ public class Payment {
     @Builder.Default
     private PayoutStatus payoutStatus = PayoutStatus.NONE;
 
-    @Column(length = 120)
+    @Column(length = 120, unique = true)
     private String payoutReference;
 
     @Column(length = 30)

@@ -204,6 +204,13 @@ public class CartService {
                 throw new IllegalStateException("L'article '" + p.getTitle() + "' fait déjà l'objet d'une commande en cours ou est déjà vendu. Veuillez le retirer du panier.");
             }
 
+            // SEC-09 : Verrou atomique sur chaque article du panier
+            int reserved = productRepository.reserveProductIfActive(p.getId());
+            if (reserved == 0) {
+                throw new IllegalStateException("L'article '" + p.getTitle() + "' n'est plus disponible (déjà réservé ou vendu). Veuillez le retirer du panier.");
+            }
+            p.setStatus(ProductStatus.RESERVED);
+
             products.add(p);
             itemPriceSum = itemPriceSum.add(p.getPrice());
         }
@@ -231,6 +238,11 @@ public class CartService {
         BigDecimal platformCommission = itemPriceSum.multiply(currentCommissionRate).setScale(0, RoundingMode.HALF_UP);
         BigDecimal sellerPayout = itemPriceSum.subtract(platformCommission);
 
+        int reservationHours = platformSettingRepository.findFirstByOrderByIdAsc()
+                .map(PlatformSetting::getReservationDurationHours)
+                .orElse(24);
+        LocalDateTime reservationExpiresAt = LocalDateTime.now().plusHours(reservationHours);
+
         String orderNumber = "RF-2026-" + String.format("%05d", 10000 + random.nextInt(90000));
         Product primaryProduct = products.get(0);
 
@@ -252,6 +264,7 @@ public class CartService {
                 .deliveryNotes(request.getDeliveryNotes())
                 .status(OrderStatus.PENDING_PAYMENT)
                 .deliveryStatus(DeliveryStatus.PENDING)
+                .reservationExpiresAt(reservationExpiresAt)
                 .build();
 
         Order savedOrder = orderRepository.save(order);
