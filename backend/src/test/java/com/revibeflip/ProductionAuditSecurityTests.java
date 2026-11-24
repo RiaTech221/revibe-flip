@@ -3,6 +3,7 @@ package com.revibeflip;
 import com.revibeflip.dto.*;
 import com.revibeflip.entity.*;
 import com.revibeflip.entity.enums.*;
+import com.revibeflip.exception.TooManyRequestsException;
 import com.revibeflip.payment.PayTechProperties;
 import com.revibeflip.payment.PaymentGateway;
 import com.revibeflip.repository.*;
@@ -175,7 +176,7 @@ class ProductionAuditSecurityTests {
     }
 
     @Test
-    @DisplayName("OTP : expiration, 5 tentatives max et réponse identique mot de passe oublié")
+    @DisplayName("OTP : expiration, 3 tentatives max (429) et réponse identique mot de passe oublié")
     void testOtpExpirationAttemptsAndForgotPassword() {
         User user = saveUser("+221778000008", "OtpUser", Role.ROLE_USER, false);
         user.setIsVerified(false);
@@ -186,18 +187,19 @@ class ProductionAuditSecurityTests {
         VerifyOtpRequest expiredReq = VerifyOtpRequest.builder().phone(user.getPhone()).otpCode("123456").build();
         assertThrows(IllegalArgumentException.class, () -> authService.verifyOtp(expiredReq));
 
-        // 5 tentatives invalides -> verrouillage
+        // 3 tentatives invalides -> 2x IllegalArgumentException puis TooManyRequestsException (429) et verrouillage
         user.setOtpCode(passwordEncoder.encode("654321"));
         user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
         user.setOtpAttempts(0);
         userRepository.save(user);
 
         VerifyOtpRequest badReq = VerifyOtpRequest.builder().phone(user.getPhone()).otpCode("000000").build();
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 2; i++) {
             assertThrows(IllegalArgumentException.class, () -> authService.verifyOtp(badReq));
         }
+        assertThrows(TooManyRequestsException.class, () -> authService.verifyOtp(badReq));
         User locked = userRepository.findById(user.getId()).orElseThrow();
-        assertNull(locked.getOtpCode(), "L'OTP doit être invalidé après 5 échecs");
+        assertNull(locked.getOtpCode(), "L'OTP doit être invalidé après 3 échecs");
 
         // Réponse identique pour numéro existant ou inexistant
         assertDoesNotThrow(() -> authService.forgotPassword("+221779990000", "10.0.0.1"));

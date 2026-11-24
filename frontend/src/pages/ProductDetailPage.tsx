@@ -96,7 +96,7 @@ export const ProductDetailPage: React.FC = () => {
     try {
       const res = await chatApi.startConversation({
         productId: product.id,
-        initialMessage: `Bonjour ! Cet article "${product.title}" est-il toujours disponible ?`,
+        initialMessage: 'Je suis intéressé',
       });
       navigate(`/messages?conversationId=${res.data.data.id}`);
     } catch (err) {

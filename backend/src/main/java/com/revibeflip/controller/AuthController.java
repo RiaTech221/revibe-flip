@@ -70,6 +70,17 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Si un compte correspond à ce numéro, un nouveau code OTP a été envoyé."));
     }
 
+    @PostMapping("/skip-otp")
+    @Operation(summary = "Passer l'OTP en environnement de test (hors production)")
+    public ResponseEntity<ApiResponse<AuthResponse>> skipOtp(
+            @RequestParam String phone,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
+        AuthResponse response = authService.skipOtpForDevTest(phone);
+        attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        return ResponseEntity.ok(ApiResponse.ok(response, "Compte activé en mode test."));
+    }
+
     @PostMapping("/forgot-password")
     @Operation(summary = "Demander une réinitialisation de mot de passe par OTP SMS")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(

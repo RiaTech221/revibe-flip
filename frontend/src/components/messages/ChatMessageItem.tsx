@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Message } from '../../types';
 import { formatImageUrl } from '../../utils/imageUrl';
 
@@ -16,6 +17,8 @@ interface ChatMessageItemProps {
 export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, currentUserId }) => {
   const isMe = message.senderId === currentUserId;
   const isSystem = message.messageType === 'SYSTEM';
+  const hasProductCard = Boolean(message.productTitle || message.productId);
+  const cardImage = message.productImageUrl || message.imageUrl;
 
   if (isSystem) {
     return (
@@ -36,13 +39,40 @@ export const ChatMessageItem: React.FC<ChatMessageItemProps> = ({ message, curre
             : 'bg-white text-gray-800 rounded-bl-xs border border-gray-150 shadow-xs'
         }`}
       >
-        {message.imageUrl && (
-          <img
-            src={formatImageUrl(message.imageUrl)}
-            alt="Détail article"
-            className="w-full max-w-[260px] max-h-56 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
-            onClick={() => window.open(formatImageUrl(message.imageUrl), '_blank')}
-          />
+        {hasProductCard ? (
+          <Link
+            to={message.productId ? `/product/${message.productId}` : '#'}
+            className={`flex items-center gap-3 p-2.5 rounded-xl border transition-colors ${
+              isMe
+                ? 'bg-white/10 border-white/20 hover:bg-white/15 text-white'
+                : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-900'
+            }`}
+          >
+            {cardImage && (
+              <img
+                src={formatImageUrl(cardImage)}
+                alt={message.productTitle || 'Article'}
+                className="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-200"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${isMe ? 'text-purple-200' : 'text-purple-700'}`}>
+                Article concerné
+              </p>
+              <p className="font-bold text-xs sm:text-sm truncate">
+                {message.productTitle || 'Article'}
+              </p>
+            </div>
+          </Link>
+        ) : (
+          message.imageUrl && (
+            <img
+              src={formatImageUrl(message.imageUrl)}
+              alt="Détail article"
+              className="w-full max-w-[260px] max-h-56 rounded-xl object-cover cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => window.open(formatImageUrl(message.imageUrl), '_blank')}
+            />
+          )
         )}
         <p>{message.content}</p>
       </div>

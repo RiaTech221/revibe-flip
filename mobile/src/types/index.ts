@@ -119,6 +119,9 @@ export interface Message {
   senderName: string;
   content: string;
   imageUrl?: string;
+  productId?: number;
+  productTitle?: string;
+  productImageUrl?: string;
   sentAt: string;
   createdAt?: string;
   read: boolean;

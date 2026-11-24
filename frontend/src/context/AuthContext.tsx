@@ -23,6 +23,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
   isAuthModalOpen: boolean;
   authModalMode: 'login' | 'register' | 'otp';
   pendingPhone: string;
@@ -42,8 +43,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'otp'>('login');
   const [pendingPhone, setPendingPhone] = useState('');
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   const refreshUser = async () => {
     try {
+      if (token) {
+        const meRes = await authApi.getMe();
+        if (meRes.data && meRes.data.data) {
+          setUser(meRes.data.data);
+          return;
+        }
+      }
       if (!activeRefreshPromise) {
         activeRefreshPromise = authApi
           .refresh()
@@ -135,6 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         logout,
         refreshUser,
+        updateUser,
         isAuthModalOpen,
         authModalMode,
         pendingPhone,

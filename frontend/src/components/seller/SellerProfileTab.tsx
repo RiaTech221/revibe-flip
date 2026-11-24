@@ -5,6 +5,8 @@
  */
 
 import React from 'react';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { ProfileAvatarUpload } from '../common/ProfileAvatarUpload';
 
 interface SellerProfileTabProps {
   profileForm: {
@@ -13,6 +15,7 @@ interface SellerProfileTabProps {
     city: string;
     phone: string;
     address: string;
+    profilePicture: string;
   };
   setProfileForm: React.Dispatch<
     React.SetStateAction<{
@@ -21,8 +24,20 @@ interface SellerProfileTabProps {
       city: string;
       phone: string;
       address: string;
+      profilePicture: string;
     }>
   >;
+  selectedPhotoFile: File | null;
+  photoPreviewUrl: string | null;
+  photoMarkedForRemoval: boolean;
+  photoError: string | null;
+  uploadingPhoto: boolean;
+  profileSuccess: string | null;
+  profileError: string | null;
+  onSelectPhotoFile: (file: File) => void;
+  onClearSelectedPhoto: () => void;
+  onRemoveCurrentPhoto: () => void;
+  onPhotoValidationError: (message: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   updating: boolean;
 }
@@ -30,6 +45,17 @@ interface SellerProfileTabProps {
 export const SellerProfileTab: React.FC<SellerProfileTabProps> = ({
   profileForm,
   setProfileForm,
+  selectedPhotoFile,
+  photoPreviewUrl,
+  photoMarkedForRemoval,
+  photoError,
+  uploadingPhoto,
+  profileSuccess,
+  profileError,
+  onSelectPhotoFile,
+  onClearSelectedPhoto,
+  onRemoveCurrentPhoto,
+  onPhotoValidationError,
   onSubmit,
   updating,
 }) => {
@@ -41,6 +67,37 @@ export const SellerProfileTab: React.FC<SellerProfileTabProps> = ({
       </div>
 
       <form onSubmit={onSubmit} className="bg-white rounded-3xl p-6 border border-gray-150 shadow-xs space-y-4">
+        {profileSuccess && (
+          <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{profileSuccess}</span>
+          </div>
+        )}
+
+        {profileError && (
+          <div
+            role="alert"
+            className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-center gap-2"
+          >
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{profileError}</span>
+          </div>
+        )}
+
+        <ProfileAvatarUpload
+          currentImageUrl={profileForm.profilePicture}
+          previewUrl={photoPreviewUrl}
+          selectedFile={selectedPhotoFile}
+          fullName={`${profileForm.firstName} ${profileForm.lastName}`.trim() || 'Boutique'}
+          error={photoError}
+          uploading={uploadingPhoto}
+          disabled={updating}
+          isMarkedForRemoval={photoMarkedForRemoval}
+          onFileSelect={onSelectPhotoFile}
+          onClearSelectedFile={onClearSelectedPhoto}
+          onRemoveCurrentPhoto={onRemoveCurrentPhoto}
+          onValidationError={onPhotoValidationError}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block font-bold text-gray-700 mb-1">Prénom *</label>
@@ -105,10 +162,14 @@ export const SellerProfileTab: React.FC<SellerProfileTabProps> = ({
         <div className="pt-2">
           <button
             type="submit"
-            disabled={updating}
+            disabled={updating || uploadingPhoto}
             className="px-6 py-3 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md shadow-purple-700/20 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
-            {updating ? 'Enregistrement...' : 'Mettre à jour ma boutique'}
+            {uploadingPhoto
+              ? 'Téléversement de la photo...'
+              : updating
+              ? 'Enregistrement...'
+              : 'Mettre à jour ma boutique'}
           </button>
         </div>
       </form>

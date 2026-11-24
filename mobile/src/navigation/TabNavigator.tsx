@@ -20,11 +20,12 @@ import { ProfileScreen } from '../screens/ProfileScreen';
 import { colors } from '../theme/colors';
 import { Home, Search, PlusCircle, MessageCircle, User } from 'lucide-react-native';
 
-const Tab = createBottomTabNavigator<MainTabParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList, 'MainTabs'>();
 
 export const TabNavigator = () => {
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,

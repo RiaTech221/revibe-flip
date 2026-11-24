@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Page de Gestion du Profil Utilisateur ReVibe FliP
  * 
  * Permet à l'utilisateur connecté de consulter et modifier ses informations personnelles :
@@ -7,34 +7,36 @@
  *  * - Paramètres de notification et sécurité du compte
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { orderApi, userApi } from '../services/api';
+import { orderApi, userApi, uploadApi } from '../services/api';
 import { Order } from '../types';
+import { formatImageUrl } from '../utils/imageUrl';
+import { validateProfileImageFile } from '../utils/profileImageValidation';
+import { ProfileAvatarUpload } from '../components/common/ProfileAvatarUpload';
 import {
-  User as UserIcon,
   ShoppingBag,
   MapPin,
   Phone,
-  Mail,
   Clock,
   ChevronRight,
   Settings,
   CheckCircle2,
   Store,
   Truck,
-  ExternalLink,
   LogOut,
   ShieldCheck,
   Package,
-  AlertCircle
+  AlertCircle,
+  Camera
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
-  const { user, isAuthenticated, refreshUser, logout } = useAuth();
+  const { user, isAuthenticated, updateUser, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentTab = searchParams.get('tab') || 'purchases';
 
@@ -48,8 +50,15 @@ export const ProfilePage: React.FC = () => {
   const [editCity, setEditCity] = useState(user?.city || 'Dakar');
   const [editAddress, setEditAddress] = useState(user?.address || '');
   const [editProfilePic, setEditProfilePic] = useState(user?.profilePicture || '');
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const [photoMarkedForRemoval, setPhotoMarkedForRemoval] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [headerAvatarError, setHeaderAvatarError] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -61,6 +70,45 @@ export const ProfilePage: React.FC = () => {
       setEditProfilePic(user.profilePicture || '');
     }
   }, [user]);
+
+  useEffect(() => {
+    setHeaderAvatarError(false);
+  }, [user?.profilePicture]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) {
+        URL.revokeObjectURL(photoPreviewUrl);
+      }
+    };
+  }, [photoPreviewUrl]);
+
+  const handleSelectPhotoFile = (file: File) => {
+    if (photoPreviewUrl) {
+      URL.revokeObjectURL(photoPreviewUrl);
+    }
+    setPhotoError(null);
+    setProfileError(null);
+    setProfileSuccess(null);
+    setPhotoMarkedForRemoval(false);
+    setSelectedPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const handleClearSelectedPhoto = () => {
+    if (photoPreviewUrl) {
+      URL.revokeObjectURL(photoPreviewUrl);
+    }
+    setSelectedPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    setPhotoError(null);
+  };
+
+  const handleRemoveCurrentPhoto = () => {
+    handleClearSelectedPhoto();
+    setPhotoMarkedForRemoval(true);
+    setPhotoError(null);
+  };
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -77,21 +125,67 @@ export const ProfilePage: React.FC = () => {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileSaving(true);
-    setProfileSuccess(false);
+    setProfileSuccess(null);
+    setProfileError(null);
+    setPhotoError(null);
+
     try {
-      await userApi.updateProfile({
+      let nextProfilePicture = photoMarkedForRemoval ? '' : editProfilePic.trim();
+
+      if (selectedPhotoFile) {
+        const validation = validateProfileImageFile(selectedPhotoFile);
+        if (!validation.valid) {
+          setPhotoError(validation.error || 'Fichier invalide.');
+          return;
+        }
+        setUploadingPhoto(true);
+        try {
+          const uploadRes = await uploadApi.uploadFile(selectedPhotoFile, 'avatars');
+          if (!uploadRes.data?.data) {
+            throw new Error("Le serveur n'a pas retourné l'URL de la photo téléversée.");
+          }
+          nextProfilePicture = uploadRes.data.data;
+        } catch (uploadErr: any) {
+          const msg =
+            uploadErr?.response?.data?.message ||
+            uploadErr?.message ||
+            'Erreur lors du téléversement de la photo de profil.';
+          setPhotoError(msg);
+          return;
+        } finally {
+          setUploadingPhoto(false);
+        }
+      }
+
+      const updateRes = await userApi.updateProfile({
         firstName: editFirstName.trim(),
         lastName: editLastName.trim(),
         email: editEmail.trim(),
         city: editCity.trim(),
         address: editAddress.trim(),
-        profilePicture: editProfilePic.trim(),
+        profilePicture: nextProfilePicture,
       });
-      await refreshUser();
-      setProfileSuccess(true);
-      setTimeout(() => setProfileSuccess(false), 3000);
-    } catch (err) {
-      alert('Erreur lors de la mise à jour des informations de profil');
+
+      if (updateRes.data?.data) {
+        updateUser(updateRes.data.data);
+        setEditProfilePic(updateRes.data.data.profilePicture || '');
+      }
+
+      const hadNewPhoto = Boolean(selectedPhotoFile);
+      handleClearSelectedPhoto();
+      setPhotoMarkedForRemoval(false);
+
+      setProfileSuccess(
+        hadNewPhoto
+          ? 'Votre photo de profil et vos informations personnelles ont été mises à jour avec succès !'
+          : 'Vos coordonnées ont été enregistrées avec succès !'
+      );
+      setTimeout(() => setProfileSuccess(null), 4000);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        'Erreur lors de la mise à jour des informations de profil.';
+      setProfileError(msg);
     } finally {
       setProfileSaving(false);
     }
@@ -160,20 +254,33 @@ export const ProfilePage: React.FC = () => {
         {/* HEADER PROFIL CLIENT */}
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-150 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-            <div className="relative">
+            <div className="relative group">
               <img
                 src={
-                  user?.profilePicture ||
+                  (!headerAvatarError && formatImageUrl(user?.profilePicture)) ||
                   `https://ui-avatars.com/api/?name=${encodeURIComponent(
                     user?.fullName || 'User'
                   )}&background=7c3aed&color=fff`
                 }
                 alt={user?.fullName}
-                className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm"
+                onError={() => setHeaderAvatarError(true)}
+                className="w-16 h-16 rounded-full object-cover border-2 border-purple-200 shadow-sm bg-white"
               />
-              <span className="absolute -bottom-1 -right-1 text-base bg-white rounded-full px-1 shadow-xs">
-                🇸🇳
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (currentTab === 'settings') {
+                    photoInputRef.current?.click();
+                  } else {
+                    setSearchParams({ tab: 'settings' });
+                  }
+                }}
+                title="Modifier ma photo de profil"
+                aria-label="Modifier ma photo de profil"
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-purple-700 hover:bg-purple-800 text-white flex items-center justify-center border-2 border-white shadow-xs transition-colors cursor-pointer"
+              >
+                <Camera className="w-3 h-3" />
+              </button>
             </div>
 
             <div>
@@ -347,9 +454,35 @@ export const ProfilePage: React.FC = () => {
             {profileSuccess && (
               <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-bold flex items-center gap-2 animate-fadeIn">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Vos coordonnées ont été enregistrées avec succès !</span>
+                <span>{profileSuccess}</span>
               </div>
             )}
+
+            {profileError && (
+              <div
+                role="alert"
+                className="p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-bold flex items-center gap-2"
+              >
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{profileError}</span>
+              </div>
+            )}
+
+            <ProfileAvatarUpload
+              currentImageUrl={editProfilePic}
+              previewUrl={photoPreviewUrl}
+              selectedFile={selectedPhotoFile}
+              fullName={`${editFirstName} ${editLastName}`.trim() || user?.fullName}
+              error={photoError}
+              uploading={uploadingPhoto}
+              disabled={profileSaving}
+              isMarkedForRemoval={photoMarkedForRemoval}
+              onFileSelect={handleSelectPhotoFile}
+              onClearSelectedFile={handleClearSelectedPhoto}
+              onRemoveCurrentPhoto={handleRemoveCurrentPhoto}
+              onValidationError={(msg) => setPhotoError(msg)}
+              inputRef={photoInputRef}
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
@@ -412,10 +545,14 @@ export const ProfilePage: React.FC = () => {
             <div className="pt-2 flex justify-end">
               <button
                 type="submit"
-                disabled={profileSaving}
-                className="px-6 py-2.5 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md shadow-purple-700/20 transition-all disabled:opacity-50"
+                disabled={profileSaving || uploadingPhoto}
+                className="px-6 py-2.5 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md shadow-purple-700/20 transition-all disabled:opacity-50 cursor-pointer"
               >
-                {profileSaving ? 'Enregistrement...' : 'Enregistrer mes coordonnées'}
+                {uploadingPhoto
+                  ? 'Téléversement de la photo...'
+                  : profileSaving
+                  ? 'Enregistrement...'
+                  : 'Enregistrer mes coordonnées'}
               </button>
             </div>
           </form>

@@ -15,6 +15,7 @@ import { useCart } from '../context/CartContext';
 import { categoryApi, notificationApi } from '../services/api';
 import { Category, Notification } from '../types';
 import { Logo } from './Logo';
+import { formatImageUrl } from '../utils/imageUrl';
 import {
   Search,
   PlusCircle,
@@ -155,10 +156,10 @@ export const Navbar: React.FC = () => {
                 className="p-1 sm:p-1.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
                 title={isAuthenticated ? (user?.fullName || 'Mon profil') : 'Compte & Connexion'}
               >
-                {isAuthenticated && user?.profilePicture ? (
+                {isAuthenticated && formatImageUrl(user?.profilePicture) ? (
                   <img
-                    src={user.profilePicture}
-                    alt={user.fullName}
+                    src={formatImageUrl(user?.profilePicture) || ''}
+                    alt={user?.fullName}
                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-purple-200 ring-2 ring-transparent hover:ring-purple-400 transition-all"
                   />
                 ) : (
@@ -176,7 +177,7 @@ export const Navbar: React.FC = () => {
                       {/* En-tête utilisateur connecté */}
                       <div className="px-4 pb-3 border-b border-slate-100 flex items-center gap-3">
                         <img
-                          src={user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
+                          src={formatImageUrl(user?.profilePicture) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
                           alt={user?.fullName}
                           className="w-10 h-10 rounded-full object-cover border border-purple-200"
                         />
