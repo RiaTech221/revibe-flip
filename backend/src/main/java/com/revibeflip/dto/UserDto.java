@@ -35,6 +35,7 @@ public class UserDto {
     private Integer reviewCount;
     private Boolean isSuspended;
     private Boolean mustChangePassword;
+    private java.util.Set<com.revibeflip.entity.enums.AdminPermission> adminPermissions;
     private LocalDateTime createdAt;
 
     public static UserDto fromEntity(User user) {
@@ -59,6 +60,7 @@ public class UserDto {
                 .reviewCount(user.getReviewCount() != null ? user.getReviewCount() : 0)
                 .isSuspended(Boolean.TRUE.equals(user.getIsSuspended()))
                 .mustChangePassword(Boolean.TRUE.equals(user.getMustChangePassword()))
+                .adminPermissions(user.getAdminPermissions() != null ? user.getAdminPermissions() : java.util.Collections.emptySet())
                 .createdAt(user.getCreatedAt())
                 .build();
     }

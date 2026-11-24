@@ -19,6 +19,14 @@ export interface PageResponse<T> {
   hasPrevious: boolean;
 }
 
+export type AdminPermission =
+  | 'DASHBOARD'
+  | 'USERS'
+  | 'PRODUCTS'
+  | 'CATEGORIES'
+  | 'ORDERS_PAYMENTS'
+  | 'REPORTS';
+
 export interface User {
   id: number;
   firstName: string;
@@ -26,7 +34,7 @@ export interface User {
   fullName: string;
   phone: string;
   email?: string;
-  role: 'ROLE_USER' | 'ROLE_ADMIN';
+  role: 'ROLE_USER' | 'ROLE_ADMIN' | 'ROLE_COLLABORATOR';
   countryCode: string;
   countryName: string;
   flagEmoji: string;
@@ -38,7 +46,24 @@ export interface User {
   rating: number;
   reviewCount: number;
   isSuspended: boolean;
+  adminPermissions?: AdminPermission[];
   createdAt: string;
+}
+
+export interface Collaborator {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  role: string;
+  isSuspended: boolean;
+  isVerified: boolean;
+  permissions: AdminPermission[];
+  initialPassword?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 /**

@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
+import { User, AdminPermission } from '../types';
 import { authApi } from '../services/api';
 import { setAccessToken } from '../services/httpClient';
 
@@ -17,6 +17,8 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isStaff: boolean;
+  hasPermission: (permission: AdminPermission) => boolean;
   loading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
@@ -111,6 +113,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = !!token && !!user;
   const isAdmin = user?.role === 'ROLE_ADMIN';
+  const isCollaborator = user?.role === 'ROLE_COLLABORATOR';
+  const isStaff = isAdmin || isCollaborator;
+
+  const hasPermission = (permission: AdminPermission): boolean => {
+    if (isAdmin) return true;
+    if (!isCollaborator || !user?.adminPermissions) return false;
+    return user.adminPermissions.includes(permission);
+  };
 
   return (
     <AuthContext.Provider
@@ -119,6 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated,
         isAdmin,
+        isStaff,
+        hasPermission,
         loading,
         login,
         logout,
