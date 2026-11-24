@@ -38,6 +38,7 @@ import { AdminAuditSection } from '../components/admin/AdminAuditSection';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
 import { AdminTeamSection } from '../components/admin/AdminTeamSection';
 import { AdminModals } from '../components/admin/AdminModals';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const AdminPage: React.FC = () => {
   const { user, isAdmin, isStaff, hasPermission, logout } = useAuth();
@@ -155,6 +156,15 @@ export const AdminPage: React.FC = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [adminFeedback, setAdminFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    variant?: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void> | void;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // State: Dashboard période & auto-refresh
   const [period, setPeriod] = useState<string>('30d');
@@ -393,15 +403,27 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleUpdateUserRole = async (userId: number, currentRole: 'ROLE_USER' | 'ROLE_ADMIN') => {
+  const handleUpdateUserRole = (userId: number, currentRole: 'ROLE_USER' | 'ROLE_ADMIN') => {
     const nextRole = currentRole === 'ROLE_ADMIN' ? 'ROLE_USER' : 'ROLE_ADMIN';
-    if (!confirm(`Changer le rôle de cet utilisateur en ${nextRole} ?`)) return;
-    try {
-      await adminApi.updateUserRole(userId, nextRole);
-      fetchUsers();
-    } catch (e) {
-      console.error('Error updating user role', e);
-    }
+    setConfirmDialog({
+      title: 'Modifier le rôle utilisateur',
+      message: `Voulez-vous changer le rôle de cet utilisateur en ${nextRole === 'ROLE_ADMIN' ? 'Administrateur' : 'Utilisateur'} ?`,
+      confirmLabel: 'Confirmer le changement',
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          await adminApi.updateUserRole(userId, nextRole);
+          setAdminFeedback({ type: 'success', message: 'Rôle utilisateur mis à jour avec succès.' });
+          fetchUsers();
+          if (isAdmin) fetchSettingsAndAudit();
+        } catch (e: any) {
+          setAdminFeedback({
+            type: 'error',
+            message: e?.response?.data?.message || 'Erreur lors de la modification du rôle.',
+          });
+        }
+      },
+    });
   };
 
   const handleViewUserDetail = async (userId: number) => {
@@ -424,16 +446,28 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = async (productId: number) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cet article ?')) return;
-    try {
-      await adminApi.deleteProduct(productId);
-      fetchProducts();
-      fetchDashboard();
-      if (selectedProductDetail) setSelectedProductDetail(null);
-    } catch (e) {
-      console.error('Error deleting product', e);
-    }
+  const handleDeleteProduct = (productId: number) => {
+    setConfirmDialog({
+      title: "Supprimer définitivement l'annonce ?",
+      message: 'Cette action est irréversible. L’annonce et ses photos seront supprimées de la plateforme et journalisées dans l’audit.',
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteProduct(productId);
+          setAdminFeedback({ type: 'success', message: 'Annonce supprimée définitivement avec succès.' });
+          fetchProducts();
+          if (hasPermission('DASHBOARD')) fetchDashboard();
+          if (isAdmin) fetchSettingsAndAudit();
+          if (selectedProductDetail) setSelectedProductDetail(null);
+        } catch (e: any) {
+          setAdminFeedback({
+            type: 'error',
+            message: e?.response?.data?.message || "Impossible de supprimer cette annonce.",
+          });
+        }
+      },
+    });
   };
 
   const handleOpenCategoryModal = (cat?: Category) => {
@@ -477,14 +511,26 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleDeleteCategory = async (catId: number) => {
-    if (!confirm('Supprimer cette catégorie ?')) return;
-    try {
-      await adminApi.deleteCategory(catId);
-      fetchCategories();
-    } catch (err) {
-      console.error('Error deleting category', err);
-    }
+  const handleDeleteCategory = (catId: number) => {
+    setConfirmDialog({
+      title: 'Supprimer ce rayon / catégorie ?',
+      message: 'Cette action supprimera définitivement le rayon s’il ne contient aucune annonce associée, et sera enregistrée dans le journal d’audit.',
+      confirmLabel: 'Supprimer',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await adminApi.deleteCategory(catId);
+          setAdminFeedback({ type: 'success', message: 'Rayon supprimé avec succès.' });
+          fetchCategories();
+          if (isAdmin) fetchSettingsAndAudit();
+        } catch (err: any) {
+          setAdminFeedback({
+            type: 'error',
+            message: err?.response?.data?.message || 'Impossible de supprimer ce rayon.',
+          });
+        }
+      },
+    });
   };
 
   const handleOpenDeliveryModal = (order: Order) => {
@@ -654,6 +700,24 @@ export const AdminPage: React.FC = () => {
       {/* 2. ZONE DE CONTENU PRINCIPAL */}
       <div className="lg:pl-72 min-w-0">
         <main className="p-3 sm:p-5 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+        {adminFeedback && (
+          <div
+            className={`flex items-center justify-between gap-3 p-4 rounded-2xl border text-xs font-medium ${
+              adminFeedback.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            <span>{adminFeedback.message}</span>
+            <button
+              type="button"
+              onClick={() => setAdminFeedback(null)}
+              className="px-2 py-1 rounded-lg hover:bg-black/5 font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
         {!isAdmin && (!user?.adminPermissions || user.adminPermissions.length === 0) && (
           <div className="bg-white rounded-3xl p-8 border border-gray-150 shadow-xs text-center space-y-3">
             <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
@@ -852,6 +916,28 @@ export const AdminPage: React.FC = () => {
           setAuditConversationModal({ isOpen: false, data: null, loading: false })
         }
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+        onCancel={() => {
+          if (!confirmLoading) setConfirmDialog(null);
+        }}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          setConfirmLoading(true);
+          try {
+            await confirmDialog.onConfirm();
+          } finally {
+            setConfirmLoading(false);
+            setConfirmDialog(null);
+          }
+        }}
       />
     </div>
   );

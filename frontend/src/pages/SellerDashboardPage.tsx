@@ -27,11 +27,14 @@ import { SellerFinancesTab } from '../components/seller/SellerFinancesTab';
 import { SellerReviewsTab } from '../components/seller/SellerReviewsTab';
 import { SellerProfileTab } from '../components/seller/SellerProfileTab';
 import { SellerProductModal } from '../components/seller/SellerProductModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const SellerDashboardPage: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [confirmDeleteProdId, setConfirmDeleteProdId] = useState<number | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState(false);
 
   const activeTab = (searchParams.get('tab') as SellerTabType) || 'overview';
   const setActiveTab = (tab: SellerTabType) => {
@@ -287,13 +290,21 @@ export const SellerDashboardPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = async (prodId: number) => {
-    if (!confirm('Supprimer définitivement cet article ?')) return;
+  const handleDeleteProduct = (prodId: number) => {
+    setConfirmDeleteProdId(prodId);
+  };
+
+  const confirmDeleteProduct = async () => {
+    if (confirmDeleteProdId === null) return;
+    setDeletingProduct(true);
     try {
-      await sellerApi.deleteProduct(prodId);
+      await sellerApi.deleteProduct(confirmDeleteProdId);
       loadAllData();
     } catch (err: any) {
       alert(err.response?.data?.message || "Erreur lors de la suppression.");
+    } finally {
+      setDeletingProduct(false);
+      setConfirmDeleteProdId(null);
     }
   };
 
@@ -480,6 +491,19 @@ export const SellerDashboardPage: React.FC = () => {
         setProductForm={setProductForm}
         onSubmit={handleSubmitProduct}
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={confirmDeleteProdId !== null}
+        title="Supprimer définitivement cet article ?"
+        message="Cette annonce sera définitivement retirée de votre dressing et ne pourra plus être récupérée."
+        confirmLabel="Supprimer"
+        variant="danger"
+        loading={deletingProduct}
+        onCancel={() => {
+          if (!deletingProduct) setConfirmDeleteProdId(null);
+        }}
+        onConfirm={confirmDeleteProduct}
       />
     </div>
   );
