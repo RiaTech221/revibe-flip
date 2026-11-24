@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { chatApi, chatOfferApi, paymentApi, uploadApi } from '../services/api';
+import { createStompClient } from '../services/wsClient';
 import { Conversation, Message, ChatOffer, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
@@ -100,6 +101,10 @@ export const MessagesPage: React.FC = () => {
     try {
       const res = await chatApi.getMessages(convId);
       setMessages(res?.data?.data || []);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+      );
+      window.dispatchEvent(new CustomEvent('revibe:messages-read'));
     } catch {
       setMessages([]);
     }
@@ -124,11 +129,44 @@ export const MessagesPage: React.FC = () => {
   }, [isAuthenticated, searchParams]);
 
   useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation.id);
-      fetchOffers(activeConversation.id);
-    }
-  }, [activeConversation]);
+    if (!activeConversation) return;
+    const convId = activeConversation.id;
+    fetchMessages(convId);
+    fetchOffers(convId);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/conversations/${convId}`, (frame) => {
+        try {
+          const incoming: Message = JSON.parse(frame.body);
+          setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
+          if (incoming.senderId !== user?.id) {
+            chatApi.markAsRead(convId).then(() => {
+              window.dispatchEvent(new CustomEvent('revibe:messages-read'));
+            }).catch(() => {});
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+
+      stomp.subscribe(`/topic/conversations/${convId}/read`, (frame) => {
+        try {
+          const payload = JSON.parse(frame.body) as { conversationId: number; readerId: number };
+          if (payload.readerId !== user?.id) {
+            setMessages((prev) =>
+              prev.map((m) => (m.senderId === user?.id ? { ...m, isRead: true } : m))
+            );
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      client?.deactivate();
+    };
+  }, [activeConversation?.id, user?.id]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
