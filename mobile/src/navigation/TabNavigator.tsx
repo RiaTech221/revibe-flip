@@ -61,6 +61,7 @@ export const TabNavigator = () => {
         name="Vendre"
         component={SellScreen}
         options={{
+          tabBarLabel: 'Vendeur',
           tabBarIcon: ({ color, size }) => <PlusCircle size={size + 2} color={colors.secondary} />,
           tabBarLabelStyle: {
             fontSize: 11,

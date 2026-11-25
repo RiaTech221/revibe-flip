@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
-import { Phone, ShieldCheck, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { Phone, ShieldCheck } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { authService } from '../services';
 
@@ -41,23 +41,9 @@ export const RegisterScreen = ({ navigation }: any) => {
   const { login } = useAuth();
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [isOtpStep, setIsOtpStep] = useState(false);
-  const [isPasswordStep, setIsPasswordStep] = useState(false);
   const [fullPhoneForOtp, setFullPhoneForOtp] = useState('');
   const [otpCode, setOtpCode] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const continueToPassword = (data: Awaited<ReturnType<typeof authService.verifyOtp>>) => {
-    if (!data?.token || !data?.user) {
-      throw new Error('La réponse du serveur est incomplète.');
-    }
-    login(data.token, data.user);
-    setIsOtpStep(false);
-    setIsPasswordStep(true);
-  };
 
   const handleRegister = async () => {
     const digits = phoneDisplay.replace(/\D/g, '');
@@ -95,7 +81,10 @@ export const RegisterScreen = ({ navigation }: any) => {
         phone: fullPhoneForOtp,
         otpCode: cleanOtp,
       });
-      continueToPassword(data);
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
+      navigation.navigate('MainTabs');
     } catch (err: any) {
       Alert.alert('Erreur', err.response?.data?.message || 'Code OTP invalide ou expiré.');
     } finally {
@@ -107,30 +96,12 @@ export const RegisterScreen = ({ navigation }: any) => {
     setLoading(true);
     try {
       const data = await authService.skipOtp(fullPhoneForOtp);
-      continueToPassword(data);
-    } catch (err: any) {
-      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de passer la vérification OTP.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSetPassword = async () => {
-    if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
-      Alert.alert('Mot de passe invalide', 'Utilisez au moins 8 caractères, avec une majuscule, une minuscule et un chiffre.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert('Vérification', 'Les deux mots de passe ne correspondent pas.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await authService.setPassword(password);
+      if (data?.token && data?.user) {
+        login(data.token, data.user);
+      }
       navigation.navigate('MainTabs');
     } catch (err: any) {
-      Alert.alert('Erreur', err.response?.data?.message || 'Impossible d’enregistrer le mot de passe.');
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de passer la vérification OTP.');
     } finally {
       setLoading(false);
     }
@@ -151,12 +122,9 @@ export const RegisterScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header
-        showBack={!isPasswordStep}
-        onBack={() => {
-          if (isOtpStep) setIsOtpStep(false);
-          else navigation.goBack();
-        }}
-        title={isPasswordStep ? 'Créer un mot de passe' : isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
+        showBack
+        onBack={() => (isOtpStep ? setIsOtpStep(false) : navigation.goBack())}
+        title={isOtpStep ? 'Vérification OTP' : 'Créer un compte'}
       />
 
       <KeyboardAvoidingView
@@ -169,7 +137,7 @@ export const RegisterScreen = ({ navigation }: any) => {
           keyboardDismissMode="none"
           showsVerticalScrollIndicator={false}
         >
-        {!isOtpStep && !isPasswordStep ? (
+        {!isOtpStep ? (
           <>
             <View style={styles.header}>
               <Text style={styles.title}>Rejoignez la communauté</Text>
@@ -216,7 +184,7 @@ export const RegisterScreen = ({ navigation }: any) => {
               </TouchableOpacity>
             </View>
           </>
-        ) : isOtpStep ? (
+        ) : (
           <>
             <View style={styles.header}>
               <View style={styles.otpIconWrap}>
@@ -244,15 +212,13 @@ export const RegisterScreen = ({ navigation }: any) => {
             </View>
 
             <View style={styles.twoBtnRow}>
-              {__DEV__ && (
-                <TouchableOpacity
-                  style={[styles.skipButton, loading && styles.buttonDisabled]}
-                  onPress={handleSkipOtp}
-                  disabled={loading}
-                >
-                  <Text style={styles.skipButtonText}>Passer</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[styles.skipButton, loading && styles.buttonDisabled]}
+                onPress={handleSkipOtp}
+                disabled={loading}
+              >
+                <Text style={styles.skipButtonText}>Passer</Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.validateButton, loading && styles.buttonDisabled]}
@@ -269,65 +235,6 @@ export const RegisterScreen = ({ navigation }: any) => {
 
             <TouchableOpacity style={styles.resendWrap} onPress={handleResend} disabled={loading}>
               <Text style={styles.footerLink}>Renvoyer le code</Text>
-            </TouchableOpacity>
-          </>
-        ) : (
-          <>
-            <View style={styles.header}>
-              <View style={styles.otpIconWrap}>
-                <Lock size={26} color={colors.primary} />
-              </View>
-              <Text style={styles.title}>Sécurisez votre compte</Text>
-              <Text style={styles.subtitle}>
-                Créez un mot de passe pour vous reconnecter plus tard.
-              </Text>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Mot de passe *</Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="8 caractères minimum"
-                  placeholderTextColor={colors.textSecondary}
-                  secureTextEntry={!passwordVisible}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity onPress={() => setPasswordVisible((visible) => !visible)} accessibilityLabel={passwordVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}>
-                  {passwordVisible ? <EyeOff size={20} color={colors.textSecondary} /> : <Eye size={20} color={colors.textSecondary} />}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Confirmer le mot de passe *</Text>
-              <View style={styles.inputWrap}>
-                <TextInput
-                  style={styles.input}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Saisissez à nouveau le mot de passe"
-                  placeholderTextColor={colors.textSecondary}
-                  secureTextEntry={!confirmPasswordVisible}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <TouchableOpacity onPress={() => setConfirmPasswordVisible((visible) => !visible)} accessibilityLabel={confirmPasswordVisible ? 'Masquer la confirmation' : 'Afficher la confirmation'}>
-                  {confirmPasswordVisible ? <EyeOff size={20} color={colors.textSecondary} /> : <Eye size={20} color={colors.textSecondary} />}
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <Text style={styles.passwordHint}>8 caractères minimum, avec une majuscule, une minuscule et un chiffre.</Text>
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSetPassword}
-              disabled={loading}
-            >
-              {loading ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Enregistrer et continuer</Text>}
             </TouchableOpacity>
           </>
         )}
@@ -472,12 +379,6 @@ const styles = StyleSheet.create({
   resendWrap: {
     alignItems: 'center',
     marginTop: 18,
-  },
-  passwordHint: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: -4,
   },
   footerRow: {
     flexDirection: 'row',
