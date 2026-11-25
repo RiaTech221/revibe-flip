@@ -14,13 +14,16 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Image,
   TextInput,
   TouchableOpacity,
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 import { Category, ProductCondition } from '../types';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
@@ -29,8 +32,8 @@ import {
   ConditionSelector,
   CategoryPicker,
 } from '../components/sell';
-import { productService, sellerService, SellerEligibility } from '../services';
-import { AlertCircle, Camera, CheckCircle, MapPin, RefreshCw, Store } from 'lucide-react-native';
+import { productService, sellerService, uploadService, SellerEligibility } from '../services';
+import { AlertCircle, Camera, CheckCircle, MapPin, RefreshCw, Store, X } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 
 export const SellScreen = ({ navigation, route }: any) => {
@@ -58,7 +61,8 @@ export const SellScreen = ({ navigation, route }: any) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [condition, setCondition] = useState<ProductCondition>('VERY_GOOD');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [imageUrl, setImageUrl] = useState('');
+  const [selectedImages, setSelectedImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
@@ -112,6 +116,53 @@ export const SellScreen = ({ navigation, route }: any) => {
   }, []);
 
   const price = parseFloat(priceStr) || 0;
+  const maxPhotos = 5;
+
+  const handlePickImages = async () => {
+    const remainingSlots = maxPhotos - selectedImages.length;
+    if (remainingSlots <= 0) {
+      Alert.alert('Limite atteinte', `Vous pouvez ajouter jusqu’à ${maxPhotos} photos.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Accès aux photos refusé',
+          'Autorisez ReVibe FliP à accéder à vos photos dans les réglages pour ajouter des images à votre article.',
+          permission.canAskAgain
+            ? [{ text: 'Compris', style: 'cancel' }]
+            : [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Réglages', onPress: () => Linking.openSettings() },
+              ],
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingSlots,
+        quality: 0.8,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      });
+
+      if (!result.canceled) {
+        setSelectedImages((current) => [...current, ...result.assets].slice(0, maxPhotos));
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible d’ouvrir votre galerie.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (uri: string) => {
+    setSelectedImages((current) => current.filter((image) => image.uri !== uri));
+  };
 
   const handleProfileSave = async () => {
     if (firstName.trim().length < 2 || lastName.trim().length < 2 || profileCity.trim().length < 2 || address.trim().length < 5) {
@@ -300,6 +351,14 @@ export const SellScreen = ({ navigation, route }: any) => {
 
     setLoading(true);
     try {
+      const imageUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        setUploadingImages(true);
+        for (const image of selectedImages) {
+          imageUrls.push(await uploadService.uploadProductImage(image));
+        }
+      }
+
       const created = await productService.createProduct({
         title: title.trim(),
         description: description.trim(),
@@ -308,21 +367,25 @@ export const SellScreen = ({ navigation, route }: any) => {
         condition,
         brand: brand.trim() || undefined,
         size: size.trim() || undefined,
-        city,
-        images: imageUrl.trim() ? [imageUrl.trim()] : undefined,
+        locationCity: city,
+        imageUrls: imageUrls.length ? imageUrls : undefined,
       });
 
       Alert.alert('Succès !', 'Votre annonce a été publiée avec succès.', [
         {
           text: 'Voir mon article',
           onPress: () => {
-            navigation.navigate('ProductDetail', { productId: created.id });
+            navigation.navigate('ProductDetail', { id: created.id });
           },
         },
       ]);
     } catch (err: any) {
-      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de créer votre annonce.');
+      Alert.alert(
+        'Erreur',
+        err.response?.data?.message || err.message || 'Impossible de créer votre annonce.',
+      );
     } finally {
+      setUploadingImages(false);
       setLoading(false);
     }
   };
@@ -333,17 +396,47 @@ export const SellScreen = ({ navigation, route }: any) => {
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Photo Box */}
-        <TouchableOpacity
-          style={styles.photoBox}
-          onPress={() =>
-            Alert.alert('Téléversement photo', 'Sélectionnez une photo depuis votre galerie via le sélecteur de média.')
-          }
-        >
-          <Camera size={28} color={colors.primary} />
-          <Text style={styles.photoText}>
-            {imageUrl ? 'Photo ajoutée avec succès ✓' : 'Ajouter des photos du vêtement'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.photoSection}>
+          <View style={styles.photoSectionHeader}>
+            <Text style={styles.photoSectionTitle}>Photos de l’article</Text>
+            <Text style={styles.photoCount}>{selectedImages.length}/{maxPhotos}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.photoBox, (uploadingImages || loading) && styles.btnDisabled]}
+            onPress={handlePickImages}
+            disabled={uploadingImages || loading}
+            activeOpacity={0.8}
+          >
+            {uploadingImages ? <ActivityIndicator color={colors.primary} /> : <Camera size={26} color={colors.primary} />}
+            <Text style={styles.photoText}>
+              {uploadingImages ? 'Préparation des photos…' : 'Ouvrir la galerie'}
+            </Text>
+            <Text style={styles.photoHint}>JPEG, PNG ou WebP • jusqu’à 5 photos</Text>
+          </TouchableOpacity>
+
+          {selectedImages.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPreviewList}>
+              {selectedImages.map((image, index) => (
+                <View key={`${image.uri}-${index}`} style={styles.photoPreviewWrap}>
+                  <Image source={{ uri: image.uri }} style={styles.photoPreview} />
+                  {index === 0 && (
+                    <View style={styles.primaryPhotoBadge}>
+                      <Text style={styles.primaryPhotoText}>Principale</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemoveImage(image.uri)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Retirer la photo ${index + 1}`}
+                  >
+                    <X size={15} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
         {/* Form Fields */}
         <View style={styles.inputCard}>
@@ -425,7 +518,7 @@ export const SellScreen = ({ navigation, route }: any) => {
         >
           <CheckCircle size={20} color="#ffffff" />
           <Text style={styles.submitButtonText}>
-            {loading ? 'Publication...' : 'Mettre en vente avec Séquestre'}
+            {loading ? (uploadingImages ? 'Envoi des photos…' : 'Publication…') : 'Mettre en vente avec Séquestre'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -540,10 +633,46 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
+  photoSection: { marginBottom: 8 },
+  photoSectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  photoSectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '800' },
+  photoCount: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   photoText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+  },
+  photoHint: { color: colors.textSecondary, fontSize: 11 },
+  photoPreviewList: { gap: 10, paddingBottom: 14, paddingTop: 2 },
+  photoPreviewWrap: { height: 88, position: 'relative', width: 88 },
+  photoPreview: { backgroundColor: colors.borderLight, borderRadius: 12, height: 88, width: 88 },
+  primaryPhotoBadge: {
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    borderRadius: 7,
+    bottom: 5,
+    left: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    position: 'absolute',
+  },
+  primaryPhotoText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+  removePhotoButton: {
+    alignItems: 'center',
+    backgroundColor: colors.danger,
+    borderColor: colors.white,
+    borderRadius: 13,
+    borderWidth: 2,
+    height: 26,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    width: 26,
   },
   inputCard: {
     backgroundColor: colors.surface,
