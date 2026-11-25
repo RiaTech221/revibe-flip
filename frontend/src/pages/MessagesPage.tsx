@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { chatApi, chatOfferApi, paymentApi, uploadApi } from '../services/api';
+import { createStompClient } from '../services/wsClient';
 import { Conversation, Message, ChatOffer, DeliveryMode, PaymentMethod } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, ShieldCheck, Lock, ArrowLeft } from 'lucide-react';
@@ -20,6 +21,7 @@ import { ChatMessageItem } from '../components/messages/ChatMessageItem';
 import { ChatInputBar } from '../components/messages/ChatInputBar';
 import { MakeOfferModal } from '../components/messages/MakeOfferModal';
 import { OfferPaymentModal } from '../components/messages/OfferPaymentModal';
+import { ConfirmModal } from '../components/common/ConfirmModal';
 
 export const MessagesPage: React.FC = () => {
   const { user, isAuthenticated } = useAuth();
@@ -33,6 +35,14 @@ export const MessagesPage: React.FC = () => {
   const [sending, setSending] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: 'danger' | 'warning' | 'primary';
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Offres dans la conversation
   const [conversationOffers, setConversationOffers] = useState<ChatOffer[]>([]);
@@ -91,6 +101,10 @@ export const MessagesPage: React.FC = () => {
     try {
       const res = await chatApi.getMessages(convId);
       setMessages(res?.data?.data || []);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c))
+      );
+      window.dispatchEvent(new CustomEvent('revibe:messages-read'));
     } catch {
       setMessages([]);
     }
@@ -115,11 +129,44 @@ export const MessagesPage: React.FC = () => {
   }, [isAuthenticated, searchParams]);
 
   useEffect(() => {
-    if (activeConversation) {
-      fetchMessages(activeConversation.id);
-      fetchOffers(activeConversation.id);
-    }
-  }, [activeConversation]);
+    if (!activeConversation) return;
+    const convId = activeConversation.id;
+    fetchMessages(convId);
+    fetchOffers(convId);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/conversations/${convId}`, (frame) => {
+        try {
+          const incoming: Message = JSON.parse(frame.body);
+          setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
+          if (incoming.senderId !== user?.id) {
+            chatApi.markAsRead(convId).then(() => {
+              window.dispatchEvent(new CustomEvent('revibe:messages-read'));
+            }).catch(() => {});
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+
+      stomp.subscribe(`/topic/conversations/${convId}/read`, (frame) => {
+        try {
+          const payload = JSON.parse(frame.body) as { conversationId: number; readerId: number };
+          if (payload.readerId !== user?.id) {
+            setMessages((prev) =>
+              prev.map((m) => (m.senderId === user?.id ? { ...m, isRead: true } : m))
+            );
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      client?.deactivate();
+    };
+  }, [activeConversation?.id, user?.id]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -205,47 +252,68 @@ export const MessagesPage: React.FC = () => {
     }
   };
 
-  const handleAcceptOffer = async (offer: ChatOffer) => {
-    if (!confirm(`Accepter l'offre à ${formatPrice(offer.agreedPrice)} ?`)) return;
-    try {
-      const res = await chatOfferApi.acceptOffer(offer.id);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-      if (res?.data?.data) {
-        setAcceptedOfferToPay(res.data.data);
-      }
-      setIsPaymentModalOpen(true);
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
-    }
+  const handleAcceptOffer = (offer: ChatOffer) => {
+    setConfirmDialog({
+      title: "Accepter cette offre ?",
+      message: `Voulez-vous accepter l'offre de prix à ${formatPrice(offer.agreedPrice)} ? Vous pourrez ensuite procéder au paiement sécurisé.`,
+      confirmLabel: "Accepter l'offre",
+      variant: 'primary',
+      onConfirm: async () => {
+        try {
+          const res = await chatOfferApi.acceptOffer(offer.id);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+          if (res?.data?.data) {
+            setAcceptedOfferToPay(res.data.data);
+          }
+          setIsPaymentModalOpen(true);
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'acceptation.");
+        }
+      },
+    });
   };
 
-  const handleDeclineOffer = async (offerId: number) => {
-    if (!confirm("Refuser cette offre de prix ?")) return;
-    try {
-      await chatOfferApi.declineOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
-    }
+  const handleDeclineOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Refuser cette offre ?',
+      message: "L'acheteur sera informé que vous avez décliné sa proposition de prix.",
+      confirmLabel: 'Refuser',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.declineOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors du refus de l'offre.");
+        }
+      },
+    });
   };
 
-  const handleCancelOffer = async (offerId: number) => {
-    if (!confirm("Annuler votre offre envoyée ?")) return;
-    try {
-      await chatOfferApi.cancelOffer(offerId);
-      if (activeConversation) {
-        fetchOffers(activeConversation.id);
-        fetchMessages(activeConversation.id);
-      }
-    } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'annulation.");
-    }
+  const handleCancelOffer = (offerId: number) => {
+    setConfirmDialog({
+      title: 'Annuler votre offre ?',
+      message: 'Cette offre de prix sera annulée et ne pourra plus être acceptée par le vendeur.',
+      confirmLabel: "Annuler l'offre",
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await chatOfferApi.cancelOffer(offerId);
+          if (activeConversation) {
+            fetchOffers(activeConversation.id);
+            fetchMessages(activeConversation.id);
+          }
+        } catch (err: any) {
+          alert(err.response?.data?.message || "Erreur lors de l'annulation.");
+        }
+      },
+    });
   };
 
   const handleProcessPayment = async (e: React.FormEvent) => {
@@ -431,6 +499,28 @@ export const MessagesPage: React.FC = () => {
         paymentError={paymentError}
         onSubmit={handleProcessPayment}
         formatPrice={formatPrice}
+      />
+
+      <ConfirmModal
+        isOpen={!!confirmDialog}
+        title={confirmDialog?.title || ''}
+        message={confirmDialog?.message || ''}
+        confirmLabel={confirmDialog?.confirmLabel}
+        variant={confirmDialog?.variant}
+        loading={confirmLoading}
+        onCancel={() => {
+          if (!confirmLoading) setConfirmDialog(null);
+        }}
+        onConfirm={async () => {
+          if (!confirmDialog) return;
+          setConfirmLoading(true);
+          try {
+            await confirmDialog.onConfirm();
+          } finally {
+            setConfirmLoading(false);
+            setConfirmDialog(null);
+          }
+        }}
       />
     </div>
   );

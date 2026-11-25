@@ -82,7 +82,6 @@ export const SellScreen = ({ navigation }: any) => {
         {
           text: 'Voir mon article',
           onPress: () => {
-            navigation.navigate('Catalog');
             navigation.navigate('ProductDetail', { productId: created.id });
           },
         },

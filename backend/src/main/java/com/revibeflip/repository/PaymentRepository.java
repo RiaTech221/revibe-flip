@@ -12,6 +12,11 @@ import java.util.Optional;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByOrderId(Long orderId);
+
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.QueryHints({@jakarta.persistence.QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")})
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Payment p WHERE p.order.id = :orderId")
+    Optional<Payment> findByOrderIdForUpdate(@org.springframework.data.repository.query.Param("orderId") Long orderId);
     Optional<Payment> findByTransactionReference(String transactionReference);
     Optional<Payment> findByPaytechToken(String paytechToken);
     Optional<Payment> findByPayoutReference(String payoutReference);

@@ -25,4 +25,5 @@ export type RootStackParamList = {
   OrderDetail: { orderId: number; order?: Order };
   Login: { returnScreen?: keyof RootStackParamList } | undefined;
   Register: undefined;
+  Favorites: undefined;
 };

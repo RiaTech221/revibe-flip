@@ -12,9 +12,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { categoryApi, notificationApi } from '../services/api';
+import { categoryApi, notificationApi, chatApi } from '../services/api';
+import { sellerApi, SellerEligibility } from '../services/sellerService';
+import { BecomeSellerModal } from './seller/BecomeSellerModal';
+import { createStompClient } from '../services/wsClient';
 import { Category, Notification } from '../types';
 import { Logo } from './Logo';
+import { formatImageUrl } from '../utils/imageUrl';
 import {
   Search,
   PlusCircle,
@@ -36,7 +40,7 @@ import {
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isStaff, logout } = useAuth();
   const { totalCount, toggleCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +48,9 @@ export const Navbar: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const [sellerEligibility, setSellerEligibility] = useState<SellerEligibility | null>(null);
+  const [isBecomeSellerOpen, setIsBecomeSellerOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -70,16 +77,65 @@ export const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated || !user?.id) {
+      setUnreadNotifications(0);
+      setUnreadMessages(0);
+      setSellerEligibility(null);
+      return;
+    }
+
+    const refreshEligibility = () => {
+      sellerApi.getEligibility().then((res) => {
+        if (res.data?.data) setSellerEligibility(res.data.data);
+      }).catch(() => {});
+    };
+
+    const refreshCounts = () => {
       notificationApi.getUnreadCount().then((res) => {
         if (res.data) setUnreadNotifications(res.data.data);
       }).catch(console.error);
 
-      notificationApi.getAll().then((res) => {
-        if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
       }).catch(console.error);
-    }
-  }, [isAuthenticated]);
+    };
+
+    refreshCounts();
+    refreshEligibility();
+
+    notificationApi.getAll().then((res) => {
+      if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+    }).catch(console.error);
+
+    const handleMessagesRead = () => {
+      chatApi.getUnreadCount().then((res) => {
+        if (res.data) setUnreadMessages(res.data.data);
+      }).catch(console.error);
+    };
+    window.addEventListener('revibe:messages-read', handleMessagesRead);
+    window.addEventListener('revibe:seller-eligibility-updated', refreshEligibility);
+
+    const client = createStompClient((stomp) => {
+      stomp.subscribe(`/topic/user.${user.id}.notifications`, (frame) => {
+        try {
+          const notif: Notification = JSON.parse(frame.body);
+          setUnreadNotifications((prev) => prev + 1);
+          setNotifications((prev) => [notif, ...prev].slice(0, 5));
+          if (notif.type === 'NEW_MESSAGE') {
+            setUnreadMessages((prev) => prev + 1);
+          }
+        } catch {
+          // ignore parse error
+        }
+      });
+    });
+
+    return () => {
+      window.removeEventListener('revibe:messages-read', handleMessagesRead);
+      window.removeEventListener('revibe:seller-eligibility-updated', refreshEligibility);
+      client?.deactivate();
+    };
+  }, [isAuthenticated, user?.id, location.pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,15 +184,44 @@ export const Navbar: React.FC = () => {
 
           {/* 3. ACTIONS DE DROITE (VENDRE, MESSAGES, PROFIL, PANIER) */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Bouton "+ Vendre" (Le moteur principal de la marketplace) */}
-            <Link
-              to={isAuthenticated ? "/sell" : "/login?redirect=/sell"}
-              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95"
-              title="Vendre un article"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Vendre</span>
-            </Link>
+            {/* Bouton "Vendeur" -> "Vendre" (US-06 : passage d'acheteur à vendeur) */}
+            {isAuthenticated && (sellerEligibility?.alreadySeller || sellerEligibility?.eligible) ? (
+              <Link
+                to="/sell"
+                className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95"
+                title="Vendre un article"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Vendre</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!isAuthenticated) {
+                    navigate('/login?redirect=/seller');
+                    return;
+                  }
+                  try {
+                    const res = await sellerApi.getEligibility();
+                    const elig = res.data?.data;
+                    setSellerEligibility(elig || null);
+                    if (elig?.alreadySeller || elig?.eligible) {
+                      navigate('/seller');
+                    } else {
+                      setIsBecomeSellerOpen(true);
+                    }
+                  } catch {
+                    setIsBecomeSellerOpen(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer"
+                title="Devenir vendeur"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Vendeur</span>
+              </button>
+            )}
 
             {/* Messages / Discussions */}
             <Link
@@ -145,6 +230,11 @@ export const Navbar: React.FC = () => {
               title="Messagerie & Discussions"
             >
               <MessageSquare className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+              {isAuthenticated && unreadMessages > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-purple-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
             </Link>
 
             {/* 3. Icône Profil Parlante (Ouverture du Menu Compte & Connexion style Amazon / Shein) */}
@@ -155,10 +245,10 @@ export const Navbar: React.FC = () => {
                 className="p-1 sm:p-1.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors flex items-center justify-center cursor-pointer active:scale-95"
                 title={isAuthenticated ? (user?.fullName || 'Mon profil') : 'Compte & Connexion'}
               >
-                {isAuthenticated && user?.profilePicture ? (
+                {isAuthenticated && formatImageUrl(user?.profilePicture) ? (
                   <img
-                    src={user.profilePicture}
-                    alt={user.fullName}
+                    src={formatImageUrl(user?.profilePicture) || ''}
+                    alt={user?.fullName}
                     className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-purple-200 ring-2 ring-transparent hover:ring-purple-400 transition-all"
                   />
                 ) : (
@@ -176,7 +266,7 @@ export const Navbar: React.FC = () => {
                       {/* En-tête utilisateur connecté */}
                       <div className="px-4 pb-3 border-b border-slate-100 flex items-center gap-3">
                         <img
-                          src={user?.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
+                          src={formatImageUrl(user?.profilePicture) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || 'User')}&background=7c3aed&color=fff`}
                           alt={user?.fullName}
                           className="w-10 h-10 rounded-full object-cover border border-purple-200"
                         />
@@ -223,7 +313,7 @@ export const Navbar: React.FC = () => {
                           <span>Vos ventes & Dressing</span>
                         </Link>
 
-                        {isAdmin && (
+                        {isStaff && (
                           <Link
                             to="/admin"
                             onClick={() => setIsUserMenuOpen(false)}
@@ -353,6 +443,15 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Modal US-06 : Coordonnées Personnelles & Livraison pour devenir vendeur */}
+      <BecomeSellerModal
+        isOpen={isBecomeSellerOpen}
+        onClose={() => setIsBecomeSellerOpen(false)}
+        onSuccess={() => {
+          setIsBecomeSellerOpen(false);
+          navigate('/seller');
+        }}
+      />
     </header>
   );
 };

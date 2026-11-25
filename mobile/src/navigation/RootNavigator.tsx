@@ -18,12 +18,14 @@ import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
+import { FavoritesScreen } from '../screens/FavoritesScreen';
 
-const Stack = createNativeStackNavigator<RootStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList, 'RootStack'>();
 
 export const RootNavigator = () => {
   return (
     <Stack.Navigator
+      id="RootStack"
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
@@ -36,6 +38,7 @@ export const RootNavigator = () => {
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Favorites" component={FavoritesScreen} />
     </Stack.Navigator>
   );
 };

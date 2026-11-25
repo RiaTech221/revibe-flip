@@ -16,7 +16,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
-  const { isAuthenticated, isAdmin, loading, refreshUser } = useAuth();
+  const { isAuthenticated, isStaff, loading, refreshUser } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminO
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectUrl)}`} state={{ from: location }} replace />;
   }
 
-  if (adminOnly && !isAdmin) {
+  if (adminOnly && !isStaff) {
     return <Navigate to="/" replace />;
   }
 

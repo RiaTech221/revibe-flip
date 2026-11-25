@@ -43,7 +43,7 @@ public class ProductDto {
     private String countryName;
     private String currency;
     private Integer viewCount;
-    private UserDto seller;
+    private PublicUserDto seller;
     private List<String> images;
     private String primaryImage;
     private LocalDateTime createdAt;
@@ -78,7 +78,7 @@ public class ProductDto {
                 .countryName(product.getCountry() != null ? product.getCountry().getName() : "Sénégal")
                 .currency(product.getCountry() != null ? product.getCountry().getCurrency() : "XOF")
                 .viewCount(product.getViewCount())
-                .seller(UserDto.fromEntity(product.getSeller()))
+                .seller(PublicUserDto.fromEntity(product.getSeller()))
                 .images(imgUrls)
                 .primaryImage(product.getPrimaryImageUrl())
                 .createdAt(product.getCreatedAt())

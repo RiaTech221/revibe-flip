@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@org.springframework.test.context.ActiveProfiles("dev")
 class RevibeFlipIntegrationTests {
 
     @Autowired
@@ -224,6 +225,13 @@ class RevibeFlipIntegrationTests {
                 .build();
         DeliveryDto deliv1 = deliveryService.updateDeliveryStatus(order.getDelivery().getId(), delivReq1, sellerUser);
         assertEquals(DeliveryStatus.IN_TRANSIT.name(), deliv1.getStatus());
+
+        UpdateDeliveryStatusRequest delivReqOut = UpdateDeliveryStatusRequest.builder()
+                .status(DeliveryStatus.OUT_FOR_DELIVERY)
+                .notes("Colis en cours de livraison")
+                .build();
+        DeliveryDto delivOut = deliveryService.updateDeliveryStatus(order.getDelivery().getId(), delivReqOut, sellerUser);
+        assertEquals(DeliveryStatus.OUT_FOR_DELIVERY.name(), delivOut.getStatus());
 
         UpdateDeliveryStatusRequest delivReq2 = UpdateDeliveryStatusRequest.builder()
                 .status(DeliveryStatus.DELIVERED)

@@ -8,7 +8,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
+import { User, AdminPermission } from '../types';
 import { authApi } from '../services/api';
 import { setAccessToken } from '../services/httpClient';
 
@@ -17,10 +17,13 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  isStaff: boolean;
+  hasPermission: (permission: AdminPermission) => boolean;
   loading: boolean;
   login: (token: string, user: User) => void;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (updatedUser: User) => void;
   isAuthModalOpen: boolean;
   authModalMode: 'login' | 'register' | 'otp';
   pendingPhone: string;
@@ -40,8 +43,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register' | 'otp'>('login');
   const [pendingPhone, setPendingPhone] = useState('');
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   const refreshUser = async () => {
     try {
+      if (token) {
+        const meRes = await authApi.getMe();
+        if (meRes.data && meRes.data.data) {
+          setUser(meRes.data.data);
+          return;
+        }
+      }
       if (!activeRefreshPromise) {
         activeRefreshPromise = authApi
           .refresh()
@@ -111,6 +125,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const isAuthenticated = !!token && !!user;
   const isAdmin = user?.role === 'ROLE_ADMIN';
+  const isCollaborator = user?.role === 'ROLE_COLLABORATOR';
+  const isStaff = isAdmin || isCollaborator;
+
+  const hasPermission = (permission: AdminPermission): boolean => {
+    if (isAdmin) return true;
+    if (!isCollaborator || !user?.adminPermissions) return false;
+    return user.adminPermissions.includes(permission);
+  };
 
   return (
     <AuthContext.Provider
@@ -119,10 +141,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         token,
         isAuthenticated,
         isAdmin,
+        isStaff,
+        hasPermission,
         loading,
         login,
         logout,
         refreshUser,
+        updateUser,
         isAuthModalOpen,
         authModalMode,
         pendingPhone,

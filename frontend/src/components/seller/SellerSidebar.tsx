@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { SellerDashboard, SellerProfile } from '../../services/api';
 import { User } from '../../types';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 export type SellerTabType =
   | 'overview'
@@ -166,13 +167,23 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
     </nav>
   );
 
-  const renderProfileFooter = () => (
+  const renderProfileFooter = () => {
+    const avatarSrc = formatImageUrl(profile?.profilePicture || currentUser?.profilePicture);
+    return (
     <div className="pt-5 border-t border-gray-150">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 font-black text-sm flex items-center justify-center shrink-0 border border-purple-200">
-            {profile?.firstName?.charAt(0) || currentUser?.firstName?.charAt(0) || 'V'}
-          </div>
+          {avatarSrc ? (
+            <img
+              src={avatarSrc}
+              alt={profile?.fullName || currentUser?.fullName || 'Vendeur'}
+              className="w-10 h-10 rounded-full object-cover shrink-0 border border-purple-200 bg-white"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 font-black text-sm flex items-center justify-center shrink-0 border border-purple-200">
+              {profile?.firstName?.charAt(0) || currentUser?.firstName?.charAt(0) || 'V'}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-xs font-bold text-gray-900 truncate">
               {profile?.fullName || currentUser?.fullName || 'Vendeur'}
@@ -193,7 +204,8 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <>

@@ -4,6 +4,7 @@ import com.revibeflip.dto.*;
 import com.revibeflip.entity.Category;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.*;
+import com.revibeflip.security.PaginationValidator;
 import com.revibeflip.service.AdminService;
 import com.revibeflip.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,7 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'COLLABORATOR')")
 @Tag(name = "Back-Office Administrateur", description = "Gestion globale : utilisateurs, annonces, litiges, commissions, fonds conservés et paramètres")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminController {
@@ -44,6 +45,7 @@ public class AdminController {
     // 2. DASHBOARD (VUE D'ENSEMBLE)
     // ==========================================
     @GetMapping("/dashboard")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_DASHBOARD')")
     @Operation(
             summary = "Tableau de bord administrateur (Vue d'ensemble)",
             description = "Agrège l'ensemble des métriques de la plateforme (revenus, commissions réelles, séquestre, commandes, transactions, panier moyen, entonnoir, répartition mobile money, nouveaux inscrits) avec variations calculées sur la période précédente de même durée. Fuseau horaire de référence : Africa/Dakar (UTC+0). Mise en cache courte de 30 secondes."
@@ -69,6 +71,7 @@ public class AdminController {
     // 3. GESTION DES UTILISATEURS (AVEC PAGINATION & GARDE-FOUS)
     // ==========================================
     @GetMapping("/users")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_USERS')")
     @Operation(summary = "Lister les utilisateurs avec pagination et filtres", description = "Recherche multicritère par nom, prénom, téléphone, rôle et statut de suspension.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des utilisateurs"),
@@ -80,13 +83,18 @@ public class AdminController {
             @Parameter(description = "Filtrer par rôle (ROLE_USER, ROLE_ADMIN)") @RequestParam(required = false) Role role,
             @Parameter(description = "Filtrer par statut de suspension") @RequestParam(required = false) Boolean isSuspended,
             @Parameter(description = "Numéro de page (0-indexé)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Nombre d'éléments par page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Nombre d'éléments par page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.USER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchUsersPage(query, role, isSuspended, pageable)));
     }
 
     @GetMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_USERS')")
     @Operation(summary = "Consulter le détail complet d'un utilisateur", description = "Retourne le profil, les annonces publiées, les achats, les ventes, les avis et les gains financiers.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Détail de l'utilisateur trouvé"),
@@ -101,6 +109,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/suspend")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_USERS')")
     @Operation(summary = "Suspendre ou réactiver un utilisateur", description = "Applique ou lève la suspension. Protégé par garde-fous : un admin ne peut pas se suspendre lui-même ni suspendre le dernier admin actif.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Statut utilisateur mis à jour"),
@@ -119,6 +128,7 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Changer le rôle d'un utilisateur", description = "Permet de promouvoir un utilisateur en ROLE_ADMIN ou de le rétrograder en ROLE_USER. Un admin ne peut pas se rétrograder lui-même ni rétrograder le dernier admin actif.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rôle mis à jour"),
@@ -140,6 +150,7 @@ public class AdminController {
     // 4. GESTION DES ANNONCES (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/products")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_PRODUCTS')")
     @Operation(summary = "Lister et modérer les annonces avec pagination", description = "Recherche et filtres par statut (ACTIVE, SOLD, INACTIVE, DRAFT), rayon et vendeur.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des annonces"),
@@ -152,13 +163,18 @@ public class AdminController {
             @Parameter(description = "ID du rayon / catégorie") @RequestParam(required = false) Long categoryId,
             @Parameter(description = "ID du vendeur") @RequestParam(required = false) Long sellerId,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchProductsPage(query, status, categoryId, sellerId, pageable)));
     }
 
     @PutMapping("/products/{id}/status")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_PRODUCTS')")
     @Operation(summary = "Modifier le statut d'une annonce", description = "Permet d'activer ou de désactiver une annonce immédiatement.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Statut de l'annonce modifié"),
@@ -176,6 +192,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/products/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_PRODUCTS')")
     @Operation(summary = "Supprimer définitivement une annonce", description = "Supprime l'annonce du catalogue et enregistre l'action dans le journal d'audit.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Annonce supprimée avec succès"),
@@ -195,6 +212,7 @@ public class AdminController {
     // 5. GESTION DES CATÉGORIES (RAYONS)
     // ==========================================
     @PostMapping("/categories")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_CATEGORIES')")
     @Operation(summary = "Créer un rayon / catégorie", description = "Ajoute un nouveau rayon au catalogue marketplace.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rayon créé"),
@@ -211,6 +229,7 @@ public class AdminController {
     }
 
     @PutMapping("/categories/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_CATEGORIES')")
     @Operation(summary = "Modifier un rayon existant", description = "Met à jour le nom, slug, icône et description d'un rayon.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rayon modifié"),
@@ -229,6 +248,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/categories/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_CATEGORIES')")
     @Operation(summary = "Supprimer un rayon (avec protection anti-suppression)", description = "Bloqué si des annonces sont associées au rayon.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Rayon supprimé"),
@@ -249,6 +269,7 @@ public class AdminController {
     // 6. GESTION DES COMMANDES & LIVRAISON (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/orders")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Lister les commandes avec pagination", description = "Recherche par numéro de commande, acheteur, vendeur et filtre par statut.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des commandes"),
@@ -259,13 +280,18 @@ public class AdminController {
             @Parameter(description = "Recherche textuelle") @RequestParam(required = false) String query,
             @Parameter(description = "Statut de la commande") @RequestParam(required = false) OrderStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.ORDER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchOrdersPage(query, status, pageable)));
     }
 
     @GetMapping("/orders/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Consulter le détail d'une commande", description = "Numéro unique, acheteur, vendeur, produit, montants détaillés, mode et adresse de livraison.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Détail de la commande"),
@@ -280,6 +306,7 @@ public class AdminController {
     }
 
     @PutMapping("/orders/{id}/delivery-status")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Mettre à jour l'étape de livraison", description = "Fait progresser l'étape : PENDING → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED avec ajout de note.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Étape de livraison mise à jour"),
@@ -302,6 +329,7 @@ public class AdminController {
     // 7. GESTION DES PAIEMENTS & TRANSACTIONS (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/payments")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Lister les paiements et transactions", description = "Décomposition financière : prix article, frais validation (1%), livraison, commission plateforme (20%) et moyen de paiement PayTech (Wave, Orange Money, Free Money).")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des transactions"),
@@ -312,9 +340,13 @@ public class AdminController {
             @Parameter(description = "Recherche par référence ou commande") @RequestParam(required = false) String query,
             @Parameter(description = "Moyen de paiement (WAVE, ORANGE_MONEY, FREE_MONEY)") @RequestParam(required = false) PaymentMethod method,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.PAYMENT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchPaymentsPage(query, method, pageable)));
     }
 
@@ -322,6 +354,7 @@ public class AdminController {
     // 8. SIGNALEMENTS & LITIGES (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/reports")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_REPORTS')")
     @Operation(summary = "Lister les signalements et litiges", description = "Motifs : annonce trompeuse, contrefaçon, arnaque, faux profil, comportement abusif, autre.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Liste paginée des signalements"),
@@ -331,13 +364,18 @@ public class AdminController {
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<ReportDto>>> searchReports(
             @Parameter(description = "Statut du signalement (PENDING, RESOLVED, DISMISSED)") @RequestParam(required = false) ReportStatus status,
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "15") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.REPORT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchReportsPage(status, pageable)));
     }
 
     @PutMapping("/reports/{id}/resolve")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_REPORTS')")
     @Operation(summary = "Traiter et clôturer un signalement", description = "Applique une action disciplinaire (WARN, DEACTIVATE_LISTING, SUSPEND_USER, NONE) et consigne la note.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Signalement résolu et consigné"),
@@ -365,6 +403,7 @@ public class AdminController {
     // 10. PARAMÈTRES DE LA PLATEFORME (Point 4)
     // ==========================================
     @GetMapping("/settings")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Récupérer la configuration générale de la plateforme", description = "Retourne le taux de commission (20%), les frais de validation (1%), devise et contacts support.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Configuration récupérée"),
@@ -376,6 +415,7 @@ public class AdminController {
     }
 
     @PutMapping("/settings")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Mettre à jour la configuration générale de la marketplace", description = "Permet de modifier les taux de commission et frais de validation qui sont appliqués immédiatement à toutes les opérations.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Configuration enregistrée"),
@@ -392,6 +432,7 @@ public class AdminController {
     }
 
     @GetMapping("/conversations/{id}/audit-view")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_REPORTS')")
     @Operation(summary = "Consulter en lecture seule les messages d'une discussion liée à un litige (accès journalisé)")
     public ResponseEntity<com.revibeflip.dto.ApiResponse<List<MessageDto>>> auditViewConversation(
             @PathVariable Long id,
@@ -406,6 +447,7 @@ public class AdminController {
     // 11. JOURNAL D'AUDIT ADMIN (AVEC PAGINATION)
     // ==========================================
     @GetMapping("/audit-logs")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Consulter le journal d'audit des actions sensibles", description = "Historique paginé de toutes les suspensions, suppressions, résolutions de litiges et modifications de rôles.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Journal d'audit paginé"),
@@ -414,19 +456,28 @@ public class AdminController {
     })
     public ResponseEntity<com.revibeflip.dto.ApiResponse<PageResponseDto<AdminActionLogDto>>> getAuditLogs(
             @Parameter(description = "Numéro de page") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "20") int size
+            @Parameter(description = "Taille de page") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.AUDIT_LOG_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getAuditLogsPage(pageable)));
     }
 
     @GetMapping("/ledger")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Consulter le grand livre des fonds et soldes")
     public ResponseEntity<com.revibeflip.dto.ApiResponse<java.util.Map<String, Object>>> getLedger(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(required = false) String sortDir
     ) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, size, sortBy, sortDir, PaginationValidator.LEDGER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
         java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("balances", ledgerService.getBalancesFromLedger());
         result.put("entries", PageResponseDto.fromPage(ledgerService.getEntries(pageable)));
@@ -434,6 +485,7 @@ public class AdminController {
     }
 
     @GetMapping(value = "/ledger/export", produces = "text/csv")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('PERMISSION_ORDERS_PAYMENTS')")
     @Operation(summary = "Exporter le grand livre comptable au format CSV")
     public ResponseEntity<String> exportLedgerCsv() {
         return ResponseEntity.ok()

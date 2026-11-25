@@ -19,15 +19,15 @@ import { AuthSplitHero, AuthLoginForm } from '../components/auth';
  * Architecture modulaire encapsulée dans `components/auth/`.
  */
 export const LoginPage: React.FC = () => {
-  const { login, isAuthenticated, isAdmin } = useAuth();
+  const { login, isAuthenticated, isAdmin, isStaff } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(isAdmin ? '/admin' : '/', { replace: true });
+      navigate(isStaff ? '/admin' : '/', { replace: true });
     }
-  }, [isAuthenticated, isAdmin, navigate]);
+  }, [isAuthenticated, isStaff, navigate]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export const LoginPage: React.FC = () => {
         const redirectParam = searchParams.get('redirect');
         const from = (location.state as any)?.from?.pathname;
 
-        if (data.user.role === 'ROLE_ADMIN') {
+        if (data.user.role === 'ROLE_ADMIN' || data.user.role === 'ROLE_COLLABORATOR') {
           navigate('/admin', { replace: true });
         } else if (redirectParam) {
           navigate(redirectParam, { replace: true });

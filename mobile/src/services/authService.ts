@@ -46,6 +46,20 @@ export const authService = {
     return res.data?.data;
   },
 
+  verifyOtp: async (payload: { phone: string; otpCode: string }): Promise<AuthResponse> => {
+    const res = await api.post('/auth/verify-otp', payload);
+    return res.data?.data;
+  },
+
+  skipOtp: async (phone: string): Promise<AuthResponse> => {
+    const res = await api.post(`/auth/skip-otp?phone=${encodeURIComponent(phone)}`);
+    return res.data?.data;
+  },
+
+  resendOtp: async (phone: string): Promise<void> => {
+    await api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`);
+  },
+
   getProfile: async (): Promise<User> => {
     const res = await api.get('/auth/me');
     return res.data?.data;

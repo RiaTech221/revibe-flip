@@ -125,9 +125,23 @@ public final class SafeMediaService {
             if (image == null) {
                 throw new IllegalArgumentException("Image corrompue ou illisible.");
             }
+            BufferedImage toWrite = image;
+            if (type == DetectedType.JPEG && image.getColorModel().hasAlpha()) {
+                toWrite = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g = toWrite.createGraphics();
+                try {
+                    g.setColor(java.awt.Color.WHITE);
+                    g.fillRect(0, 0, image.getWidth(), image.getHeight());
+                    g.drawImage(image, 0, 0, null);
+                } finally {
+                    g.dispose();
+                }
+            }
             String format = type == DetectedType.PNG ? "png" : "jpg";
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            ImageIO.write(image, format, out);
+            if (!ImageIO.write(toWrite, format, out) || out.size() == 0) {
+                throw new IllegalArgumentException("Impossible de traiter cette image.");
+            }
             return out.toByteArray();
         }
         if (type == DetectedType.WEBP) {

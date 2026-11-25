@@ -119,6 +119,7 @@ class BuyerOrderReviewServiceTest {
     @DisplayName("Acheteur : création de commande avec calcul exact de l'escrow 1% et livraison")
     void testCreateOrderSuccess() {
         when(productRepository.findById(501L)).thenReturn(Optional.of(product));
+        when(productRepository.reserveProductIfActive(501L)).thenReturn(1);
         when(orderRepository.existsByProductIdAndStatusIn(eq(501L), any())).thenReturn(false);
         when(platformSettingRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(setting));
         when(orderRepository.save(any(Order.class))).thenAnswer(inv -> {
@@ -213,14 +214,17 @@ class BuyerOrderReviewServiceTest {
                 .build();
 
         when(orderRepository.findById(1001L)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
         when(deliveryRepository.findByOrderId(1001L)).thenReturn(Optional.of(delivery));
         when(paymentRepository.findByOrderId(1001L)).thenReturn(Optional.of(payment));
+        doAnswer(inv -> {
+            order.setStatus(OrderStatus.COMPLETED);
+            return null;
+        }).when(paymentService).releaseFundsToSeller(1001L);
 
         OrderDto confirmed = orderService.confirmReceipt(1001L, buyer);
 
         assertThat(confirmed.getStatus()).isEqualTo("COMPLETED");
-        verify(paymentService).releaseFundsToSeller(any(Order.class));
+        verify(paymentService).releaseFundsToSeller(1001L);
         assertThat(delivery.getStatus()).isEqualTo(DeliveryStatus.DELIVERED);
     }
 

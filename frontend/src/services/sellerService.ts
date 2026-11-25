@@ -192,6 +192,7 @@ export interface SellerProfile {
   countryCode: string;
   city?: string;
   address?: string;
+  profilePicture?: string;
   profilePictureUrl?: string;
   activeListingsCount: number;
   soldListingsCount: number;
@@ -200,10 +201,20 @@ export interface SellerProfile {
   createdAt: string;
 }
 
+export interface SellerEligibility {
+  eligible: boolean;
+  alreadySeller: boolean;
+  missingFields: string[];
+  invalidFields: Record<string, string>;
+  message: string;
+}
+
 /**
  * Service dédié à l'espace vendeur (Gestion du catalogue, commandes, finances et retraits).
  */
 export const sellerApi = {
+  getEligibility: () =>
+    api.get<{ success: boolean; data: SellerEligibility }>('/seller/eligibility'),
   getProfile: () =>
     api.get<{ success: boolean; data: SellerProfile }>('/seller/profile'),
   updateProfile: (data: any) =>

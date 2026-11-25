@@ -3,6 +3,9 @@ package com.revibeflip.repository;
 import com.revibeflip.entity.Report;
 import com.revibeflip.entity.enums.ReportStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +23,8 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findAllByOrderByCreatedAtDesc();
     org.springframework.data.domain.Page<Report> findByStatusOrderByCreatedAtDesc(ReportStatus status, org.springframework.data.domain.Pageable pageable);
     org.springframework.data.domain.Page<Report> findAllByOrderByCreatedAtDesc(org.springframework.data.domain.Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Report r SET r.reportedProduct = null WHERE r.reportedProduct.id = :productId")
+    void clearReportedProduct(@Param("productId") Long productId);
 }

@@ -12,7 +12,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../services/authService';
 import { ArrowLeft } from 'lucide-react';
-import { AuthSplitHero, AuthRegisterForm, AuthOtpForm } from '../components/auth';
+import { AuthSplitHero, AuthRegisterForm, AuthOtpForm, AuthSetPasswordForm } from '../components/auth';
 
 /**
  * Page d'inscription et de vérification OTP ReVibe FliP.
@@ -22,7 +22,7 @@ export const RegisterPage: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [step, setStep] = useState<'REGISTER' | 'OTP' | 'PASSWORD'>('REGISTER');
   const [phoneForOtp, setPhoneForOtp] = useState('');
 
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ export const RegisterPage: React.FC = () => {
     try {
       await authApi.register(formData, turnstileToken);
       setPhoneForOtp(formData.phone);
-      setIsOtpStep(true);
+      setStep('OTP');
     } catch (err: any) {
       setError(err.response?.data?.message || "Erreur lors de l'inscription.");
     } finally {
@@ -51,9 +51,37 @@ export const RegisterPage: React.FC = () => {
       const res = await authApi.verifyOtp({ phone: phoneForOtp, otpCode });
       const data = res.data.data;
       login(data.token, data.user);
-      navigate('/');
+      setStep('PASSWORD');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Code OTP invalide.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkipOtp = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authApi.skipOtp(phoneForOtp);
+      const data = res.data.data;
+      login(data.token, data.user);
+      setStep('PASSWORD');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Impossible de passer la vérification OTP.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetPasswordSubmit = async (password: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      await authApi.setPassword({ password });
+      navigate('/');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erreur lors de l’enregistrement du mot de passe.');
     } finally {
       setLoading(false);
     }
@@ -87,7 +115,7 @@ export const RegisterPage: React.FC = () => {
         </div>
 
         <div className="max-w-md w-full mx-auto my-8">
-          {!isOtpStep ? (
+          {step === 'REGISTER' && (
             <>
               <div className="mb-6">
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -105,13 +133,23 @@ export const RegisterPage: React.FC = () => {
                 onSwitchToLogin={() => navigate('/login')}
               />
             </>
-          ) : (
+          )}
+          {step === 'OTP' && (
             <AuthOtpForm
               phone={phoneForOtp}
               loading={loading}
               error={error}
               onSubmit={handleVerifyOtpSubmit}
-              onBack={() => setIsOtpStep(false)}
+              onBack={() => setStep('REGISTER')}
+              onSkip={handleSkipOtp}
+            />
+          )}
+          {step === 'PASSWORD' && (
+            <AuthSetPasswordForm
+              loading={loading}
+              error={error}
+              onSubmit={handleSetPasswordSubmit}
+              onSkip={() => navigate('/')}
             />
           )}
         </div>

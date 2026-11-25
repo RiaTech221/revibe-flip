@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -26,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Paiements PayTech", description = "Initiation de paiement PayTech, webhook IPN sécurisé et vérification de statut")
 public class PaymentController {
 
@@ -62,11 +64,43 @@ public class PaymentController {
         return ResponseEntity.ok(Map.of("status", "ok"));
     }
 
+    /**
+     * Webhook IPN de retour de virement vendeur PayTech.
+     *
+     * <p>Règle : Seul un virement en cours (PROCESSING) peut changer d'état par ce canal.
+     * Les identifiants ou statuts non textuels sont rejetés sans erreur 500 avec réponse 200.
+     * <p>Pourquoi : Empêcher l'injection de types inattendus et la modification frauduleuse
+     * de virements dans des états terminaux ou nécessitant une action manuelle.
+     */
     @PostMapping("/transfer-ipn")
     @Operation(summary = "Webhook IPN Transfert PayTech", description = "Endpoint public recevant les notifications de statut de versement vendeur.")
-    public ResponseEntity<Map<String, Object>> handleTransferIpn(@RequestBody Map<String, Object> payload) {
-        String externalId = payload.get("external_id") != null ? String.valueOf(payload.get("external_id")) : null;
-        String status = payload.get("status") != null ? String.valueOf(payload.get("status")) : null;
+    public ResponseEntity<Map<String, Object>> handleTransferIpn(@RequestBody(required = false) Map<String, Object> payload) {
+        if (payload == null) {
+            // SEC-02 : Ignorer les payloads vides pour éviter les NullPointerException
+            log.warn("Transfer IPN ignoré : corps de requête manquant.");
+            return ResponseEntity.ok(Map.of("status", "ok"));
+        }
+
+        Object rawExternalId = payload.get("external_id");
+        Object rawStatus = payload.get("status");
+
+        // SEC-02 : Rejet sans conversion String si external_id n'est pas une chaîne pour éviter les désérialisations imprévues
+        if (rawExternalId != null && !(rawExternalId instanceof String)) {
+            log.warn("Transfer IPN ignoré : type invalide pour external_id (reçu: {}).",
+                    rawExternalId.getClass().getSimpleName());
+            return ResponseEntity.ok(Map.of("status", "ok"));
+        }
+
+        // SEC-02 : Rejet sans conversion String si status n'est pas une chaîne
+        if (rawStatus != null && !(rawStatus instanceof String)) {
+            String sanitizedRef = PaymentService.sanitizeAndTruncateRef(rawExternalId instanceof String s ? s : null);
+            log.warn("Transfer IPN ignoré : type invalide pour status (ref: {}, reçu: {}).",
+                    sanitizedRef, rawStatus.getClass().getSimpleName());
+            return ResponseEntity.ok(Map.of("status", "ok"));
+        }
+
+        String externalId = (String) rawExternalId;
+        String status = (String) rawStatus;
         paymentService.handleTransferIpn(externalId, status);
         return ResponseEntity.ok(Map.of("status", "ok"));
     }

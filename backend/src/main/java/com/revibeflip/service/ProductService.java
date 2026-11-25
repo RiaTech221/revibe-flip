@@ -13,6 +13,7 @@ import com.revibeflip.repository.CategoryRepository;
 import com.revibeflip.repository.ProductRepository;
 import com.revibeflip.security.SafeMediaService;
 import lombok.RequiredArgsConstructor;
+import com.revibeflip.security.PaginationValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,8 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductModificationPolicyService policyService;
+    private final SellerEligibilityService sellerEligibilityService;
 
     public Page<ProductDto> searchProducts(
             String query,
@@ -49,9 +52,10 @@ public class ProductService {
             String sortBy,
             String sortDirection
     ) {
-        Sort sort = Sort.by("asc".equalsIgnoreCase(sortDirection) ? Sort.Direction.ASC : Sort.Direction.DESC,
-                sortBy != null ? sortBy : "createdAt");
-        Pageable pageable = PageRequest.of(page, sizeLimit, sort);
+        Pageable pageable = PaginationValidator.validateAndCreate(
+                page, sizeLimit, sortBy, sortDirection,
+                PaginationValidator.PRODUCT_SORT_FIELDS, "createdAt", Sort.Direction.DESC
+        );
 
         String cleanQuery = (query != null && !query.trim().isEmpty()) ? query.trim() : null;
         String cleanSize = (size != null && !size.trim().isEmpty()) ? size.trim() : null;
@@ -78,6 +82,7 @@ public class ProductService {
 
     @Transactional
     public ProductDto createProduct(CreateProductRequest request, User seller) {
+        sellerEligibilityService.assertEligibleToSell(seller);
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Catégorie non trouvée."));
 
@@ -113,8 +118,18 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
 
-        if (!product.getSeller().getId().equals(user.getId()) && !user.getRole().name().equals("ROLE_ADMIN")) {
-            throw new org.springframework.security.access.AccessDeniedException("Vous n'êtes pas autorisé à modifier cet article.");
+        policyService.validateProductModification(
+                product,
+                user,
+                request.getPrice(),
+                request.getTitle(),
+                request.getCategoryId(),
+                request.getCondition()
+        );
+
+        if (request.getStatus() != null && request.getStatus() != product.getStatus()) {
+            policyService.validateStatusChange(product, user, request.getStatus());
+            product.setStatus(request.getStatus());
         }
 
         if (request.getTitle() != null) product.setTitle(request.getTitle().trim());
@@ -125,7 +140,6 @@ public class ProductService {
         if (request.getSize() != null) product.setSize(request.getSize().trim());
         if (request.getColor() != null) product.setColor(request.getColor().trim());
         if (request.getCondition() != null) product.setCondition(request.getCondition());
-        if (request.getStatus() != null) product.setStatus(request.getStatus());
         if (request.getLocationCity() != null) product.setLocationCity(request.getLocationCity().trim());
 
         if (request.getCategoryId() != null) {
@@ -148,9 +162,7 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Article non trouvé."));
 
-        if (!product.getSeller().getId().equals(user.getId()) && !user.getRole().name().equals("ROLE_ADMIN")) {
-            throw new org.springframework.security.access.AccessDeniedException("Vous n'êtes pas autorisé à supprimer cet article.");
-        }
+        policyService.validateProductDeletion(product, user);
 
         productRepository.delete(product);
     }

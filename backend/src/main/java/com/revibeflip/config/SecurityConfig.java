@@ -2,6 +2,7 @@ package com.revibeflip.config;
 
 import com.revibeflip.security.CustomUserDetailsService;
 import com.revibeflip.security.JwtAuthenticationFilter;
+import com.revibeflip.security.PathNormalizationFilter;
 import com.revibeflip.security.RateLimitFilter;
 import com.revibeflip.security.TurnstileFilter;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,6 +28,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,12 +53,13 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    private final PathNormalizationFilter pathNormalizationFilter;
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final RateLimitFilter rateLimitFilter;
     private final TurnstileFilter turnstileFilter;
     private final CustomUserDetailsService userDetailsService;
 
-    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${revibeflip.cors.allowed-origins:http://localhost:5173,http://localhost:5174,http://localhost:3000}")
     private String allowedOrigins;
 
     @Bean
@@ -89,6 +92,7 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/verify-otp",
+                                "/api/auth/skip-otp",
                                 "/api/auth/resend-otp",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
@@ -117,12 +121,13 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/ws/**"
                         ).permitAll()
-                        // Admin endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // Admin endpoints (SEC-13 & US-36 : normalisation et protection des variantes)
+                        .requestMatchers("/api/admin/**", "/api/v1/admin/**", "/admin/**").hasAnyRole("ADMIN", "COLLABORATOR")
                         // Any other endpoint requires authentication
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())
+                .addFilterBefore(pathNormalizationFilter, CorsFilter.class)
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(turnstileFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

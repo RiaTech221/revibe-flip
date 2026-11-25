@@ -18,6 +18,10 @@ export const chatApi = {
     api.get<{ success: boolean; data: Conversation[] }>('/messages/conversations'),
   getMessages: (conversationId: number) =>
     api.get<{ success: boolean; data: Message[] }>(`/messages/conversations/${conversationId}`),
+  getUnreadCount: () =>
+    api.get<{ success: boolean; data: number }>('/messages/unread-count'),
+  markAsRead: (conversationId: number) =>
+    api.post<{ success: boolean; data: number }>(`/messages/conversations/${conversationId}/read`),
   startConversation: (data: { productId?: number; productIds?: number[]; initialMessage?: string }) =>
     api.post<{ success: boolean; data: Conversation }>('/messages/conversations', data),
   sendMessage: (data: { conversationId: number; content?: string; imageUrl?: string }) =>
