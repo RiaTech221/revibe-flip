@@ -7,12 +7,22 @@ const GRADIENT_PAIRS: [string, string][] = [
   ['#14b8a6', '#0891b2'],
 ];
 
+export interface MobileImageTransformOptions {
+  width?: number;
+  height?: number;
+  crop?: 'fill' | 'limit' | 'fit' | 'thumb';
+  gravity?: 'auto' | 'face';
+}
+
 /**
  * Formate une URL d'image pour l'application mobile :
- * - Injecte automatiquement `f_auto,q_auto` sur les URLs Cloudinary (`res.cloudinary.com`)
+ * - Injecte automatiquement `f_auto,q_auto` (+ dimensions/recadrage optionnels) sur les URLs Cloudinary (`res.cloudinary.com`)
  * - Résout les chemins locaux `/api/uploads/...` ou `/uploads/...`
  */
-export function formatImageUrl(url?: string | null): string | null {
+export function formatImageUrl(
+  url?: string | null,
+  options?: MobileImageTransformOptions
+): string | null {
   if (!url) return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
@@ -24,7 +34,12 @@ export function formatImageUrl(url?: string | null): string | null {
     if (afterMarker.includes('f_auto') || afterMarker.includes('q_auto')) {
       return trimmed;
     }
-    return `${trimmed.slice(0, idx + marker.length)}f_auto,q_auto/${afterMarker}`;
+    const transforms = ['f_auto', 'q_auto'];
+    if (options?.crop) transforms.push(`c_${options.crop}`);
+    if (options?.gravity) transforms.push(`g_${options.gravity}`);
+    if (options?.width) transforms.push(`w_${options.width}`);
+    if (options?.height) transforms.push(`h_${options.height}`);
+    return `${trimmed.slice(0, idx + marker.length)}${transforms.join(',')}/${afterMarker}`;
   }
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('file://')) {

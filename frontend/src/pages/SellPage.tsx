@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { productApi, categoryApi, uploadApi } from '../services/api';
 import { sellerApi, SellerEligibility } from '../services/sellerService';
+import { prepareImageForUpload } from '../utils/imageUploadOptimize';
 import { Category, ProductCondition } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -72,8 +73,8 @@ export const SellPage: React.FC = () => {
     setUploading(true);
     try {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const res = await uploadApi.uploadFile(file);
+        const optimized = await prepareImageForUpload(files[i]);
+        const res = await uploadApi.uploadFile(optimized);
         if (res.data?.data) {
           setImageUrls((prev) => [...prev, res.data.data]);
         }
