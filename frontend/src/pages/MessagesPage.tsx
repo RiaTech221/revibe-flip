@@ -121,7 +121,7 @@ export const MessagesPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const targetId = searchParams.get('id');
+      const targetId = searchParams.get('id') || searchParams.get('conversation');
       const convId = targetId ? parseInt(targetId, 10) : undefined;
       if (convId) setMobileShowChat(true);
       fetchConversations(convId);
