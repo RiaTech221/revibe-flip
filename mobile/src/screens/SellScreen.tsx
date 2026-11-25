@@ -210,6 +210,83 @@ export const SellScreen = ({ navigation, route }: any) => {
     );
   }
 
+  if (showSellerOnboarding) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Coordonnées vendeur" />
+        <ScrollView
+          contentContainerStyle={styles.onboardingContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.onboardingIntro}>
+            <View style={styles.onboardingIcon}>
+              <Store size={24} color={colors.primary} />
+            </View>
+            <Text style={styles.onboardingTitle}>Préparez votre espace vendeur</Text>
+            <Text style={styles.onboardingDescription}>
+              Complétez vos coordonnées pour publier vos articles et faciliter la livraison.
+            </Text>
+          </View>
+
+          {(eligibility.missingFields?.length > 0 || Object.keys(eligibility.invalidFields || {}).length > 0) && (
+            <View style={styles.missingFieldsCard}>
+              <AlertCircle size={18} color={colors.warning} />
+              <View style={styles.missingFieldsCopy}>
+                <Text style={styles.missingFieldsTitle}>Informations à compléter</Text>
+                {!!eligibility.missingFields?.length && (
+                  <Text style={styles.missingFieldsText}>{eligibility.missingFields.join(', ')}</Text>
+                )}
+                {Object.values(eligibility.invalidFields || {}).map((message, index) => (
+                  <Text key={`${index}-${message}`} style={styles.missingFieldsText}>{message}</Text>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={styles.profileCard}>
+            <Text style={styles.label}>Prénom *</Text>
+            <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="Votre prénom" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+
+            <Text style={styles.label}>Nom *</Text>
+            <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Votre nom" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+
+            <Text style={styles.label}>Email (facultatif)</Text>
+            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="vous@exemple.com" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+
+            <Text style={styles.label}>Ville de résidence *</Text>
+            <TextInput style={styles.input} value={profileCity} onChangeText={setProfileCity} placeholder="Ex. Dakar" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+
+            <Text style={styles.label}>Adresse par défaut *</Text>
+            <View style={styles.addressInputWrap}>
+              <MapPin size={18} color={colors.textSecondary} />
+              <TextInput
+                style={styles.addressInput}
+                value={address}
+                onChangeText={setAddress}
+                placeholder="Quartier, rue, numéro…"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="sentences"
+                multiline
+              />
+            </View>
+            <Text style={styles.fieldHint}>Indiquez au moins 5 caractères pour votre adresse.</Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.submitButton, profileSaving && styles.btnDisabled]}
+            onPress={handleProfileSave}
+            disabled={profileSaving}
+            activeOpacity={0.85}
+          >
+            {profileSaving ? <ActivityIndicator color={colors.white} /> : <CheckCircle size={19} color={colors.white} />}
+            <Text style={styles.submitButtonText}>{profileSaving ? 'Enregistrement…' : 'Enregistrer et continuer'}</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   const handleSubmit = async () => {
     if (!title.trim() || price <= 0 || !selectedCategoryId) {
       Alert.alert('Champs requis', 'Veuillez renseigner un titre, un prix et une catégorie.');
