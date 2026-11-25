@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AlertCircle, ArrowRight, BadgeCheck, PackagePlus, Store } from 'lucide-react-native';
+import { AlertCircle, ArrowRight, BadgeCheck, PackagePlus, Pencil, Store } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 import { Header } from '../components/common/Header';
 import { colors } from '../theme/colors';
@@ -64,6 +64,16 @@ export const SellerSpaceScreen = ({ navigation, route }: any) => {
             <ArrowRight size={18} color={colors.white} />
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={() => navigation.navigate('EditProfile')}
+          activeOpacity={0.75}
+        >
+          <Pencil size={17} color={colors.primary} />
+          <Text style={styles.editProfileText}>Modifier mes coordonnées</Text>
+          <ArrowRight size={16} color={colors.primary} />
+        </TouchableOpacity>
 
         <View style={styles.tipCard}>
           <Text style={styles.tipTitle}>Un conseil pour bien commencer</Text>
@@ -150,6 +160,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   actionButtonText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  editProfileButton: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 9,
+    marginTop: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 13,
+  },
+  editProfileText: { color: colors.primary, flex: 1, fontSize: 13, fontWeight: '700' },
   tipCard: {
     backgroundColor: '#F3E8FF',
     borderRadius: 16,
