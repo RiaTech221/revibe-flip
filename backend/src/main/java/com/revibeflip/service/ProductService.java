@@ -36,6 +36,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final ProductModificationPolicyService policyService;
+    private final SellerEligibilityService sellerEligibilityService;
 
     public Page<ProductDto> searchProducts(
             String query,
@@ -81,6 +82,7 @@ public class ProductService {
 
     @Transactional
     public ProductDto createProduct(CreateProductRequest request, User seller) {
+        sellerEligibilityService.assertEligibleToSell(seller);
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Catégorie non trouvée."));
 
