@@ -84,15 +84,32 @@ class OtpAuthFlowTest {
                 .andExpect(status().isConflict());
 
         // Validation OTP valide -> 200 + ACTIVE + JWT
-        mockMvc.perform(post("/api/auth/verify-otp")
+        var verifyResult = mockMvc.perform(post("/api/auth/verify-otp")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(Map.of("phone", phone, "otpCode", otpCode))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.token").isNotEmpty());
+                .andExpect(jsonPath("$.data.token").isNotEmpty())
+                .andReturn();
+
+        String jwtToken = objectMapper.readTree(verifyResult.getResponse().getContentAsString())
+                .path("data").path("token").asText();
 
         User verified = userRepository.findByPhone(phone).orElseThrow();
         assertThat(verified.getStatus()).isEqualTo(AccountStatus.ACTIVE);
         assertThat(verified.getIsVerified()).isTrue();
+
+        // Option B : Création du mot de passe après OTP -> puis connexion via /api/auth/login
+        mockMvc.perform(post("/api/auth/set-password")
+                        .header("Authorization", "Bearer " + jwtToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("password", "Pass1234!"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("identifier", phone, "password", "Pass1234!"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.token").isNotEmpty());
     }
 
     @Test
