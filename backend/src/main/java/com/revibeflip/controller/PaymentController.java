@@ -33,6 +33,7 @@ public class PaymentController {
 
     private final PaymentService paymentService;
     private final UserRepository userRepository;
+    private final com.revibeflip.security.ClientIpResolver clientIpResolver;
 
     private User resolveUser(Authentication authentication) {
         if (authentication == null) {
@@ -128,10 +129,6 @@ public class PaymentController {
     }
 
     private String extractClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return clientIpResolver.resolve(request);
     }
 }
