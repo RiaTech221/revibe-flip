@@ -47,6 +47,7 @@ public class SellerService {
     private final ChatOfferRepository chatOfferRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final ProductModificationPolicyService policyService;
+    private final SellerEligibilityService sellerEligibilityService;
 
     private static class SellerDashboardCacheEntry {
         final SellerDashboardDto data;
@@ -752,6 +753,9 @@ public class SellerService {
     @Transactional
     public ProductDto createProduct(User seller, SellerProductRequest request) {
         checkSellerNotSuspended(seller);
+        if (!Boolean.TRUE.equals(request.getIsDraft())) {
+            sellerEligibilityService.assertEligibleToSell(seller);
+        }
 
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("Rayon / Catégorie invalide"));
