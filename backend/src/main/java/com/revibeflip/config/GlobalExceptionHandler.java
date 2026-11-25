@@ -1,6 +1,8 @@
 package com.revibeflip.config;
 
 import com.revibeflip.dto.ApiResponse;
+import com.revibeflip.dto.SellerEligibilityDto;
+import com.revibeflip.exception.SellerEligibilityException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -53,6 +55,16 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : "Accès refusé."));
     }
 
+    @ExceptionHandler(SellerEligibilityException.class)
+    public ResponseEntity<ApiResponse<SellerEligibilityDto>> handleSellerEligibility(SellerEligibilityException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.<SellerEligibilityDto>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(ex.getEligibility())
+                        .build());
+    }
+
     @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleEntityNotFound(jakarta.persistence.EntityNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -103,9 +115,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(com.revibeflip.exception.TooManyRequestsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(com.revibeflip.exception.TooManyRequestsException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> handleTooManyRequests(com.revibeflip.exception.TooManyRequestsException ex) {
+        long retryAfter = Math.max(1L, ex.getRetryAfterSeconds());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(ApiResponse.error(ex.getMessage()));
+                .header("Retry-After", String.valueOf(retryAfter))
+                .body(ApiResponse.<Map<String, Long>>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(Map.of("retryAfterSeconds", retryAfter))
+                        .build());
     }
 
     @ExceptionHandler(com.revibeflip.exception.SellerConflictException.class)

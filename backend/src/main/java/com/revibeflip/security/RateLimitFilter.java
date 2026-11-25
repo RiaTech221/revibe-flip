@@ -4,12 +4,14 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -17,23 +19,39 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Pattern;
 
 /**
- * Filtre de limitation de débit (Rate Limiting) et de protection anti-bot basique
- * par adresse IP réelle et groupe d'endpoints sensibles.
+ * Filtre de limitation de débit (Rate Limiting) et de protection anti-bot
+ * par adresse IP réelle (derrière proxy de confiance) et groupe d'endpoints sensibles.
+ * <p>
+ * Délègue le stockage des compteurs à {@link PersistentRateLimitService} en environnement Spring
+ * pour garantir la persistance entre redémarrages et le partage multi-instances.
+ * </p>
  */
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final int MAX_BUCKETS = 10_000;
-    private static final Pattern VALID_IP_PATTERN = Pattern.compile("^[0-9a-fA-F:.]{3,45}$");
+    private static final long WINDOW_SECONDS = 60L;
     private static final Set<String> BLOCKED_BOT_SIGNATURES = Set.of(
             "sqlmap", "nikto", "nessus", "masscan", "zgrab",
             "gobuster", "dirbuster", "wfuzz", "nuclei", "acunetix", "havij"
     );
 
-    private final Map<String, Deque<Instant>> buckets = new ConcurrentHashMap<>();
+    private final ClientIpResolver clientIpResolver;
+    private final PersistentRateLimitService persistentRateLimitService;
+    private final Map<String, Deque<Instant>> fallbackBuckets = new ConcurrentHashMap<>();
+
+    public RateLimitFilter() {
+        this(new ClientIpResolver(), null);
+    }
+
+    @Autowired
+    public RateLimitFilter(ClientIpResolver clientIpResolver,
+                           PersistentRateLimitService persistentRateLimitService) {
+        this.clientIpResolver = clientIpResolver != null ? clientIpResolver : new ClientIpResolver();
+        this.persistentRateLimitService = persistentRateLimitService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -48,20 +66,37 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String path = request.getRequestURI();
-        if (path != null && (path.startsWith("/api/auth/") || path.startsWith("/api/payments/"))) {
+        if (path != null && (path.startsWith("/api/auth/") || path.startsWith("/api/v1/auth/") || path.startsWith("/api/payments/"))) {
             response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
             response.setHeader("Pragma", "no-cache");
         }
 
         LimitRule rule = resolveRule(path, request.getMethod());
-        if (rule != null && !allow(extractClientIp(request) + ":" + rule.bucketName, rule.maxPerMinute)) {
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-            response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"success\":false,\"message\":\"Trop de requêtes. Veuillez patienter avant de réessayer.\"}");
-            return;
+        if (rule != null) {
+            String key = "filter:" + rule.bucketName + ":ip:" + extractClientIp(request);
+            PersistentRateLimitService.RateLimitDecision decision = checkBucket(key, rule.maxPerMinute);
+            if (!decision.allowed()) {
+                long retryAfter = Math.max(1L, decision.retryAfterSeconds());
+                response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+                response.setHeader("Retry-After", String.valueOf(retryAfter));
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(
+                        "{\"success\":false,\"message\":\"Trop de requêtes. Veuillez patienter "
+                                + retryAfter + " seconde(s) avant de réessayer.\",\"data\":{\"retryAfterSeconds\":"
+                                + retryAfter + "}}"
+                );
+                return;
+            }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private PersistentRateLimitService.RateLimitDecision checkBucket(String key, int maxPerMinute) {
+        if (persistentRateLimitService != null) {
+            return persistentRateLimitService.checkAndIncrement(key, maxPerMinute, WINDOW_SECONDS);
+        }
+        return allowInMemory(key, maxPerMinute);
     }
 
     private boolean isMaliciousBot(String userAgent) {
@@ -79,57 +114,64 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private LimitRule resolveRule(String path, String method) {
         if (path == null) return null;
-        if (path.startsWith("/api/auth/login")
-                || path.startsWith("/api/auth/register")
-                || path.startsWith("/api/auth/forgot-password")
-                || path.startsWith("/api/auth/reset-password")
-                || path.startsWith("/api/auth/resend-otp")
-                || path.startsWith("/api/auth/verify-otp")) {
+        String normalized = path.startsWith("/api/v1/") ? "/api/" + path.substring("/api/v1/".length()) : path;
+
+        if (normalized.startsWith("/api/auth/login")
+                || normalized.startsWith("/api/auth/register")
+                || normalized.startsWith("/api/auth/forgot-password")
+                || normalized.startsWith("/api/auth/reset-password")
+                || normalized.startsWith("/api/auth/resend-otp")
+                || normalized.startsWith("/api/auth/verify-otp")
+                || normalized.startsWith("/api/auth/skip-otp")) {
             return new LimitRule("auth", 20);
         }
-        if (path.startsWith("/api/payments/ipn") || path.startsWith("/api/payments/transfer-ipn")) {
+        if (normalized.startsWith("/api/payments/ipn") || normalized.startsWith("/api/payments/transfer-ipn")) {
             return new LimitRule("ipn", 60);
         }
-        if (path.startsWith("/api/contact")) {
+        if (normalized.startsWith("/api/contact")) {
             return new LimitRule("contact", 10);
         }
-        if (path.startsWith("/api/uploads")) {
+        if (normalized.startsWith("/api/uploads")) {
             return new LimitRule("uploads", 15);
         }
         if (HttpMethod.POST.matches(method)
-                && (path.equals("/api/products") || path.equals("/api/seller/products"))) {
+                && (normalized.equals("/api/products") || normalized.equals("/api/seller/products"))) {
             return new LimitRule("listings", 15);
         }
-        if (HttpMethod.POST.matches(method) && path.startsWith("/api/reports")) {
+        if (HttpMethod.POST.matches(method) && normalized.startsWith("/api/reports")) {
             return new LimitRule("reports", 10);
         }
-        if (path.startsWith("/api/chat") || path.startsWith("/api/offers")) {
+        if (normalized.startsWith("/api/chat") || normalized.startsWith("/api/offers")) {
             return new LimitRule("messaging", 60);
         }
         return null;
     }
 
-    private boolean allow(String key, int maxPerMinute) {
+    private PersistentRateLimitService.RateLimitDecision allowInMemory(String key, int maxPerMinute) {
         Instant now = Instant.now();
-        Instant cutoff = now.minusSeconds(60);
-        if (buckets.size() >= MAX_BUCKETS && !buckets.containsKey(key)) {
+        Instant cutoff = now.minusSeconds(WINDOW_SECONDS);
+        if (fallbackBuckets.size() >= MAX_BUCKETS && !fallbackBuckets.containsKey(key)) {
             pruneExpiredBuckets(cutoff);
         }
-        Deque<Instant> deque = buckets.computeIfAbsent(key, k -> new ArrayDeque<>());
+        Deque<Instant> deque = fallbackBuckets.computeIfAbsent(key, k -> new ArrayDeque<>());
         synchronized (deque) {
             while (!deque.isEmpty() && deque.peekFirst().isBefore(cutoff)) {
                 deque.pollFirst();
             }
             if (deque.size() >= maxPerMinute) {
-                return false;
+                Instant oldest = deque.peekFirst();
+                long retryAfter = oldest != null
+                        ? Math.max(1L, Duration.between(now, oldest.plusSeconds(WINDOW_SECONDS)).getSeconds())
+                        : WINDOW_SECONDS;
+                return new PersistentRateLimitService.RateLimitDecision(false, retryAfter);
             }
             deque.addLast(now);
-            return true;
+            return new PersistentRateLimitService.RateLimitDecision(true, 0L);
         }
     }
 
     private void pruneExpiredBuckets(Instant cutoff) {
-        buckets.entrySet().removeIf(entry -> {
+        fallbackBuckets.entrySet().removeIf(entry -> {
             Deque<Instant> deque = entry.getValue();
             synchronized (deque) {
                 while (!deque.isEmpty() && deque.peekFirst().isBefore(cutoff)) {
@@ -138,33 +180,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 return deque.isEmpty();
             }
         });
-        if (buckets.size() >= MAX_BUCKETS) {
-            buckets.clear();
+        if (fallbackBuckets.size() >= MAX_BUCKETS) {
+            fallbackBuckets.clear();
         }
     }
 
     String extractClientIp(HttpServletRequest request) {
-        // Priorité aux en-têtes positionnés par le proxy de confiance (Cloudflare / Nginx),
-        // afin d'éviter le spoofing trivial via un en-tête X-Forwarded-For forgé par le client.
-        String cfIp = sanitizeIp(request.getHeader("CF-Connecting-IP"));
-        if (cfIp != null) {
-            return cfIp;
-        }
-        String realIp = sanitizeIp(request.getHeader("X-Real-IP"));
-        if (realIp != null) {
-            return realIp;
-        }
-        String remoteAddr = sanitizeIp(request.getRemoteAddr());
-        return remoteAddr != null ? remoteAddr : "unknown";
-    }
-
-    private String sanitizeIp(String raw) {
-        if (raw == null) return null;
-        String trimmed = raw.trim();
-        if (trimmed.isEmpty() || !VALID_IP_PATTERN.matcher(trimmed).matches()) {
-            return null;
-        }
-        return trimmed;
+        return clientIpResolver.resolve(request);
     }
 
     private record LimitRule(String bucketName, int maxPerMinute) {}

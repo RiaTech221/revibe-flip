@@ -33,6 +33,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final SessionOriginValidator sessionOriginValidator;
+    private final com.revibeflip.security.ClientIpResolver clientIpResolver;
     private final org.springframework.core.env.Environment environment;
 
     @Value("${revibeflip.jwt.refresh-expiration-ms:604800000}")
@@ -56,7 +57,7 @@ public class AuthController {
             @Valid @RequestBody VerifyOtpRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        AuthResponse response = authService.verifyOtp(request);
+        AuthResponse response = authService.verifyOtp(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.ok(response, "Numéro vérifié et compte activé avec succès !"));
     }
@@ -101,13 +102,22 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Mot de passe réinitialisé avec succès."));
     }
 
+    @PostMapping("/set-password")
+    @Operation(summary = "Définir ou modifier le mot de passe du compte connecté (après validation OTP ou depuis le profil)")
+    public ResponseEntity<ApiResponse<UserDto>> setPassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody SetPasswordRequest request) {
+        UserDto updated = authService.setPassword(user, request);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Mot de passe enregistré avec succès."));
+    }
+
     @PostMapping("/login")
     @Operation(summary = "Connexion utilisateur", description = "Connexion par numéro de téléphone ou email avec mot de passe")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.login(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.ok(response, "Connexion réussie."));
     }
@@ -192,10 +202,6 @@ public class AuthController {
     }
 
     private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return clientIpResolver.resolve(request);
     }
 }

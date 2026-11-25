@@ -27,6 +27,8 @@ export const authApi = {
     api.post('/auth/forgot-password', { phone }, turnstileConfig(turnstileToken)),
   resetPassword: (data: { phone: string; otpCode: string; newPassword: string }) =>
     api.post('/auth/reset-password', data),
+  setPassword: (data: { password: string; currentPassword?: string }) =>
+    api.post('/auth/set-password', data),
   refresh: () => api.post('/auth/refresh', {}),
   logout: () => api.post('/auth/logout', {}),
   getMe: () => api.get<{ success: boolean; data: User }>('/auth/me'),

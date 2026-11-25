@@ -13,6 +13,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { categoryApi, notificationApi, chatApi } from '../services/api';
+import { sellerApi, SellerEligibility } from '../services/sellerService';
+import { BecomeSellerModal } from './seller/BecomeSellerModal';
 import { createStompClient } from '../services/wsClient';
 import { Category, Notification } from '../types';
 import { Logo } from './Logo';
@@ -47,6 +49,8 @@ export const Navbar: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(0);
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const [sellerEligibility, setSellerEligibility] = useState<SellerEligibility | null>(null);
+  const [isBecomeSellerOpen, setIsBecomeSellerOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -76,8 +80,15 @@ export const Navbar: React.FC = () => {
     if (!isAuthenticated || !user?.id) {
       setUnreadNotifications(0);
       setUnreadMessages(0);
+      setSellerEligibility(null);
       return;
     }
+
+    const refreshEligibility = () => {
+      sellerApi.getEligibility().then((res) => {
+        if (res.data?.data) setSellerEligibility(res.data.data);
+      }).catch(() => {});
+    };
 
     const refreshCounts = () => {
       notificationApi.getUnreadCount().then((res) => {
@@ -90,6 +101,7 @@ export const Navbar: React.FC = () => {
     };
 
     refreshCounts();
+    refreshEligibility();
 
     notificationApi.getAll().then((res) => {
       if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
@@ -101,6 +113,7 @@ export const Navbar: React.FC = () => {
       }).catch(console.error);
     };
     window.addEventListener('revibe:messages-read', handleMessagesRead);
+    window.addEventListener('revibe:seller-eligibility-updated', refreshEligibility);
 
     const client = createStompClient((stomp) => {
       stomp.subscribe(`/topic/user.${user.id}.notifications`, (frame) => {
@@ -119,6 +132,7 @@ export const Navbar: React.FC = () => {
 
     return () => {
       window.removeEventListener('revibe:messages-read', handleMessagesRead);
+      window.removeEventListener('revibe:seller-eligibility-updated', refreshEligibility);
       client?.deactivate();
     };
   }, [isAuthenticated, user?.id, location.pathname]);
@@ -170,15 +184,44 @@ export const Navbar: React.FC = () => {
 
           {/* 3. ACTIONS DE DROITE (VENDRE, MESSAGES, PROFIL, PANIER) */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Bouton "+ Vendre" (Le moteur principal de la marketplace) */}
-            <Link
-              to={isAuthenticated ? "/sell" : "/login?redirect=/sell"}
-              className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95"
-              title="Vendre un article"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Vendre</span>
-            </Link>
+            {/* Bouton "Vendeur" -> "Vendre" (US-06 : passage d'acheteur à vendeur) */}
+            {isAuthenticated && (sellerEligibility?.alreadySeller || sellerEligibility?.eligible) ? (
+              <Link
+                to="/sell"
+                className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95"
+                title="Vendre un article"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Vendre</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!isAuthenticated) {
+                    navigate('/login?redirect=/seller');
+                    return;
+                  }
+                  try {
+                    const res = await sellerApi.getEligibility();
+                    const elig = res.data?.data;
+                    setSellerEligibility(elig || null);
+                    if (elig?.alreadySeller || elig?.eligible) {
+                      navigate('/seller');
+                    } else {
+                      setIsBecomeSellerOpen(true);
+                    }
+                  } catch {
+                    setIsBecomeSellerOpen(true);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95 cursor-pointer"
+                title="Devenir vendeur"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Vendeur</span>
+              </button>
+            )}
 
             {/* Messages / Discussions */}
             <Link
@@ -400,6 +443,15 @@ export const Navbar: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Modal US-06 : Coordonnées Personnelles & Livraison pour devenir vendeur */}
+      <BecomeSellerModal
+        isOpen={isBecomeSellerOpen}
+        onClose={() => setIsBecomeSellerOpen(false)}
+        onSuccess={() => {
+          setIsBecomeSellerOpen(false);
+          navigate('/seller');
+        }}
+      />
     </header>
   );
 };

@@ -80,16 +80,15 @@ public class AuthService {
                 .orElseGet(() -> countryRepository.findByCode("SN").orElse(null));
 
         String rawOtp = generateOtp();
-        String rawPassword = (request.getPassword() != null && !request.getPassword().isBlank())
-                ? request.getPassword()
-                : UUID.randomUUID().toString();
+        boolean hasPassword = request.getPassword() != null && !request.getPassword().isBlank();
 
         User user = User.builder()
                 .firstName(request.getFirstName() != null ? request.getFirstName().trim() : null)
                 .lastName(request.getLastName() != null ? request.getLastName().trim() : null)
                 .phone(cleanPhone)
                 .email(request.getEmail() != null && !request.getEmail().isBlank() ? request.getEmail().trim().toLowerCase() : null)
-                .password(passwordEncoder.encode(rawPassword))
+                .password(hasPassword ? passwordEncoder.encode(request.getPassword()) : null)
+                .mustChangePassword(!hasPassword)
                 .role(Role.ROLE_USER)
                 .status(AccountStatus.PENDING_OTP)
                 .country(country)
@@ -117,7 +116,13 @@ public class AuthService {
 
     @Transactional(noRollbackFor = {IllegalArgumentException.class, TooManyRequestsException.class})
     public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        return verifyOtp(request, null);
+    }
+
+    @Transactional(noRollbackFor = {IllegalArgumentException.class, TooManyRequestsException.class})
+    public AuthResponse verifyOtp(VerifyOtpRequest request, String clientIp) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
+        otpRateLimiter.checkOtpVerificationAttempt(cleanPhone, clientIp);
 
         User user = userRepository.findByPhone(cleanPhone)
                 .orElseThrow(() -> new IllegalArgumentException("Code OTP invalide ou expiré."));
@@ -300,9 +305,43 @@ public class AuthService {
         refreshTokenService.revokeAllForUser(user);
     }
 
+    @Transactional
+    public UserDto setPassword(User authenticatedUser, SetPasswordRequest request) {
+        if (authenticatedUser == null) {
+            throw new IllegalArgumentException("Utilisateur non authentifié.");
+        }
+        User user = userRepository.findById(authenticatedUser.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable."));
+
+        validatePasswordStrength(request.getPassword());
+
+        boolean needsInitialPassword = user.getPassword() == null
+                || user.getPassword().isBlank()
+                || Boolean.TRUE.equals(user.getMustChangePassword());
+
+        if (!needsInitialPassword) {
+            if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()
+                    || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                throw new BadCredentialsException("Le mot de passe actuel est incorrect.");
+            }
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setMustChangePassword(false);
+        User saved = userRepository.save(user);
+        return UserDto.fromEntity(saved);
+    }
+
     @Transactional(noRollbackFor = BadCredentialsException.class)
     public AuthResponse login(LoginRequest request) {
+        return login(request, null);
+    }
+
+    @Transactional(noRollbackFor = BadCredentialsException.class)
+    public AuthResponse login(LoginRequest request, String clientIp) {
         String identifier = request.getIdentifier().trim();
+        String normalizedForLimit = identifier.contains("@") ? identifier.toLowerCase() : cleanPhoneNumber(identifier);
+        otpRateLimiter.checkLoginAttempt(normalizedForLimit, clientIp);
 
         User user = userRepository.findByIdentifier(identifier)
                 .or(() -> userRepository.findByIdentifier(cleanPhoneNumber(identifier)))
@@ -314,6 +353,10 @@ public class AuthService {
 
         if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(LocalDateTime.now())) {
             throw new IllegalStateException("Compte temporairement verrouillé suite à plusieurs tentatives échouées. Réessayez dans quelques minutes.");
+        }
+
+        if (user.getPassword() == null || user.getPassword().isBlank()) {
+            throw new BadCredentialsException("Aucun mot de passe défini pour ce compte. Définissez-le après vérification OTP ou via « Mot de passe oublié ».");
         }
 
         boolean isMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());

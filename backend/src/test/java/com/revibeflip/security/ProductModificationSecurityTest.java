@@ -13,6 +13,7 @@ import com.revibeflip.repository.OrderRepository;
 import com.revibeflip.repository.ProductRepository;
 import com.revibeflip.service.ProductModificationPolicyService;
 import com.revibeflip.service.ProductService;
+import com.revibeflip.service.SellerEligibilityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -246,7 +247,7 @@ class ProductModificationSecurityTest {
         void setUpProductService() {
             productRepository = org.mockito.Mockito.mock(ProductRepository.class);
             categoryRepository = org.mockito.Mockito.mock(CategoryRepository.class);
-            productService = new ProductService(productRepository, categoryRepository, policyService);
+            productService = new ProductService(productRepository, categoryRepository, policyService, new SellerEligibilityService(productRepository));
             when(productRepository.findById(100L)).thenReturn(java.util.Optional.of(product));
         }
 
