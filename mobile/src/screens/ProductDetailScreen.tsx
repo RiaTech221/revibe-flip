@@ -8,7 +8,7 @@
  *  * - Barre d'actions inférieure : bouton "Acheter maintenant" et "Négocier / Faire une offre"
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -42,6 +42,8 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
   const productId = route.params.productId || route.params.id;
   const [product, setProduct] = useState<Product | null>(route.params.product || null);
   const [loading, setLoading] = useState(!route.params.product);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const galleryRef = useRef<ScrollView>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const isLiked = product ? isFavorite(product.id) : false;
 
@@ -57,6 +59,10 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
     }
   }, [productId]);
 
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [product?.id]);
+
   if (loading || !product) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -68,9 +74,10 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
     );
   }
 
-  const imageUrl =
-    product.primaryImage ||
-    (product.images && product.images.length > 0 ? product.images[0] : null);
+  const productImages = [
+    ...(product.primaryImage ? [product.primaryImage] : []),
+    ...(product.images || []).filter((image) => image !== product.primaryImage),
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -90,12 +97,58 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Main Product Image */}
-        <ImageWithFallback
-          uri={imageUrl}
-          label={product.title}
-          style={styles.image}
-        />
+        {/* Galerie produit : balayage et miniatures comme sur le web */}
+        <View style={styles.galleryContainer}>
+          <ScrollView
+            ref={galleryRef}
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              setActiveImageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+            }}
+          >
+            {productImages.length > 0 ? productImages.map((image, index) => (
+              <ImageWithFallback
+                key={`${image}-${index}`}
+                uri={image}
+                label={product.title}
+                style={styles.image}
+              />
+            )) : (
+              <ImageWithFallback label={product.title} style={styles.image} />
+            )}
+          </ScrollView>
+          {productImages.length > 1 && (
+            <View style={styles.imageCountBadge}>
+              <Text style={styles.imageCountText}>{activeImageIndex + 1}/{productImages.length}</Text>
+            </View>
+          )}
+        </View>
+
+        {productImages.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailList}
+          >
+            {productImages.map((image, index) => (
+              <TouchableOpacity
+                key={`${image}-thumb-${index}`}
+                onPress={() => {
+                  galleryRef.current?.scrollTo({ x: index * width, animated: true });
+                  setActiveImageIndex(index);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Afficher la photo ${index + 1}`}
+                style={[styles.thumbnailButton, index === activeImageIndex && styles.thumbnailSelected]}
+              >
+                <ImageWithFallback uri={image} label={product.title} style={styles.thumbnailImage} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         <View style={styles.content}>
           {/* Price & Escrow Badge */}
@@ -211,6 +264,29 @@ const styles = StyleSheet.create({
     height: width * 0.9,
     backgroundColor: colors.surface,
   },
+  galleryContainer: { position: 'relative' },
+  imageCountBadge: {
+    position: 'absolute',
+    right: 14,
+    bottom: 14,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  imageCountText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  thumbnailList: { gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  thumbnailButton: {
+    width: 62,
+    height: 62,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    opacity: 0.72,
+  },
+  thumbnailSelected: { borderColor: colors.primary, opacity: 1 },
+  thumbnailImage: { width: '100%', height: '100%', backgroundColor: colors.surface },
   likeBtn: {
     padding: 6,
   },
