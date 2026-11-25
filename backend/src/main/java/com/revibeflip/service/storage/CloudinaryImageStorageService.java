@@ -58,7 +58,10 @@ public class CloudinaryImageStorageService implements ImageStorageService {
         String safeContext = normalizeContext(context);
         String folder = baseFolder + "/" + safeContext;
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
-        String signature = signParams("folder=" + folder + "&timestamp=" + timestamp + apiSecret);
+        String transformation = resolveUploadTransformation(safeContext);
+        String signature = signParams(
+                "folder=" + folder + "&timestamp=" + timestamp + "&transformation=" + transformation + apiSecret
+        );
 
         String filename = UUID.randomUUID() + extension;
         ByteArrayResource fileResource = new ByteArrayResource(cleanBytes) {
@@ -73,6 +76,7 @@ public class CloudinaryImageStorageService implements ImageStorageService {
         body.add("api_key", apiKey);
         body.add("timestamp", timestamp);
         body.add("folder", folder);
+        body.add("transformation", transformation);
         body.add("signature", signature);
 
         HttpHeaders headers = new HttpHeaders();
@@ -88,6 +92,13 @@ public class CloudinaryImageStorageService implements ImageStorageService {
             throw new IOException("URL Cloudinary retournée non conforme à la liste blanche.");
         }
         return secureUrl;
+    }
+
+    static String resolveUploadTransformation(String safeContext) {
+        if ("avatars".equals(safeContext)) {
+            return "c_fill,g_face,w_500,h_500,q_auto:good,f_auto";
+        }
+        return "c_limit,w_1600,h_1600,q_auto:good,f_auto";
     }
 
     private static String signParams(String toSign) {
