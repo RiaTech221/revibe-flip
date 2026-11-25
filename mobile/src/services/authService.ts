@@ -56,10 +56,6 @@ export const authService = {
     return res.data?.data;
   },
 
-  setPassword: async (password: string): Promise<void> => {
-    await api.post('/auth/set-password', { password });
-  },
-
   resendOtp: async (phone: string): Promise<void> => {
     await api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`);
   },
