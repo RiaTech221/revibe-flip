@@ -1,6 +1,8 @@
 package com.revibeflip.config;
 
 import com.revibeflip.dto.ApiResponse;
+import com.revibeflip.dto.SellerEligibilityDto;
+import com.revibeflip.exception.SellerEligibilityException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,6 +53,16 @@ public class GlobalExceptionHandler {
         log.warn("Tentative d'accès non autorisée : {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : "Accès refusé."));
+    }
+
+    @ExceptionHandler(SellerEligibilityException.class)
+    public ResponseEntity<ApiResponse<SellerEligibilityDto>> handleSellerEligibility(SellerEligibilityException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.<SellerEligibilityDto>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(ex.getEligibility())
+                        .build());
     }
 
     @ExceptionHandler(jakarta.persistence.EntityNotFoundException.class)

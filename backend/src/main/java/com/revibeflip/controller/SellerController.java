@@ -9,6 +9,7 @@ import com.revibeflip.dto.ProductDto;
 import com.revibeflip.dto.ReportReviewRequest;
 import com.revibeflip.dto.ReviewDto;
 import com.revibeflip.dto.SellerDashboardDto;
+import com.revibeflip.dto.SellerEligibilityDto;
 import com.revibeflip.dto.SellerProductRequest;
 import com.revibeflip.dto.SellerProfileDto;
 import com.revibeflip.dto.SellerTransactionDto;
@@ -19,6 +20,7 @@ import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.OrderStatus;
 import com.revibeflip.entity.enums.ProductStatus;
 import com.revibeflip.repository.UserRepository;
+import com.revibeflip.service.SellerEligibilityService;
 import com.revibeflip.service.SellerService;
 import com.revibeflip.security.PaginationValidator;
 import io.swagger.v3.oas.annotations.Operation;
@@ -54,6 +56,7 @@ import java.util.List;
 public class SellerController {
 
     private final SellerService sellerService;
+    private final SellerEligibilityService sellerEligibilityService;
     private final UserRepository userRepository;
 
     private User resolveSeller(Authentication authentication) {
@@ -68,8 +71,17 @@ public class SellerController {
     }
 
     // ==========================================
-    // 1. PROFIL VENDEUR
+    // 1. PROFIL VENDEUR & ÉLIGIBILITÉ
     // ==========================================
+    @GetMapping("/eligibility")
+    @Operation(summary = "Vérifier l'éligibilité pour devenir vendeur", description = "Vérifie que toutes les informations utilisateur requises sont remplies et valides.")
+    public ResponseEntity<com.revibeflip.dto.ApiResponse<SellerEligibilityDto>> getEligibility(
+            Authentication authentication
+    ) {
+        User seller = resolveSeller(authentication);
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(sellerEligibilityService.checkEligibility(seller)));
+    }
+
     @GetMapping("/profile")
     @Operation(summary = "Consulter son profil vendeur", description = "Retourne les informations du profil vendeur ainsi que ses statistiques (annonces, ventes, note moyenne).")
     @ApiResponses({

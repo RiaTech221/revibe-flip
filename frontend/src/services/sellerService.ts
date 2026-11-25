@@ -201,10 +201,19 @@ export interface SellerProfile {
   createdAt: string;
 }
 
+export interface SellerEligibility {
+  eligible: boolean;
+  missingFields: string[];
+  invalidFields: Record<string, string>;
+  message: string;
+}
+
 /**
  * Service dédié à l'espace vendeur (Gestion du catalogue, commandes, finances et retraits).
  */
 export const sellerApi = {
+  getEligibility: () =>
+    api.get<{ success: boolean; data: SellerEligibility }>('/seller/eligibility'),
   getProfile: () =>
     api.get<{ success: boolean; data: SellerProfile }>('/seller/profile'),
   updateProfile: (data: any) =>
