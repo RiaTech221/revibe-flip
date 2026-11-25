@@ -25,6 +25,7 @@ import { SellerSidebar, SellerTabType } from '../components/seller/SellerSidebar
 import { SellerOverviewTab } from '../components/seller/SellerOverviewTab';
 import { SellerListingsTab } from '../components/seller/SellerListingsTab';
 import { SellerOrdersTab } from '../components/seller/SellerOrdersTab';
+import { SellerOffersTab } from '../components/seller/SellerOffersTab';
 import { SellerFinancesTab } from '../components/seller/SellerFinancesTab';
 import { SellerReviewsTab } from '../components/seller/SellerReviewsTab';
 import { SellerProfileTab } from '../components/seller/SellerProfileTab';
@@ -63,7 +64,7 @@ export const SellerDashboardPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [transactions, setTransactions] = useState<SellerTransaction[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [, setSellerOffers] = useState<ChatOffer[]>([]);
+  const [sellerOffers, setSellerOffers] = useState<ChatOffer[]>([]);
 
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
@@ -536,6 +537,22 @@ export const SellerDashboardPage: React.FC = () => {
             onOpenEditModal={handleOpenEditProduct}
             onToggleStatus={handleToggleProductStatus}
             onDeleteProduct={handleDeleteProduct}
+            formatPrice={formatPrice}
+          />
+        )}
+
+        {activeTab === 'offers' && (
+          <SellerOffersTab
+            offers={sellerOffers}
+            onCancelOffer={async (offerId) => {
+              try {
+                await chatOfferApi.cancelOffer(offerId);
+                await loadAllData();
+              } catch (err: any) {
+                alert(err?.response?.data?.message || "Impossible d'annuler l'offre.");
+              }
+            }}
+            onOpenConversation={(conversationId) => navigate(`/messages?id=${conversationId}`)}
             formatPrice={formatPrice}
           />
         )}
