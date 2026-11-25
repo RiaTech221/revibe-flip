@@ -71,7 +71,7 @@ export const CartDrawer: React.FC = () => {
       const firstItem = items[0]?.product;
       const res = await chatApi.startConversation({
         productId: firstItem?.id,
-        initialMessage: `Bonjour ! J'ai sélectionné "${firstItem?.title || 'cet article'}" (${Number(firstItem?.price || 0).toLocaleString('fr-FR')} FCFA) dans votre dressing. Pouvons-nous échanger pour finaliser l'achat et la livraison ?`,
+        initialMessage: 'Je suis intéressé',
       });
       closeCart();
       const conv = res.data?.data;
