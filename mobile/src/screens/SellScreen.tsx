@@ -164,6 +164,52 @@ export const SellScreen = ({ navigation, route }: any) => {
     }
   };
 
+  const showSellerOnboarding = Boolean(
+    eligibility && !eligibility.eligible && (!eligibility.alreadySeller || hasOpenedSellerSpace.current),
+  );
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Espace vendeur" />
+        <View style={styles.centerState}>
+          <Text style={styles.stateTitle}>Connectez-vous pour vendre</Text>
+          <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.submitButtonText}>Se connecter</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (eligibilityLoading || !eligibility) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <Header title="Vérification du profil" />
+        <View style={styles.centerState}>
+          {eligibilityError ? (
+            <>
+              <AlertCircle size={30} color={colors.warning} />
+              <Text style={styles.stateTitle}>{eligibilityError}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => setEligibilityRetry((retry) => retry + 1)}
+              >
+                <RefreshCw size={17} color={colors.primary} />
+                <Text style={styles.retryButtonText}>Réessayer</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={styles.stateTitle}>Vérification de vos coordonnées…</Text>
+            </>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   const handleSubmit = async () => {
     if (!title.trim() || price <= 0 || !selectedCategoryId) {
       Alert.alert('Champs requis', 'Veuillez renseigner un titre, un prix et une catégorie.');
