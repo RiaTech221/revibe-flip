@@ -141,7 +141,8 @@ class SellerEligibilityIntegrationTest {
         mockMvc.perform(get("/api/seller/eligibility")
                         .header("Authorization", "Bearer " + completeToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.eligible").value(true));
+                .andExpect(jsonPath("$.data.eligible").value(true))
+                .andExpect(jsonPath("$.data.alreadySeller").value(false));
 
         mockMvc.perform(post("/api/products")
                         .header("Authorization", "Bearer " + completeToken)
@@ -156,5 +157,11 @@ class SellerEligibilityIntegrationTest {
                         ))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/seller/eligibility")
+                        .header("Authorization", "Bearer " + completeToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.eligible").value(true))
+                .andExpect(jsonPath("$.data.alreadySeller").value(true));
     }
 }
