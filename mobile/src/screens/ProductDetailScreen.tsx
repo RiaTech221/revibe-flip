@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { Product } from '../types';
 import { colors, formatPrice } from '../theme/colors';
 import { Header } from '../components/common/Header';
@@ -43,7 +44,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
   const [product, setProduct] = useState<Product | null>(route.params.product || null);
   const [loading, setLoading] = useState(!route.params.product);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const galleryRef = useRef<ScrollView>(null);
+  const galleryRef = useRef<ScrollViewInstance | null>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const isLiked = product ? isFavorite(product.id) : false;
 
