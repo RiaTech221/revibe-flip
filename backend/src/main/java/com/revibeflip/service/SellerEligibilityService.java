@@ -4,6 +4,8 @@ import com.revibeflip.dto.SellerEligibilityDto;
 import com.revibeflip.entity.User;
 import com.revibeflip.entity.enums.AccountStatus;
 import com.revibeflip.exception.SellerEligibilityException;
+import com.revibeflip.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -17,7 +19,10 @@ import java.util.regex.Pattern;
  * pour l'autoriser à devenir vendeur sur la plateforme.
  */
 @Service
+@RequiredArgsConstructor
 public class SellerEligibilityService {
+
+    private final ProductRepository productRepository;
 
     private static final Pattern NAME_PATTERN = Pattern.compile("^[\\p{L}][\\p{L}\\s'\\-]{1,59}$");
     private static final Pattern E164_PHONE_PATTERN = Pattern.compile("^\\+[1-9]\\d{7,14}$");
@@ -53,11 +58,13 @@ public class SellerEligibilityService {
         validateMinLength("city", "ville", user.getCity(), 2, missingFields, invalidFields);
         validateMinLength("address", "adresse", user.getAddress(), 5, missingFields, invalidFields);
 
+        boolean alreadySeller = user.getId() != null && productRepository.countBySellerId(user.getId()) > 0;
         boolean eligible = missingFields.isEmpty() && invalidFields.isEmpty();
         String message = buildMessage(eligible, missingFields, invalidFields);
 
         return SellerEligibilityDto.builder()
                 .eligible(eligible)
+                .alreadySeller(alreadySeller)
                 .missingFields(missingFields)
                 .invalidFields(invalidFields)
                 .message(message)
