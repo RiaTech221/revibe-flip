@@ -109,8 +109,8 @@ export const ProfileScreen = ({ navigation }: any) => {
         />
         <ProfileMenuItem
           icon={<Settings size={20} color={colors.textSecondary} />}
-          label="Paramètres du compte"
-          onPress={() => {}}
+          label="Modifier mon profil"
+          onPress={() => navigation.navigate('EditProfile')}
         />
         <ProfileMenuItem
           icon={<HelpCircle size={20} color={colors.textSecondary} />}
