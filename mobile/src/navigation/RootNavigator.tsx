@@ -21,6 +21,7 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { SellerSpaceScreen } from '../screens/SellerSpaceScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { SellScreen } from '../screens/SellScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList, 'RootStack'>();
 
@@ -42,6 +43,7 @@ export const RootNavigator = () => {
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="SellerSpace" component={SellerSpaceScreen} />
+      <Stack.Screen name="EditProduct" component={SellScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
     </Stack.Navigator>
   );
