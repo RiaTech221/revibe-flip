@@ -5,11 +5,12 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Heart } from 'lucide-react-native';
 import { Product } from '../../types';
 import { colors, formatPrice } from '../../theme/colors';
 import { useFavorites } from '../../context/FavoritesContext';
+import { ImageWithFallback } from './ImageWithFallback';
 
 interface ProductCardProps {
   product: Product;
@@ -30,10 +31,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onPress }) =>
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
       <View style={styles.imageContainer}>
-        <Image
-          source={imageUrl ? { uri: imageUrl } : require('../../../assets/logo.png')}
+        <ImageWithFallback
+          uri={imageUrl}
+          label={product.title}
           style={styles.image}
-          resizeMode="cover"
         />
         <TouchableOpacity
           accessibilityRole="button"
