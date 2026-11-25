@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Store, AlertCircle, MapPin, Mail, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { userApi } from '../../services/api';
@@ -79,9 +80,9 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100 relative">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl border border-slate-100 relative my-auto">
         <button
           type="button"
           onClick={onClose}
@@ -203,6 +204,7 @@ export const BecomeSellerModal: React.FC<BecomeSellerModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
