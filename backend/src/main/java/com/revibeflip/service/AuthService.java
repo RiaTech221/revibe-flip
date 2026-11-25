@@ -116,7 +116,13 @@ public class AuthService {
 
     @Transactional(noRollbackFor = {IllegalArgumentException.class, TooManyRequestsException.class})
     public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        return verifyOtp(request, null);
+    }
+
+    @Transactional(noRollbackFor = {IllegalArgumentException.class, TooManyRequestsException.class})
+    public AuthResponse verifyOtp(VerifyOtpRequest request, String clientIp) {
         String cleanPhone = cleanPhoneNumber(request.getPhone());
+        otpRateLimiter.checkOtpVerificationAttempt(cleanPhone, clientIp);
 
         User user = userRepository.findByPhone(cleanPhone)
                 .orElseThrow(() -> new IllegalArgumentException("Code OTP invalide ou expiré."));
@@ -328,7 +334,14 @@ public class AuthService {
 
     @Transactional(noRollbackFor = BadCredentialsException.class)
     public AuthResponse login(LoginRequest request) {
+        return login(request, null);
+    }
+
+    @Transactional(noRollbackFor = BadCredentialsException.class)
+    public AuthResponse login(LoginRequest request, String clientIp) {
         String identifier = request.getIdentifier().trim();
+        String normalizedForLimit = identifier.contains("@") ? identifier.toLowerCase() : cleanPhoneNumber(identifier);
+        otpRateLimiter.checkLoginAttempt(normalizedForLimit, clientIp);
 
         User user = userRepository.findByIdentifier(identifier)
                 .or(() -> userRepository.findByIdentifier(cleanPhoneNumber(identifier)))

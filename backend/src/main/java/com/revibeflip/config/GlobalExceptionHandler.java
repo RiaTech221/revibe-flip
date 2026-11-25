@@ -115,9 +115,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(com.revibeflip.exception.TooManyRequestsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleTooManyRequests(com.revibeflip.exception.TooManyRequestsException ex) {
+    public ResponseEntity<ApiResponse<Map<String, Long>>> handleTooManyRequests(com.revibeflip.exception.TooManyRequestsException ex) {
+        long retryAfter = Math.max(1L, ex.getRetryAfterSeconds());
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                .body(ApiResponse.error(ex.getMessage()));
+                .header("Retry-After", String.valueOf(retryAfter))
+                .body(ApiResponse.<Map<String, Long>>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(Map.of("retryAfterSeconds", retryAfter))
+                        .build());
     }
 
     @ExceptionHandler(com.revibeflip.exception.SellerConflictException.class)

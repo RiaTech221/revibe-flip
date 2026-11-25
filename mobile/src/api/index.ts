@@ -46,6 +46,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (error.response?.status === 429) {
+      const retryHeader = error.response.headers?.['retry-after'];
+      const retrySeconds =
+        error.response.data?.data?.retryAfterSeconds ??
+        (retryHeader ? parseInt(String(retryHeader), 10) : undefined);
+      if (retrySeconds && !Number.isNaN(retrySeconds) && error.response.data) {
+        const baseMsg = error.response.data.message || 'Trop de tentatives.';
+        if (!String(baseMsg).includes(String(retrySeconds))) {
+          error.response.data.message = `${baseMsg} (Réessayez dans ${retrySeconds} s)`;
+        }
+      }
+    }
+
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest?._retry && refreshTokenValue) {
       originalRequest._retry = true;
