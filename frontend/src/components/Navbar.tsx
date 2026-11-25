@@ -57,11 +57,15 @@ export const Navbar: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -80,6 +84,8 @@ export const Navbar: React.FC = () => {
     if (!isAuthenticated || !user?.id) {
       setUnreadNotifications(0);
       setUnreadMessages(0);
+      setNotifications([]);
+      setIsNotificationsOpen(false);
       setSellerEligibility(null);
       return;
     }
@@ -104,7 +110,7 @@ export const Navbar: React.FC = () => {
     refreshEligibility();
 
     notificationApi.getAll().then((res) => {
-      if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 5));
+      if (res.data && res.data.data) setNotifications(res.data.data.slice(0, 10));
     }).catch(console.error);
 
     const handleMessagesRead = () => {
@@ -120,7 +126,7 @@ export const Navbar: React.FC = () => {
         try {
           const notif: Notification = JSON.parse(frame.body);
           setUnreadNotifications((prev) => prev + 1);
-          setNotifications((prev) => [notif, ...prev].slice(0, 5));
+          setNotifications((prev) => [notif, ...prev].slice(0, 10));
           if (notif.type === 'NEW_MESSAGE') {
             setUnreadMessages((prev) => prev + 1);
           }
@@ -144,6 +150,70 @@ export const Navbar: React.FC = () => {
       return;
     }
     navigate(`/catalog?query=${encodeURIComponent(searchQuery.trim())}`);
+  };
+
+  const resolveNotificationLink = (notif: Notification): string => {
+    const link = notif.link?.trim();
+    if (link) {
+      if (link.startsWith('/messages/')) {
+        const convId = link.replace('/messages/', '').split('?')[0];
+        return convId ? `/messages?id=${convId}` : '/messages';
+      }
+      if (link.startsWith('/messages?conversation=')) {
+        return link.replace('/messages?conversation=', '/messages?id=');
+      }
+      if (link.startsWith('/users/')) {
+        return '/profile';
+      }
+      return link;
+    }
+    if (notif.type === 'NEW_MESSAGE' || notif.type?.includes('OFFER')) {
+      return '/messages';
+    }
+    if (
+      notif.type?.includes('ORDER') ||
+      notif.type?.includes('PAYMENT') ||
+      notif.type?.includes('DELIVERY')
+    ) {
+      return '/profile?tab=purchases';
+    }
+    return '/catalog';
+  };
+
+  const formatNotifTime = (dateStr?: string): string => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return '';
+    const diffMs = Date.now() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return "À l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    const diffHours = Math.floor(diffMin / 60);
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+  };
+
+  const handleToggleNotifications = () => {
+    const nextOpen = !isNotificationsOpen;
+    setIsNotificationsOpen(nextOpen);
+    setIsUserMenuOpen(false);
+    if (nextOpen && unreadNotifications > 0) {
+      setUnreadNotifications(0);
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      notificationApi.markAllAsRead().catch(console.error);
+    }
+  };
+
+  const handleNotificationClick = (notif: Notification) => {
+    if (!notif.isRead) {
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === notif.id ? { ...item, isRead: true } : item))
+      );
+      setUnreadNotifications((prev) => Math.max(0, prev - 1));
+      notificationApi.markAsRead(notif.id).catch(console.error);
+    }
+    setIsNotificationsOpen(false);
+    navigate(resolveNotificationLink(notif));
   };
 
   return (
@@ -236,6 +306,94 @@ export const Navbar: React.FC = () => {
                 </span>
               )}
             </Link>
+
+            {/* Centre de notifications in-app (US-26) */}
+            {isAuthenticated && (
+              <div className="relative" ref={notificationsRef}>
+                <button
+                  type="button"
+                  onClick={handleToggleNotifications}
+                  className="p-2 sm:p-2.5 rounded-full hover:bg-slate-100 text-slate-700 hover:text-purple-700 transition-colors relative cursor-pointer active:scale-95"
+                  title="Notifications"
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-rose-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
+                </button>
+
+                {isNotificationsOpen && (
+                  <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-fade-in">
+                    <div className="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between">
+                      <span className="text-sm font-bold text-slate-900">Notifications</span>
+                      <span className="text-[11px] font-medium text-slate-500">
+                        {notifications.length > 0 ? `${notifications.length} récente${notifications.length > 1 ? 's' : ''}` : 'À jour'}
+                      </span>
+                    </div>
+
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <p className="text-xs text-slate-500 font-medium">Aucune notification récente</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
+                        {notifications.map((notif) => {
+                          const isMessageOrOffer =
+                            notif.type === 'NEW_MESSAGE' || notif.type?.includes('OFFER');
+                          const isOrder =
+                            notif.type?.includes('ORDER') ||
+                            notif.type?.includes('PAYMENT') ||
+                            notif.type?.includes('DELIVERY');
+                          return (
+                            <button
+                              key={notif.id}
+                              type="button"
+                              onClick={() => handleNotificationClick(notif)}
+                              className="w-full px-4 py-3 text-left hover:bg-purple-50/60 transition-colors flex items-start gap-3 cursor-pointer"
+                            >
+                              <div
+                                className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                  isMessageOrOffer
+                                    ? 'bg-purple-100 text-purple-700'
+                                    : isOrder
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-slate-100 text-slate-600'
+                                }`}
+                              >
+                                {isMessageOrOffer ? (
+                                  <MessageSquare className="w-4 h-4" />
+                                ) : isOrder ? (
+                                  <Package className="w-4 h-4" />
+                                ) : (
+                                  <Bell className="w-4 h-4" />
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-xs font-bold text-slate-900 truncate">
+                                    {notif.title}
+                                  </p>
+                                  <span className="text-[10px] text-slate-400 shrink-0">
+                                    {formatNotifTime(notif.createdAt)}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-600 line-clamp-2 mt-0.5">
+                                  {notif.message}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* 3. Icône Profil Parlante (Ouverture du Menu Compte & Connexion style Amazon / Shein) */}
             <div className="relative" ref={userMenuRef}>
