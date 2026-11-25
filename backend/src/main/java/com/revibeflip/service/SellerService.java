@@ -745,7 +745,7 @@ public class SellerService {
 
     public ProductDto getSellerProductById(User seller, Long productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
+                .orElseThrow(() -> new NoSuchElementException("Annonce #" + productId + " introuvable"));
         checkProductOwnership(seller, product);
         return ProductDto.fromEntity(product);
     }
@@ -791,24 +791,21 @@ public class SellerService {
                 .viewCount(0)
                 .build();
 
-        Product saved = productRepository.save(product);
-
         if (request.getImages() != null && !request.getImages().isEmpty()) {
-            List<ProductImage> imageEntities = new ArrayList<>();
             for (int i = 0; i < request.getImages().size(); i++) {
                 String url = request.getImages().get(i);
                 if (url != null && !url.isBlank()) {
-                    imageEntities.add(ProductImage.builder()
-                            .product(saved)
+                    product.getImages().add(ProductImage.builder()
+                            .product(product)
                             .imageUrl(url.trim())
                             .isPrimary(i == 0)
                             .displayOrder(i)
                             .build());
                 }
             }
-            productImageRepository.saveAll(imageEntities);
-            saved.setImages(imageEntities);
         }
+
+        Product saved = productRepository.save(product);
 
         log.info("Nouvelle annonce #{} créée par le vendeur {}", saved.getId(), seller.getPhone());
         return ProductDto.fromEntity(saved);
@@ -818,7 +815,7 @@ public class SellerService {
     public ProductDto updateProduct(User seller, Long productId, SellerProductRequest request) {
         checkSellerNotSuspended(seller);
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
+                .orElseThrow(() -> new NoSuchElementException("Annonce #" + productId + " introuvable"));
 
         policyService.validateProductModification(
                 product,
@@ -855,12 +852,11 @@ public class SellerService {
 
         // Mise à jour des photos si fournies
         if (request.getImages() != null && !request.getImages().isEmpty()) {
-            productImageRepository.deleteByProductId(productId);
-            List<ProductImage> imageEntities = new ArrayList<>();
+            product.getImages().clear();
             for (int i = 0; i < request.getImages().size(); i++) {
                 String url = request.getImages().get(i);
                 if (url != null && !url.isBlank()) {
-                    imageEntities.add(ProductImage.builder()
+                    product.getImages().add(ProductImage.builder()
                             .product(product)
                             .imageUrl(url.trim())
                             .isPrimary(i == 0)
@@ -868,8 +864,6 @@ public class SellerService {
                             .build());
                 }
             }
-            productImageRepository.saveAll(imageEntities);
-            product.setImages(imageEntities);
         }
 
         return ProductDto.fromEntity(productRepository.save(product));

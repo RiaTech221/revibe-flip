@@ -12,7 +12,7 @@ import { Product, Order, Conversation } from './index';
 export type MainTabParamList = {
   Accueil: undefined;
   Catalogue: { categoryId?: number; query?: string } | undefined;
-  Vendre: { skipSellerSpaceRedirect?: boolean } | undefined;
+  Vendre: { skipSellerSpaceRedirect?: boolean; editProduct?: Product; formSessionId?: number } | undefined;
   Messages: undefined;
   Profil: undefined;
 };
@@ -27,5 +27,6 @@ export type RootStackParamList = {
   Register: undefined;
   Favorites: undefined;
   SellerSpace: { eligible?: boolean } | undefined;
+  EditProduct: { product: Product };
   EditProfile: undefined;
 };
