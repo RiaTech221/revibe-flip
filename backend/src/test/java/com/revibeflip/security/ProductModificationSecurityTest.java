@@ -247,7 +247,7 @@ class ProductModificationSecurityTest {
         void setUpProductService() {
             productRepository = org.mockito.Mockito.mock(ProductRepository.class);
             categoryRepository = org.mockito.Mockito.mock(CategoryRepository.class);
-            productService = new ProductService(productRepository, categoryRepository, policyService, new SellerEligibilityService());
+            productService = new ProductService(productRepository, categoryRepository, policyService, new SellerEligibilityService(productRepository));
             when(productRepository.findById(100L)).thenReturn(java.util.Optional.of(product));
         }
 
