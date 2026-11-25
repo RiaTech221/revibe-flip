@@ -203,6 +203,7 @@ export interface SellerProfile {
 
 export interface SellerEligibility {
   eligible: boolean;
+  alreadySeller: boolean;
   missingFields: string[];
   invalidFields: Record<string, string>;
   message: string;

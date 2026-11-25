@@ -17,6 +17,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class SellerEligibilityDto {
     private boolean eligible;
+    private boolean alreadySeller;
     private List<String> missingFields;
     private Map<String, String> invalidFields;
     private String message;
