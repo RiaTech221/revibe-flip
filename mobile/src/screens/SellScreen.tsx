@@ -113,6 +113,57 @@ export const SellScreen = ({ navigation, route }: any) => {
 
   const price = parseFloat(priceStr) || 0;
 
+  const handleProfileSave = async () => {
+    if (!firstName.trim() || !lastName.trim() || !profileCity.trim() || address.trim().length < 5) {
+      Alert.alert(
+        'Coordonnées incomplètes',
+        'Renseignez votre prénom, votre nom, votre ville et une adresse d’au moins 5 caractères.',
+      );
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      const updatedProfile = {
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        city: profileCity.trim(),
+        address: address.trim(),
+      };
+      await sellerService.updateProfile(updatedProfile);
+      setCity(updatedProfile.city);
+
+      if (token && user) {
+        login(token, {
+          ...user,
+          ...updatedProfile,
+          email: updatedProfile.email || undefined,
+          fullName: `${updatedProfile.firstName} ${updatedProfile.lastName}`.trim(),
+        });
+      }
+
+      const result = await sellerService.getEligibility();
+      setEligibility(result);
+      navigation.setOptions({ tabBarLabel: result.eligible || result.alreadySeller ? 'Vendre' : 'Vendeur' });
+
+      if (result.eligible) {
+        hasOpenedSellerSpace.current = true;
+        navigation.navigate('SellerSpace', { eligible: result.eligible });
+      } else {
+        const details = [
+          ...(result.missingFields || []).map((field) => `Champ manquant : ${field}`),
+          ...Object.values(result.invalidFields || {}),
+        ].join('\n');
+        Alert.alert('Informations à vérifier', details || result.message || 'Votre profil doit être complété.');
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible d’enregistrer vos coordonnées.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!title.trim() || price <= 0 || !selectedCategoryId) {
       Alert.alert('Champs requis', 'Veuillez renseigner un titre, un prix et une catégorie.');
