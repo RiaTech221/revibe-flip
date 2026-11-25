@@ -114,11 +114,15 @@ export const SellScreen = ({ navigation, route }: any) => {
   const price = parseFloat(priceStr) || 0;
 
   const handleProfileSave = async () => {
-    if (!firstName.trim() || !lastName.trim() || !profileCity.trim() || address.trim().length < 5) {
+    if (firstName.trim().length < 2 || lastName.trim().length < 2 || profileCity.trim().length < 2 || address.trim().length < 5) {
       Alert.alert(
         'Coordonnées incomplètes',
-        'Renseignez votre prénom, votre nom, votre ville et une adresse d’au moins 5 caractères.',
+        'Le prénom et le nom doivent contenir au moins 2 caractères, la ville au moins 2 caractères et l’adresse au moins 5 caractères.',
       );
+      return;
+    }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert('Email invalide', 'Vérifiez le format de votre adresse e-mail.');
       return;
     }
 
@@ -246,16 +250,16 @@ export const SellScreen = ({ navigation, route }: any) => {
 
           <View style={styles.profileCard}>
             <Text style={styles.label}>Prénom *</Text>
-            <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="Votre prénom" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+            <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} placeholder="Votre prénom" placeholderTextColor={colors.textMuted} autoCapitalize="words" maxLength={60} />
 
             <Text style={styles.label}>Nom *</Text>
-            <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Votre nom" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+            <TextInput style={styles.input} value={lastName} onChangeText={setLastName} placeholder="Votre nom" placeholderTextColor={colors.textMuted} autoCapitalize="words" maxLength={60} />
 
             <Text style={styles.label}>Email (facultatif)</Text>
-            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="vous@exemple.com" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} />
+            <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="vous@exemple.com" placeholderTextColor={colors.textMuted} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} maxLength={120} />
 
             <Text style={styles.label}>Ville de résidence *</Text>
-            <TextInput style={styles.input} value={profileCity} onChangeText={setProfileCity} placeholder="Ex. Dakar" placeholderTextColor={colors.textMuted} autoCapitalize="words" />
+            <TextInput style={styles.input} value={profileCity} onChangeText={setProfileCity} placeholder="Ex. Dakar" placeholderTextColor={colors.textMuted} autoCapitalize="words" maxLength={100} />
 
             <Text style={styles.label}>Adresse par défaut *</Text>
             <View style={styles.addressInputWrap}>
@@ -268,6 +272,7 @@ export const SellScreen = ({ navigation, route }: any) => {
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="sentences"
                 multiline
+                maxLength={200}
               />
             </View>
             <Text style={styles.fieldHint}>Indiquez au moins 5 caractères pour votre adresse.</Text>
