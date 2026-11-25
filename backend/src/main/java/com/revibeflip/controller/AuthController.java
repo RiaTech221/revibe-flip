@@ -101,6 +101,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.ok(null, "Mot de passe réinitialisé avec succès."));
     }
 
+    @PostMapping("/set-password")
+    @Operation(summary = "Définir ou modifier le mot de passe du compte connecté (après validation OTP ou depuis le profil)")
+    public ResponseEntity<ApiResponse<UserDto>> setPassword(
+            @AuthenticationPrincipal User user,
+            @Valid @RequestBody SetPasswordRequest request) {
+        UserDto updated = authService.setPassword(user, request);
+        return ResponseEntity.ok(ApiResponse.ok(updated, "Mot de passe enregistré avec succès."));
+    }
+
     @PostMapping("/login")
     @Operation(summary = "Connexion utilisateur", description = "Connexion par numéro de téléphone ou email avec mot de passe")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
