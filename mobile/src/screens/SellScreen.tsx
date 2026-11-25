@@ -8,7 +8,7 @@
  *  * - Validation des champs et soumission vers l'API
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,9 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Category, ProductCondition } from '../types';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
@@ -27,24 +29,77 @@ import {
   ConditionSelector,
   CategoryPicker,
 } from '../components/sell';
-import { productService } from '../services';
-import { Camera, CheckCircle } from 'lucide-react-native';
+import { productService, sellerService, SellerEligibility } from '../services';
+import { AlertCircle, Camera, CheckCircle, MapPin, RefreshCw, Store } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 
-export const SellScreen = ({ navigation }: any) => {
-  const { isAuthenticated } = useAuth();
+export const SellScreen = ({ navigation, route }: any) => {
+  const { isAuthenticated, user, token, login } = useAuth();
+  const openedFromSellerSpace = route?.params?.skipSellerSpaceRedirect === true;
+
+  const [eligibility, setEligibility] = useState<SellerEligibility | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
+  const [eligibilityError, setEligibilityError] = useState('');
+  const [eligibilityRetry, setEligibilityRetry] = useState(0);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const hasOpenedSellerSpace = useRef(false);
+  const [firstName, setFirstName] = useState(user?.firstName || '');
+  const [lastName, setLastName] = useState(user?.lastName || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [profileCity, setProfileCity] = useState(user?.city || '');
+  const [address, setAddress] = useState(user?.address || '');
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priceStr, setPriceStr] = useState('');
   const [brand, setBrand] = useState('');
   const [size, setSize] = useState('');
-  const [city, setCity] = useState('Dakar');
+  const [city, setCity] = useState(user?.city || 'Dakar');
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [condition, setCondition] = useState<ProductCondition>('VERY_GOOD');
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isAuthenticated) {
+        navigation.navigate('Login');
+        return undefined;
+      }
+
+      let active = true;
+      setEligibilityLoading(true);
+      setEligibilityError('');
+      setEligibility(null);
+      if (openedFromSellerSpace) hasOpenedSellerSpace.current = true;
+
+      sellerService
+        .getEligibility()
+        .then((result) => {
+          if (!active) return;
+          setEligibility(result);
+          const sellerAccess = result.eligible || result.alreadySeller;
+          navigation.setOptions({ tabBarLabel: sellerAccess ? 'Vendre' : 'Vendeur' });
+
+          if (sellerAccess && !hasOpenedSellerSpace.current) {
+            hasOpenedSellerSpace.current = true;
+            navigation.navigate('SellerSpace', { eligible: result.eligible });
+          }
+        })
+        .catch((err: any) => {
+          if (!active) return;
+          setEligibilityError(err.response?.data?.message || 'Impossible de vérifier votre profil vendeur.');
+        })
+        .finally(() => {
+          if (active) setEligibilityLoading(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }, [eligibilityRetry, isAuthenticated, navigation, openedFromSellerSpace]),
+  );
 
   useEffect(() => {
     productService
