@@ -33,6 +33,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final SessionOriginValidator sessionOriginValidator;
+    private final com.revibeflip.security.ClientIpResolver clientIpResolver;
     private final org.springframework.core.env.Environment environment;
 
     @Value("${revibeflip.jwt.refresh-expiration-ms:604800000}")
@@ -56,7 +57,7 @@ public class AuthController {
             @Valid @RequestBody VerifyOtpRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        AuthResponse response = authService.verifyOtp(request);
+        AuthResponse response = authService.verifyOtp(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.ok(response, "Numéro vérifié et compte activé avec succès !"));
     }
@@ -116,7 +117,7 @@ public class AuthController {
             @Valid @RequestBody LoginRequest request,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
-        AuthResponse response = authService.login(request);
+        AuthResponse response = authService.login(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
         return ResponseEntity.ok(ApiResponse.ok(response, "Connexion réussie."));
     }
@@ -201,10 +202,6 @@ public class AuthController {
     }
 
     private String extractClientIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return clientIpResolver.resolve(request);
     }
 }

@@ -35,6 +35,7 @@ public class PublicContentController {
     private final FaqService faqService;
     private final ContactService contactService;
     private final MediaAssetService mediaAssetService;
+    private final com.revibeflip.security.ClientIpResolver clientIpResolver;
 
     @Operation(summary = "Récupérer la configuration dynamique du footer (liens, réseaux sociaux, support, mentions)")
     @GetMapping("/api/content/footer")
@@ -108,10 +109,6 @@ public class PublicContentController {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xfHeader = request.getHeader("X-Forwarded-For");
-        if (xfHeader == null || xfHeader.isBlank()) {
-            return request.getRemoteAddr();
-        }
-        return xfHeader.split(",")[0].trim();
+        return clientIpResolver.resolve(request);
     }
 }
