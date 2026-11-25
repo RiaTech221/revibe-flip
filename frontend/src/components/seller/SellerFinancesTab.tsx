@@ -50,7 +50,7 @@ export const SellerFinancesTab: React.FC<SellerFinancesTabProps> = ({
       {/* Historique des transactions */}
       <div className="bg-white rounded-3xl border border-gray-150 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-gray-150 font-black text-xs text-gray-900 uppercase tracking-wider">
-          Historique des transactions & Payouts
+          Mes commandes / Mes transactions &amp; Payouts
         </div>
         {transactions.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -61,11 +61,11 @@ export const SellerFinancesTab: React.FC<SellerFinancesTabProps> = ({
             <table className="w-full text-left">
               <thead className="bg-gray-50 border-b border-gray-150 text-[10px] font-black text-gray-400 uppercase tracking-wider">
                 <tr>
-                  <th className="p-4">N° Commande</th>
-                  <th className="p-4">Article</th>
+                  <th className="p-4">N° Transaction / Commande</th>
+                  <th className="p-4">Produit</th>
                   <th className="p-4">Acheteur</th>
-                  <th className="p-4">Gain Net (Payout)</th>
-                  <th className="p-4">Séquestre</th>
+                  <th className="p-4">Montants (Article / Gain Net)</th>
+                  <th className="p-4">Statut Paiement &amp; Séquestre</th>
                   <th className="p-4">Date</th>
                 </tr>
               </thead>
@@ -75,13 +75,30 @@ export const SellerFinancesTab: React.FC<SellerFinancesTabProps> = ({
                     <td className="p-4 font-mono font-bold text-gray-900">{t.orderNumber}</td>
                     <td className="p-4 font-bold text-gray-900 max-w-xs truncate">{t.productTitle}</td>
                     <td className="p-4 text-gray-600">{t.buyerName}</td>
-                    <td className="p-4 font-black text-purple-700">{formatPrice(t.sellerPayout)}</td>
                     <td className="p-4">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
+                      <p className="font-black text-purple-700">{formatPrice(t.sellerPayout)}</p>
+                      <p className="text-[10px] text-gray-400">Article : {formatPrice(t.itemPrice)}</p>
+                    </td>
+                    <td className="p-4 space-y-1">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-50 text-blue-800 mr-1">
+                        {t.paymentStatus || 'PAID'}
+                      </span>
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">
                         {t.escrowStatus || 'LOCKED'}
                       </span>
+                      {t.paymentMethod && (
+                        <p className="text-[10px] text-gray-400">{t.paymentMethod}</p>
+                      )}
                     </td>
-                    <td className="p-4 text-gray-400">{new Date(t.createdAt).toLocaleDateString('fr-FR')}</td>
+                    <td className="p-4 text-gray-500 whitespace-nowrap">
+                      {new Date(t.createdAt).toLocaleString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </td>
                   </tr>
                 ))}
               </tbody>

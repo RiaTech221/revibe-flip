@@ -15,6 +15,7 @@ import { Order, PersonalDashboard, ProductStatus } from '../types';
 import { formatImageUrl } from '../utils/imageUrl';
 import { validateProfileImageFile } from '../utils/profileImageValidation';
 import { ProfileAvatarUpload } from '../components/common/ProfileAvatarUpload';
+import { TransactionHistoryTable } from '../components/common/TransactionHistoryTable';
 import {
   ShoppingBag,
   MapPin,
@@ -609,8 +610,8 @@ export const ProfilePage: React.FC = () => {
             <ShoppingBag className="w-4 h-4" />
             <span>
               {isSeller
-                ? `Mes Commandes (${purchasesTotal + salesTotal})`
-                : `Mes Achats & Colis (${purchasesTotal})`}
+                ? `Mes commandes / Mes transactions (${purchasesTotal + salesTotal})`
+                : `Mes commandes / Mes transactions (${purchasesTotal})`}
             </span>
           </button>
 
@@ -709,6 +710,12 @@ export const ProfilePage: React.FC = () => {
               ) : (
                 <>
                   {purchasesList.map((ord) => renderOrderCard(ord, 'buyer'))}
+                  <TransactionHistoryTable
+                    title="Mes commandes / Mes transactions (Acheteur)"
+                    orders={purchasesList}
+                    role="buyer"
+                    formatPrice={(amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`}
+                  />
                   {renderPagination(purchasesPage, purchasesTotalPages, setPurchasesPage)}
                 </>
               )
@@ -723,6 +730,12 @@ export const ProfilePage: React.FC = () => {
             ) : (
               <>
                 {salesList.map((ord) => renderOrderCard(ord, 'seller'))}
+                <TransactionHistoryTable
+                  title="Mes commandes / Mes transactions (Vendeur)"
+                  orders={salesList}
+                  role="seller"
+                  formatPrice={(amount) => `${Number(amount || 0).toLocaleString('fr-FR')} FCFA`}
+                />
                 {renderPagination(salesPage, salesTotalPages, setSalesPage)}
               </>
             )}
