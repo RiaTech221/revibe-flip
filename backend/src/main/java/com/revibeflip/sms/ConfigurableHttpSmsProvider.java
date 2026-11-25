@@ -9,6 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,12 +51,23 @@ public class ConfigurableHttpSmsProvider implements SmsProvider {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(properties.getApiKey().trim());
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("to", phoneNumber);
-        body.put("sender", properties.getSenderId());
-        body.put("message", message);
+        if (isIntechProvider()) {
+            String sender = properties.getSenderId() != null ? properties.getSenderId().trim() : "ReVibeFliP";
+            if (sender.length() > 11) {
+                sender = sender.substring(0, 11);
+            }
+            body.put("app_key", properties.getApiKey().trim());
+            body.put("sender", sender);
+            body.put("content", message);
+            body.put("msisdn", List.of(phoneNumber));
+        } else {
+            headers.setBearerAuth(properties.getApiKey().trim());
+            body.put("to", phoneNumber);
+            body.put("sender", properties.getSenderId());
+            body.put("message", message);
+        }
 
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(
@@ -74,6 +86,12 @@ public class ConfigurableHttpSmsProvider implements SmsProvider {
             log.error("Erreur technique lors de l'envoi SMS à {}: {}", maskPhone(phoneNumber), ex.getMessage());
             throw new IllegalStateException("Service SMS momentanément indisponible.");
         }
+    }
+
+    private boolean isIntechProvider() {
+        String provider = properties.getProvider() != null ? properties.getProvider().trim().toLowerCase() : "";
+        String url = properties.getApiUrl() != null ? properties.getApiUrl().trim().toLowerCase() : "";
+        return provider.contains("intech") || url.contains("intechsms");
     }
 
     private String maskPhone(String phone) {

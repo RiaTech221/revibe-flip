@@ -8,8 +8,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { productApi, categoryApi, uploadApi } from '../services/api';
+import { sellerApi, SellerEligibility } from '../services/sellerService';
 import { Category, ProductCondition } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -46,12 +47,16 @@ export const SellPage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [eligibility, setEligibility] = useState<SellerEligibility | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login?redirect=/sell');
       return;
     }
+    sellerApi.getEligibility().then((res) => {
+      if (res.data?.data) setEligibility(res.data.data);
+    }).catch(() => {});
     categoryApi.getAll().then((res) => {
       if (res.data?.data) {
         setCategories(res.data.data);
@@ -145,6 +150,31 @@ export const SellPage: React.FC = () => {
           Donnez une seconde vie à vos vêtements et gagnez de l'argent facilement au Sénégal
         </p>
       </div>
+
+      {eligibility && !eligibility.eligible && (
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl text-amber-900 text-xs space-y-2">
+          <div className="flex items-center gap-2 font-bold">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span>Profil incomplet pour vendre</span>
+          </div>
+          {eligibility.missingFields?.length > 0 && (
+            <p>Champs obligatoires manquants : <strong>{eligibility.missingFields.join(', ')}</strong></p>
+          )}
+          {eligibility.invalidFields && Object.keys(eligibility.invalidFields).length > 0 && (
+            <ul className="list-disc pl-5 space-y-0.5">
+              {Object.values(eligibility.invalidFields).map((msg, i) => (
+                <li key={i}>{msg}</li>
+              ))}
+            </ul>
+          )}
+          <Link
+            to="/profile"
+            className="inline-block mt-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-colors"
+          >
+            Compléter mes informations
+          </Link>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs font-semibold flex items-center gap-2">
