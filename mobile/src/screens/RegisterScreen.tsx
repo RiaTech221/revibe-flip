@@ -82,7 +82,7 @@ export const RegisterScreen = ({ navigation }: any) => {
         otpCode: cleanOtp,
       });
       if (data?.token && data?.user) {
-        login(data.token, data.user);
+        login(data.token, data.user, data.refreshToken);
       }
       navigation.navigate('MainTabs');
     } catch (err: any) {
@@ -97,7 +97,7 @@ export const RegisterScreen = ({ navigation }: any) => {
     try {
       const data = await authService.skipOtp(fullPhoneForOtp);
       if (data?.token && data?.user) {
-        login(data.token, data.user);
+        login(data.token, data.user, data.refreshToken);
       }
       navigation.navigate('MainTabs');
     } catch (err: any) {

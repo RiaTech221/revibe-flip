@@ -48,7 +48,7 @@ export const LoginScreen = ({ route, navigation }: any) => {
       });
 
       if (data?.token) {
-        login(data.token, data.user);
+        login(data.token, data.user, data.refreshToken);
         Alert.alert('Bienvenue !', `Connecté en tant que ${data.user.fullName || data.user.phoneNumber || 'Utilisateur'}`, [
           { text: 'Continuer', onPress: () => navigation.goBack() },
         ]);
