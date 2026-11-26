@@ -12,6 +12,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { productApi, categoryApi, uploadApi } from '../services/api';
 import { sellerApi, SellerEligibility } from '../services/sellerService';
 import { prepareImageForUpload } from '../utils/imageUploadOptimize';
+import { formatImageUrl } from '../utils/imageUrl';
 import { Category, ProductCondition } from '../types';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -43,7 +44,6 @@ export const SellPage: React.FC = () => {
   const [color, setColor] = useState('');
   const [locationCity, setLocationCity] = useState('Dakar');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
-  const [customImageUrl, setCustomImageUrl] = useState('');
 
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -70,26 +70,29 @@ export const SellPage: React.FC = () => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
+    setError(null);
+    const remainingSlots = Math.max(0, 5 - imageUrls.length);
+    if (remainingSlots === 0) {
+      setError('Vous pouvez ajouter au maximum 5 photos par annonce.');
+      e.target.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
-      for (let i = 0; i < files.length; i++) {
-        const optimized = await prepareImageForUpload(files[i]);
-        const res = await uploadApi.uploadFile(optimized);
+      const selected = Array.from(files).slice(0, remainingSlots);
+      for (const file of selected) {
+        const optimized = await prepareImageForUpload(file);
+        const res = await uploadApi.uploadFile(optimized, 'products');
         if (res.data?.data) {
-          setImageUrls((prev) => [...prev, res.data.data]);
+          setImageUrls((prev) => [...prev, res.data.data].slice(0, 5));
         }
       }
-    } catch (err) {
-      alert("Erreur lors de l'envoi de l'image. Vous pouvez aussi renseigner une URL d'image.");
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Erreur lors de l'envoi de l'image. Veuillez réessayer.");
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleAddImageUrl = () => {
-    if (customImageUrl.trim()) {
-      setImageUrls((prev) => [...prev, customImageUrl.trim()]);
-      setCustomImageUrl('');
+      e.target.value = '';
     }
   };
 
@@ -203,11 +206,11 @@ export const SellPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
             {imageUrls.map((url, idx) => (
               <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-200 group">
-                <img src={url} alt="" className="w-full h-full object-cover" />
+                <img src={formatImageUrl(url) || url} alt="" className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(idx)}
-                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-purple-700 text-white rounded-full transition-colors"
+                  className="absolute top-2 right-2 p-1.5 bg-black/70 hover:bg-purple-700 text-white rounded-full transition-colors cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -220,39 +223,23 @@ export const SellPage: React.FC = () => {
             ))}
 
             {/* Upload Button */}
-            <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/50 hover:bg-purple-50 rounded-2xl aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
-              <Upload className="w-6 h-6 text-purple-600 mb-1" />
-              <span className="text-xs font-bold text-purple-800">
-                {uploading ? 'Envoi...' : 'Téléverser'}
-              </span>
-              <span className="text-[10px] text-gray-400 mt-0.5">JPG, PNG</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleFileUpload}
-                disabled={uploading}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          {/* Quick paste image URL fallback */}
-          <div className="pt-3 border-t border-gray-50 flex gap-2">
-            <input
-              type="url"
-              placeholder="URL d'image téléversée..."
-              value={customImageUrl}
-              onChange={(e) => setCustomImageUrl(e.target.value)}
-              className="flex-1 px-3 py-2 text-xs rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600"
-            />
-            <button
-              type="button"
-              onClick={handleAddImageUrl}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold text-xs rounded-xl transition-colors"
-            >
-              Ajouter
-            </button>
+            {imageUrls.length < 5 && (
+              <label className="border-2 border-dashed border-purple-200 hover:border-purple-400 bg-purple-50/50 hover:bg-purple-50 rounded-2xl aspect-square flex flex-col items-center justify-center cursor-pointer transition-colors p-4 text-center">
+                <Upload className="w-6 h-6 text-purple-600 mb-1" />
+                <span className="text-xs font-bold text-purple-800">
+                  {uploading ? 'Envoi...' : 'Sélectionner'}
+                </span>
+                <span className="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WEBP (max. 5 Mo)</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+              </label>
+            )}
           </div>
         </div>
 
