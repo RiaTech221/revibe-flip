@@ -75,6 +75,8 @@ export const SellerDashboardPage: React.FC = () => {
   // Modals
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [submittingProduct, setSubmittingProduct] = useState(false);
+  const [productModalError, setProductModalError] = useState<string | null>(null);
   const [productForm, setProductForm] = useState({
     title: '',
     categoryId: 0,
@@ -86,7 +88,7 @@ export const SellerDashboardPage: React.FC = () => {
     color: '',
     locationCity: 'Dakar',
     locationAddress: '',
-    images: [''],
+    images: [] as string[],
     status: 'ACTIVE',
   });
 
@@ -269,6 +271,7 @@ export const SellerDashboardPage: React.FC = () => {
 
   const handleOpenCreateProduct = () => {
     setEditingProductId(null);
+    setProductModalError(null);
     setProductForm({
       title: '',
       categoryId: categories[0]?.id || 1,
@@ -280,7 +283,7 @@ export const SellerDashboardPage: React.FC = () => {
       color: '',
       locationCity: user?.city || 'Dakar',
       locationAddress: '',
-      images: [''],
+      images: [],
       status: 'ACTIVE',
     });
     setShowProductModal(true);
@@ -288,6 +291,13 @@ export const SellerDashboardPage: React.FC = () => {
 
   const handleOpenEditProduct = (prod: Product) => {
     setEditingProductId(prod.id);
+    setProductModalError(null);
+    const existingImages = (prod.images && prod.images.length > 0
+      ? prod.images
+      : prod.primaryImage
+        ? [prod.primaryImage]
+        : []
+    ).filter((img) => img && img.trim().length > 0);
     setProductForm({
       title: prod.title,
       categoryId: (prod as any).categoryId || 1,
@@ -299,7 +309,7 @@ export const SellerDashboardPage: React.FC = () => {
       color: prod.color || '',
       locationCity: prod.locationCity || 'Dakar',
       locationAddress: '',
-      images: prod.images || (prod.primaryImage ? [prod.primaryImage] : ['']),
+      images: existingImages,
       status: prod.status,
     });
     setShowProductModal(true);
@@ -307,6 +317,8 @@ export const SellerDashboardPage: React.FC = () => {
 
   const handleSubmitProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    setProductModalError(null);
+    setSubmittingProduct(true);
     try {
       const payload: any = {
         title: productForm.title,
@@ -318,7 +330,7 @@ export const SellerDashboardPage: React.FC = () => {
         size: productForm.size,
         color: productForm.color,
         locationCity: productForm.locationCity,
-        imageUrls: productForm.images.filter((img) => img.trim().length > 0),
+        images: productForm.images.filter((img) => img.trim().length > 0),
       };
 
       if (editingProductId) {
@@ -327,9 +339,15 @@ export const SellerDashboardPage: React.FC = () => {
         await sellerApi.createProduct(payload);
       }
       setShowProductModal(false);
+      setActionFeedback({
+        type: 'success',
+        message: editingProductId ? 'Annonce modifiée avec succès.' : 'Annonce publiée avec succès.',
+      });
       loadAllData();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de l'enregistrement de l'annonce.");
+      setProductModalError(err.response?.data?.message || "Erreur lors de l'enregistrement de l'annonce.");
+    } finally {
+      setSubmittingProduct(false);
     }
   };
 
@@ -390,11 +408,19 @@ export const SellerDashboardPage: React.FC = () => {
   };
 
   const handleMarkReadyForPickup = async (orderId: number) => {
+    setActionFeedback(null);
     try {
       await sellerApi.markReadyForPickup(orderId);
+      setActionFeedback({
+        type: 'success',
+        message: 'Colis marqué comme remis au livreur avec succès.',
+      });
       loadAllData();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de la mise à jour logistique.");
+      setActionFeedback({
+        type: 'error',
+        message: err.response?.data?.message || "Erreur lors de la mise à jour logistique.",
+      });
     }
   };
 
@@ -657,13 +683,17 @@ export const SellerDashboardPage: React.FC = () => {
       {/* 3. Modale Produit */}
       <SellerProductModal
         isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
+        onClose={() => {
+          if (!submittingProduct) setShowProductModal(false);
+        }}
         isEditing={Boolean(editingProductId)}
         categories={categories}
         productForm={productForm}
         setProductForm={setProductForm}
         onSubmit={handleSubmitProduct}
         formatPrice={formatPrice}
+        submitting={submittingProduct}
+        submitError={productModalError}
       />
 
       <ConfirmModal
