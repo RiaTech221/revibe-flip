@@ -701,21 +701,24 @@ export const AdminPage: React.FC = () => {
       <div className="lg:pl-72 min-w-0">
         <main className="p-3 sm:p-5 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
         {adminFeedback && (
-          <div
-            className={`flex items-center justify-between gap-3 p-4 rounded-2xl border text-xs font-medium ${
-              adminFeedback.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}
-          >
-            <span>{adminFeedback.message}</span>
-            <button
-              type="button"
-              onClick={() => setAdminFeedback(null)}
-              className="px-2 py-1 rounded-lg hover:bg-black/5 font-bold cursor-pointer"
+          <div className="fixed bottom-5 right-5 z-50 max-w-md animate-fadeIn">
+            <div
+              className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border shadow-xl text-xs font-semibold ${
+                adminFeedback.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
+              }`}
             >
-              ✕
-            </button>
+              <span>{adminFeedback.message}</span>
+              <button
+                type="button"
+                onClick={() => setAdminFeedback(null)}
+                className="px-2 py-1 rounded-lg hover:bg-black/5 font-bold cursor-pointer shrink-0"
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
         {!isAdmin && (!user?.adminPermissions || user.adminPermissions.length === 0) && (
