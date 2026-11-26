@@ -2,9 +2,13 @@ package com.revibeflip.repository;
 
 import com.revibeflip.entity.ChatOffer;
 import com.revibeflip.entity.enums.OfferStatus;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -15,6 +19,11 @@ import java.util.Optional;
  * Interface Spring Data JPA pour la gestion des offres de négociation de prix en discussion.
  */
 public interface ChatOfferRepository extends JpaRepository<ChatOffer, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints({@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")})
+    @Query("SELECT o FROM ChatOffer o WHERE o.id = :id")
+    Optional<ChatOffer> findByIdForUpdate(@Param("id") Long id);
 
     List<ChatOffer> findByConversationIdOrderByCreatedAtDesc(Long conversationId);
 

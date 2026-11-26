@@ -1,6 +1,7 @@
 package com.revibeflip.dto;
 
 import com.revibeflip.entity.enums.AdminPermission;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
@@ -46,6 +47,7 @@ public class CreateCollaboratorRequest {
         return cleaned;
     }
 
+    @Email(message = "Format d'adresse e-mail invalide.")
     @Size(max = 120, message = "L'adresse e-mail ne peut pas dépasser 120 caractères.")
     private String email;
 

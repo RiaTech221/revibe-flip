@@ -7,16 +7,17 @@
  *  * - Synchronisation immédiate du token avec le client HTTP Axios (setAuthToken)
  */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import api, { setAuthToken } from '../api';
+import React, { createContext, useContext, useState } from 'react';
+import { getRefreshToken, setAuthToken, setRefreshToken } from '../api';
+import { authService } from '../services/authService';
 import { User } from '../types';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isAuthenticated: boolean;
-  login: (token: string, user: User) => void;
-  logout: () => void;
+  login: (token: string, user: User, refreshToken?: string | null) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -24,23 +25,34 @@ const AuthContext = createContext<AuthContextType>({
   token: null,
   isAuthenticated: false,
   login: () => {},
-  logout: () => {},
+  logout: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const login = (newToken: string, newUser: User) => {
+  const login = (newToken: string, newUser: User, newRefreshToken?: string | null) => {
     setToken(newToken);
     setUser(newUser);
     setAuthToken(newToken);
+    if (newRefreshToken !== undefined) {
+      setRefreshToken(newRefreshToken);
+    }
   };
 
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    setAuthToken(null);
+  const logout = async () => {
+    const currentRefreshToken = getRefreshToken();
+    try {
+      await authService.logout(currentRefreshToken);
+    } catch {
+      // Toujours purger l'état local même si le réseau ou le jeton a expiré
+    } finally {
+      setToken(null);
+      setUser(null);
+      setAuthToken(null);
+      setRefreshToken(null);
+    }
   };
 
   return (

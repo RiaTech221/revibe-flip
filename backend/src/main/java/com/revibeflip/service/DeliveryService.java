@@ -93,24 +93,38 @@ public class DeliveryService {
             throw new org.springframework.security.access.AccessDeniedException("Seul le vendeur de la commande peut mettre à jour le statut de livraison.");
         }
 
+        // SEC-18 : Impossible de faire avancer la livraison d'une commande non payée, annulée ou expirée
+        if (order.getStatus() == OrderStatus.PENDING_PAYMENT
+                || order.getStatus() == OrderStatus.AWAITING_PAYMENT
+                || order.getStatus() == OrderStatus.CANCELLED
+                || order.getStatus() == OrderStatus.EXPIRED) {
+            throw new IllegalStateException("Impossible de mettre à jour la livraison d'une commande au statut " + order.getStatus() + ".");
+        }
+
         // SEC-04 : Validation de la machine à états logistique (ordre strict des 5 statuts)
         DeliveryStateMachine.validateTransition(delivery.getStatus(), request.getStatus());
 
         delivery.setStatus(request.getStatus());
+        order.setDeliveryStatus(request.getStatus());
         if (request.getCarrierName() != null) delivery.setCarrierName(request.getCarrierName());
         if (request.getCarrierPhone() != null) delivery.setCarrierPhone(request.getCarrierPhone());
         if (request.getNotes() != null) delivery.setNotes(request.getNotes());
 
         if (DeliveryStatus.PICKED_UP.equals(request.getStatus()) && delivery.getPickedUpAt() == null) {
             delivery.setPickedUpAt(LocalDateTime.now());
+            orderRepository.save(order);
         } else if (DeliveryStatus.DELIVERED.equals(request.getStatus())) {
             delivery.setDeliveredAt(LocalDateTime.now());
-            if (OrderStatus.PAID_ESCROW_LOCKED.equals(order.getStatus()) || OrderStatus.SHIPPED.equals(order.getStatus())) {
-                order.setStatus(OrderStatus.DELIVERED);
-                orderRepository.save(order);
-            }
+            OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.DELIVERED);
+            order.setStatus(OrderStatus.DELIVERED);
+            orderRepository.save(order);
         } else if (DeliveryStatus.IN_TRANSIT.equals(request.getStatus())) {
-            order.setStatus(OrderStatus.SHIPPED);
+            if (!OrderStatus.SHIPPED.equals(order.getStatus())) {
+                OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.SHIPPED);
+                order.setStatus(OrderStatus.SHIPPED);
+            }
+            orderRepository.save(order);
+        } else {
             orderRepository.save(order);
         }
 

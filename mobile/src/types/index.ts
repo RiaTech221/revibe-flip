@@ -47,14 +47,17 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  status: 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'PENDING_APPROVAL';
+  status: 'ACTIVE' | 'INACTIVE' | 'SOLD' | 'PENDING_APPROVAL' | 'DRAFT';
   condition: ProductCondition;
   conditionLabel?: string;
   brand?: string;
   size?: string;
   color?: string;
+  defects?: string;
+  measurements?: string;
   primaryImage?: string;
   images?: string[];
+  categoryId?: number;
   locationCity?: string;
   city?: string;
   category?: Category;

@@ -19,8 +19,8 @@ export interface CreateProductPayload {
   condition: ProductCondition;
   brand?: string;
   size?: string;
-  city?: string;
-  images?: string[];
+  locationCity?: string;
+  imageUrls?: string[];
 }
 
 export const productService = {

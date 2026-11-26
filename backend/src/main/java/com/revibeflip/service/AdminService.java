@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,6 +65,46 @@ public class AdminService {
     // ==========================================
     public AdminDashboardDto getDashboardStats() {
         return getDashboardStats("30d", null, null);
+    }
+
+    public AdminDashboardDto getDashboardStats(String period, LocalDate from, LocalDate to, User actor) {
+        AdminDashboardDto full = getDashboardStats(period, from, to);
+        if (actor == null || Role.ROLE_ADMIN.equals(actor.getRole())) {
+            return full;
+        }
+
+        // SEC-17 : Filtrage strict du tableau de bord selon les permissions du collaborateur
+        boolean canSeeOrders = actor.hasAdminPermission(AdminPermission.ORDERS_PAYMENTS);
+        boolean canSeeReports = actor.hasAdminPermission(AdminPermission.REPORTS);
+        boolean canSeeProducts = actor.hasAdminPermission(AdminPermission.PRODUCTS);
+
+        AdminDashboardDto.ActionItemsDto filteredActions = null;
+        if (full.getActionItems() != null) {
+            long pendingReportsAndDisputes = canSeeReports ? full.getActionItems().getPendingReportsAndDisputes() : 0L;
+            long pendingModerationProducts = canSeeProducts ? full.getActionItems().getPendingModerationProducts() : 0L;
+            long disputedOrders = canSeeOrders ? full.getActionItems().getDisputedOrders() : 0L;
+            long deliveredAwaiting = canSeeOrders ? full.getActionItems().getDeliveredAwaitingConfirmationOrders() : 0L;
+            // Messages de contact CMS réservés à ROLE_ADMIN
+            long unreadContactMessages = 0L;
+            long totalToHandle = pendingReportsAndDisputes + pendingModerationProducts + disputedOrders + deliveredAwaiting + unreadContactMessages;
+
+            filteredActions = AdminDashboardDto.ActionItemsDto.builder()
+                    .pendingReportsAndDisputes(pendingReportsAndDisputes)
+                    .pendingModerationProducts(pendingModerationProducts)
+                    .disputedOrders(disputedOrders)
+                    .deliveredAwaitingConfirmationOrders(deliveredAwaiting)
+                    .unreadContactMessages(unreadContactMessages)
+                    .totalToHandle(totalToHandle)
+                    .hasItemsToHandle(totalToHandle > 0)
+                    .build();
+        }
+
+        return full.toBuilder()
+                .actionItems(filteredActions)
+                .recentOrders(canSeeOrders ? full.getRecentOrders() : Collections.emptyList())
+                .recentReports(canSeeReports ? full.getRecentReports() : Collections.emptyList())
+                .recentAuditLogs(Collections.emptyList())
+                .build();
     }
 
     public AdminDashboardDto getDashboardStats(String period, LocalDate from, LocalDate to) {
@@ -541,7 +582,18 @@ public class AdminService {
     // 3. GESTION DES UTILISATEURS (AVEC PAGINATION & GARDE-FOUS)
     // ==========================================
     public PageResponseDto<UserDto> searchUsersPage(String query, Role role, Boolean isSuspended, Pageable pageable) {
-        Page<User> page = userRepository.searchUsersPage(query, role, isSuspended, pageable);
+        return searchUsersPage(query, role, isSuspended, pageable, null);
+    }
+
+    public PageResponseDto<UserDto> searchUsersPage(String query, Role role, Boolean isSuspended, Pageable pageable, User actor) {
+        Role effectiveRole = role;
+        if (actor != null && Role.ROLE_COLLABORATOR.equals(actor.getRole())) {
+            if (role != null && !Role.ROLE_USER.equals(role)) {
+                return PageResponseDto.fromPage(Page.empty(pageable));
+            }
+            effectiveRole = Role.ROLE_USER;
+        }
+        Page<User> page = userRepository.searchUsersPage(query, effectiveRole, isSuspended, pageable);
         return PageResponseDto.fromPage(page.map(UserDto::fromEntity));
     }
 
@@ -553,8 +605,18 @@ public class AdminService {
     }
 
     public AdminUserDetailDto getUserDetails(Long userId) {
+        return getUserDetails(userId, null);
+    }
+
+    public AdminUserDetailDto getUserDetails(Long userId, User actor) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé avec l'id : " + userId));
+
+        if (actor != null && Role.ROLE_COLLABORATOR.equals(actor.getRole()) && !Role.ROLE_USER.equals(user.getRole())) {
+            logAdminAction(actor, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(userId),
+                    "Tentative bloquée : Un collaborateur ne peut consulter le détail d'un compte " + user.getRole().name() + ".");
+            throw new AccessDeniedException("Accès refusé : un collaborateur ne peut consulter que les comptes utilisateurs ordinaires.");
+        }
 
         List<Product> products = productRepository.findBySellerIdOrderByCreatedAtDesc(userId);
         List<Order> purchases = orderRepository.findByBuyerIdOrderByCreatedAtDesc(userId);
@@ -591,25 +653,11 @@ public class AdminService {
         User targetUser = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé avec l'id : " + userId));
 
-        // Point 7 : Garde-fous de sécurité sur les rôles
-        if (admin != null && admin.getId() != null && admin.getId().equals(userId) && suspend) {
-            logAdminAction(admin, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(userId),
-                    "Tentative bloquée : Un administrateur ne peut pas suspendre son propre compte.");
-            throw new IllegalArgumentException("Action interdite : Vous ne pouvez pas suspendre votre propre compte administrateur.");
-        }
-
-        if (suspend && Role.ROLE_ADMIN.equals(targetUser.getRole())) {
-            long activeAdmins = userRepository.countActiveAdmins();
-            if (activeAdmins <= 1) {
-                logAdminAction(admin, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(userId),
-                        "Tentative bloquée : Impossible de suspendre le dernier administrateur actif de la plateforme.");
-                throw new IllegalStateException("Action interdite : Impossible de suspendre le dernier administrateur actif de la marketplace.");
-            }
-        }
+        enforceSuspensionGuardrails(targetUser, suspend, admin);
 
         targetUser.setIsSuspended(suspend);
         User saved = userRepository.save(targetUser);
-        if (suspend) {
+        if (suspend && refreshTokenService != null) {
             refreshTokenService.revokeAllForUser(saved);
         }
 
@@ -617,10 +665,37 @@ public class AdminService {
                 suspend ? "USER_SUSPEND" : "USER_REACTIVATE",
                 "USER",
                 String.valueOf(userId),
-                "Compte " + (suspend ? "suspendu" : "réactivé") + " pour : " + targetUser.getFullName() + " (" + targetUser.getPhone() + ")"
+                "Compte " + (suspend ? "suspendu" : "réactivé") + " pour l'utilisateur #" + userId
         );
 
         return UserDto.fromEntity(saved);
+    }
+
+    private void enforceSuspensionGuardrails(User targetUser, boolean suspend, User actor) {
+        Long targetId = targetUser.getId();
+
+        // SEC-17 : Un collaborateur ne peut suspendre ou réactiver qu'un compte ROLE_USER ordinaire
+        if (actor != null && Role.ROLE_COLLABORATOR.equals(actor.getRole()) && !Role.ROLE_USER.equals(targetUser.getRole())) {
+            logAdminAction(actor, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(targetId),
+                    "Tentative bloquée : Un collaborateur ne peut ni suspendre ni réactiver un compte " + targetUser.getRole().name() + ".");
+            throw new AccessDeniedException("Action interdite : Un collaborateur ne peut suspendre ou réactiver qu'un compte utilisateur ordinaire.");
+        }
+
+        // Point 7 : Garde-fous de sécurité sur les rôles
+        if (actor != null && actor.getId() != null && actor.getId().equals(targetId) && suspend) {
+            logAdminAction(actor, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(targetId),
+                    "Tentative bloquée : Un administrateur ne peut pas suspendre son propre compte.");
+            throw new IllegalArgumentException("Action interdite : Vous ne pouvez pas suspendre votre propre compte administrateur.");
+        }
+
+        if (suspend && Role.ROLE_ADMIN.equals(targetUser.getRole())) {
+            long activeAdmins = userRepository.countActiveAdmins();
+            if (activeAdmins <= 1) {
+                logAdminAction(actor, "SECURITY_VIOLATION_BLOCKED", "USER", String.valueOf(targetId),
+                        "Tentative bloquée : Impossible de suspendre le dernier administrateur actif de la plateforme.");
+                throw new IllegalStateException("Action interdite : Impossible de suspendre le dernier administrateur actif de la marketplace.");
+            }
+        }
     }
 
     @Transactional
@@ -644,14 +719,29 @@ public class AdminService {
             }
         }
 
+        Role previousRole = targetUser.getRole();
         targetUser.setRole(newRole);
+
+        // SEC-17 : Retirer toutes les permissions modulaires dès que le compte n'est plus collaborateur
+        if (!Role.ROLE_COLLABORATOR.equals(newRole) && targetUser.getAdminPermissions() != null) {
+            targetUser.getAdminPermissions().clear();
+        }
+
         User saved = userRepository.save(targetUser);
+
+        // SEC-17 : Révoquer toutes les sessions en cas de rétrogradation
+        boolean isRoleDowngrade = previousRole != newRole
+                && (Role.ROLE_USER.equals(newRole)
+                || (Role.ROLE_ADMIN.equals(previousRole) && !Role.ROLE_ADMIN.equals(newRole)));
+        if (isRoleDowngrade && refreshTokenService != null) {
+            refreshTokenService.revokeAllForUser(saved);
+        }
 
         logAdminAction(admin,
                 "ROLE_CHANGE",
                 "USER",
                 String.valueOf(userId),
-                "Rôle modifié vers " + newRole.name() + " pour : " + targetUser.getFullName()
+                "Rôle modifié de " + previousRole.name() + " vers " + newRole.name() + " pour l'utilisateur #" + userId
         );
 
         return UserDto.fromEntity(saved);
@@ -896,9 +986,13 @@ public class AdminService {
                 case "SUSPEND_USER" -> {
                     if (report.getReportedUser() != null) {
                         User u = report.getReportedUser();
+                        enforceSuspensionGuardrails(u, true, admin);
                         u.setIsSuspended(true);
-                        userRepository.save(u);
-                        actionSummary.append(" | Action exécutée: Utilisateur ").append(u.getFullName()).append(" suspendu.");
+                        User savedUser = userRepository.save(u);
+                        if (refreshTokenService != null) {
+                            refreshTokenService.revokeAllForUser(savedUser);
+                        }
+                        actionSummary.append(" | Action exécutée: Utilisateur #").append(u.getId()).append(" suspendu.");
                     }
                 }
                 case "WARN" -> {
@@ -971,18 +1065,79 @@ public class AdminService {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation introuvable."));
 
-        String reason = reportId != null ? "Litige / Signalement #" + reportId : "Supervision litige";
+        // SEC-17 : Exiger un signalement valide et effectivement lié à cette conversation
+        if (reportId == null) {
+            logAdminAction(admin, "SECURITY_VIOLATION_BLOCKED", "CONVERSATION", String.valueOf(conversationId),
+                    "Tentative bloquée : consultation de la conversation #" + conversationId + " sans reportId.");
+            throw new AccessDeniedException("Un identifiant de signalement valide (reportId) est requis pour consulter une conversation en audit.");
+        }
+
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> {
+                    logAdminAction(admin, "SECURITY_VIOLATION_BLOCKED", "CONVERSATION", String.valueOf(conversationId),
+                            "Tentative bloquée : consultation de la conversation #" + conversationId + " avec signalement introuvable #" + reportId);
+                    return new AccessDeniedException("Signalement introuvable ou invalide pour l'audit de cette conversation.");
+                });
+
+        if (!isReportLinkedToConversation(report, conversation)) {
+            logAdminAction(admin, "SECURITY_VIOLATION_BLOCKED", "CONVERSATION", String.valueOf(conversationId),
+                    "Tentative bloquée : le signalement #" + reportId + " n'est pas lié à la conversation #" + conversationId + ".");
+            throw new AccessDeniedException("Accès refusé : le signalement fourni n'est pas lié à cette conversation.");
+        }
+
         logAdminAction(admin,
                 "VIEW_CONVERSATION",
                 "CONVERSATION",
                 String.valueOf(conversationId),
-                "Consultation en lecture seule des messages de la discussion #" + conversationId + " (" + reason + ")"
+                "Consultation en lecture seule des messages de la discussion #" + conversationId + " (Signalement #" + reportId + ")"
         );
 
         return messageRepository.findByConversationIdOrderBySentAtAsc(conversationId)
                 .stream()
                 .map(MessageDto::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    private boolean isReportLinkedToConversation(Report report, Conversation conversation) {
+        if (report == null || conversation == null || conversation.getBuyer() == null || conversation.getSeller() == null) {
+            return false;
+        }
+        Long buyerId = conversation.getBuyer().getId();
+        Long sellerId = conversation.getSeller().getId();
+        Long reporterId = report.getReporter() != null ? report.getReporter().getId() : null;
+
+        boolean reporterInConversation = reporterId != null && (reporterId.equals(buyerId) || reporterId.equals(sellerId));
+        if (!reporterInConversation) {
+            return false;
+        }
+
+        // Lien via utilisateur signalé (l'autre participant de la conversation)
+        if (report.getReportedUser() != null && report.getReportedUser().getId() != null) {
+            Long reportedUserId = report.getReportedUser().getId();
+            boolean reportedIsOtherParticipant = (reporterId.equals(buyerId) && reportedUserId.equals(sellerId))
+                    || (reporterId.equals(sellerId) && reportedUserId.equals(buyerId));
+            if (reportedIsOtherParticipant) {
+                return true;
+            }
+        }
+
+        // Lien via produit signalé (produit principal, produits attachés ou vendeur de la conversation)
+        if (report.getReportedProduct() != null && report.getReportedProduct().getId() != null) {
+            Long reportedProductId = report.getReportedProduct().getId();
+            if (conversation.getProduct() != null && reportedProductId.equals(conversation.getProduct().getId())) {
+                return true;
+            }
+            if (conversation.getReferencedProducts() != null
+                    && conversation.getReferencedProducts().stream().anyMatch(p -> reportedProductId.equals(p.getId()))) {
+                return true;
+            }
+            if (report.getReportedProduct().getSeller() != null
+                    && sellerId.equals(report.getReportedProduct().getSeller().getId())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ==========================================

@@ -73,7 +73,7 @@ public class ProductController {
     @Operation(summary = "Modifier une annonce existante")
     public ResponseEntity<ApiResponse<ProductDto>> updateProduct(
             @PathVariable Long id,
-            @RequestBody UpdateProductRequest request,
+            @Valid @RequestBody UpdateProductRequest request,
             @AuthenticationPrincipal User user
     ) {
         ProductDto updated = productService.updateProduct(id, request, user);

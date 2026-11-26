@@ -94,16 +94,25 @@ public class ChatOfferService {
                 .multiply(validationRate)
                 .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
 
-        // Frais de livraison (calculés selon le mode ou spécifiés par le vendeur)
+        // SEC-18 : Validation stricte des frais de livraison et de la durée de validité
         BigDecimal deliveryFee = request.getDeliveryFee();
         if (deliveryFee == null) {
-            deliveryFee = request.getDeliveryMode() == DeliveryMode.HOME_DELIVERY 
+            deliveryFee = request.getDeliveryMode() == DeliveryMode.HOME_DELIVERY
                     ? BigDecimal.valueOf(2000) : BigDecimal.ZERO;
+        }
+        if (deliveryFee.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Les frais de livraison ne peuvent pas être négatifs.");
         }
 
         BigDecimal totalAmount = request.getAgreedPrice().add(validationFee).add(deliveryFee);
+        if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Le montant total de l'offre doit être strictement positif.");
+        }
 
-        int validityHours = request.getValidityHours() != null && request.getValidityHours() > 0 
+        if (request.getValidityHours() != null && (request.getValidityHours() < 1 || request.getValidityHours() > 168)) {
+            throw new IllegalArgumentException("La durée de validité doit être comprise entre 1 et 168 heures.");
+        }
+        int validityHours = request.getValidityHours() != null
                 ? request.getValidityHours() : (platformSetting.getOfferValidityHours() != null ? platformSetting.getOfferValidityHours() : 24);
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(validityHours);
 
@@ -163,7 +172,8 @@ public class ChatOfferService {
             throw new IllegalStateException("Votre compte est actuellement suspendu. Impossible d'accepter une offre.");
         }
 
-        ChatOffer offer = chatOfferRepository.findById(offerId)
+        // SEC-18 : Verrou pessimiste sur l'offre pour empêcher toute double acceptation concurrente
+        ChatOffer offer = chatOfferRepository.findByIdForUpdate(offerId)
                 .orElseThrow(() -> new IllegalArgumentException("Offre introuvable."));
 
         if (!offer.getBuyer().getId().equals(buyer.getId())) {
@@ -189,9 +199,12 @@ public class ChatOfferService {
             throw new IllegalStateException("L'article n'est plus disponible (déjà vendu ou réservé).");
         }
 
-        // Verrou transactionnel : réserver l'article pour cet acheteur
+        // SEC-18 : Réservation atomique conditionnelle en base (UPDATE ... WHERE status = 'ACTIVE')
+        int reserved = productRepository.reserveProductIfActive(product.getId());
+        if (reserved == 0) {
+            throw new IllegalStateException("L'article n'est plus disponible (déjà vendu ou réservé).");
+        }
         product.setStatus(ProductStatus.RESERVED);
-        productRepository.save(product);
 
         PlatformSetting platformSetting = platformSettingRepository.findFirstByOrderByIdAsc()
                 .orElseGet(() -> PlatformSetting.builder().build());
@@ -241,6 +254,8 @@ public class ChatOfferService {
                 .order(savedOrder)
                 .product(product)
                 .price(offer.getAgreedPrice())
+                .title(product.getTitle())
+                .imageUrl(product.getPrimaryImageUrl())
                 .build();
         orderItemRepository.save(orderItem);
         savedOrder.getItems().add(orderItem);
@@ -433,20 +448,23 @@ public class ChatOfferService {
             );
         }
 
-        // 3. Expirer les commandes AWAITING_PAYMENT dont la réservation est dépassée
-        List<Order> expiredOrders = orderRepository.findByStatusAndReservationExpiresAtBefore(OrderStatus.AWAITING_PAYMENT, now);
+        // 3. SEC-18 : Expirer les commandes non payées (AWAITING_PAYMENT et PENDING_PAYMENT) dont la réservation est dépassée
+        List<Order> expiredOrders = new java.util.ArrayList<>();
+        expiredOrders.addAll(orderRepository.findByStatusAndReservationExpiresAtBefore(OrderStatus.AWAITING_PAYMENT, now));
+        expiredOrders.addAll(orderRepository.findByStatusAndReservationExpiresAtBefore(OrderStatus.PENDING_PAYMENT, now));
         for (Order order : expiredOrders) {
+            OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.EXPIRED);
             order.setStatus(OrderStatus.EXPIRED);
             orderRepository.save(order);
 
-            // Libérer l'article pour qu'il redevienne disponible
-            if (order.getProduct() != null) {
+            // Libérer l'article réservé pour qu'il redevienne disponible (sans toucher un article déjà SOLD)
+            if (order.getProduct() != null && order.getProduct().getStatus() == ProductStatus.RESERVED) {
                 order.getProduct().setStatus(ProductStatus.ACTIVE);
                 productRepository.save(order.getProduct());
             }
             if (order.getItems() != null) {
                 for (OrderItem item : order.getItems()) {
-                    if (item.getProduct() != null) {
+                    if (item.getProduct() != null && item.getProduct().getStatus() == ProductStatus.RESERVED) {
                         item.getProduct().setStatus(ProductStatus.ACTIVE);
                         productRepository.save(item.getProduct());
                     }
