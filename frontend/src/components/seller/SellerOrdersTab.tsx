@@ -5,7 +5,8 @@
  */
 
 import React from 'react';
-import { Package, Truck, Phone, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Package, Truck, Phone, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Order } from '../../types';
 
 interface SellerOrdersTabProps {
@@ -115,6 +116,14 @@ export const SellerOrdersTab: React.FC<SellerOrdersTabProps> = ({
                         <span>Colis remis au livreur</span>
                       </button>
                     )}
+
+                    <Link
+                      to={`/orders/${ord.id}`}
+                      className="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold transition-all flex items-center gap-1"
+                    >
+                      <span>Détails</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
                   </div>
                 </div>
               </div>

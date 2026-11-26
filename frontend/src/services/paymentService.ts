@@ -22,6 +22,8 @@ export const paymentApi = {
     api.post<{ success: boolean; data: PaymentInitiationResponse }>('/payments/initiate', data),
   verifyByOrder: (orderId: number) =>
     api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}/verify`),
+  cancelByOrder: (orderId: number) =>
+    api.post<{ success: boolean; data: Payment }>(`/payments/order/${orderId}/cancel`),
   getByOrder: (orderId: number) =>
     api.get<{ success: boolean; data: Payment }>(`/payments/order/${orderId}`),
 };

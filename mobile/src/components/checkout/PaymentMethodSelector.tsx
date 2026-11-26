@@ -18,10 +18,9 @@ interface PaymentOption {
 }
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
-  { id: 'WAVE', name: 'Wave Mobile Money', badge: 'Sans frais', badgeColor: '#00D1FF' },
-  { id: 'ORANGE_MONEY', name: 'Orange Money', badge: 'Rapide', badgeColor: '#FF7900' },
+  { id: 'WAVE', name: 'Wave Mobile Money', badge: 'Rapide', badgeColor: '#00D1FF' },
+  { id: 'ORANGE_MONEY', name: 'Orange Money', badge: 'Populaire', badgeColor: '#FF7900' },
   { id: 'FREE_MONEY', name: 'Free Money', badge: 'Disponible', badgeColor: '#CD1224' },
-  { id: 'CARD', name: 'Carte Bancaire (Visa/Mastercard)', badge: '3D Secure', badgeColor: '#2563EB' },
 ];
 
 interface PaymentMethodSelectorProps {

@@ -25,6 +25,7 @@ import { ProductDetailPage } from './pages/ProductDetailPage';
 import { SellPage } from './pages/SellPage';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
+import { PaymentReturnPage } from './pages/PaymentReturnPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { SellerDashboardPage } from './pages/SellerDashboardPage';
@@ -76,6 +77,30 @@ const AppLayout: React.FC = () => {
             element={
               <ProtectedRoute>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/orders/payment-return"
+            element={
+              <ProtectedRoute>
+                <PaymentReturnPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/success"
+            element={
+              <ProtectedRoute>
+                <PaymentReturnPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payment/cancel"
+            element={
+              <ProtectedRoute>
+                <PaymentReturnPage />
               </ProtectedRoute>
             }
           />

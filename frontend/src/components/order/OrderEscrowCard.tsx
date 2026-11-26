@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import { ShieldCheck, CheckCircle2, Lock } from 'lucide-react';
-import { Order } from '../../types';
+import { Link } from 'react-router-dom';
+import { ShieldCheck, CheckCircle2, Lock, Clock, XCircle, RefreshCw } from 'lucide-react';
+import { Order, PaymentMethod } from '../../types';
 
 interface OrderEscrowCardProps {
   order: Order;
@@ -14,6 +15,10 @@ interface OrderEscrowCardProps {
   onConfirmReceipt: () => void;
   confirmingReceipt: boolean;
   onOpenReviewModal: () => void;
+  onRetryPayment?: (method: PaymentMethod) => void;
+  onVerifyPayment?: () => void;
+  onCancelOrder?: () => void;
+  paymentActionLoading?: boolean;
 }
 
 export const OrderEscrowCard: React.FC<OrderEscrowCardProps> = ({
@@ -22,11 +27,129 @@ export const OrderEscrowCard: React.FC<OrderEscrowCardProps> = ({
   onConfirmReceipt,
   confirmingReceipt,
   onOpenReviewModal,
+  onRetryPayment,
+  onVerifyPayment,
+  onCancelOrder,
+  paymentActionLoading = false,
 }) => {
+  const isPendingPayment =
+    order.status === 'PENDING_PAYMENT' || order.status === 'AWAITING_PAYMENT';
+  const isCancelled = order.status === 'CANCELLED' || order.status === 'EXPIRED';
+  const isCompleted =
+    order.status === 'COMPLETED' || order.payment?.escrowStatus === 'RELEASED_TO_SELLER';
   const isEscrowLocked =
-    order.status === 'PAID_ESCROW_LOCKED' ||
-    (order.payment?.escrowStatus === 'LOCKED' && order.status !== 'COMPLETED');
-  const isCompleted = order.status === 'COMPLETED' || order.payment?.escrowStatus === 'RELEASED_TO_SELLER';
+    !isPendingPayment &&
+    !isCancelled &&
+    !isCompleted &&
+    (order.status === 'PAID_ESCROW_LOCKED' ||
+      order.status === 'SHIPPED' ||
+      order.status === 'DELIVERED' ||
+      order.status === 'DISPUTED' ||
+      order.payment?.escrowStatus === 'LOCKED');
+  const canConfirmReceipt =
+    isBuyer &&
+    !isCompleted &&
+    (order.status === 'DELIVERED' || order.deliveryStatus === 'DELIVERED');
+
+  if (isCancelled) {
+    return (
+      <div className="rounded-3xl p-6 border bg-rose-50/60 border-rose-200 text-rose-950 transition-all">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+              <XCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black">
+                {order.status === 'EXPIRED' ? 'Commande expirée' : 'Commande annulée — Paiement non abouti'}
+              </h4>
+              <p className="text-xs text-rose-800 mt-1 max-w-xl">
+                Aucun fonds n'est bloqué en séquestre. L'annonce a été automatiquement remise en vente (statut ACTIVE).
+              </p>
+            </div>
+          </div>
+          {order.productId && (
+            <Link
+              to={`/product/${order.productId}`}
+              className="px-5 py-3 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-black text-xs shrink-0 text-center transition-all"
+            >
+              Revoir l'annonce
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isPendingPayment) {
+    return (
+      <div className="rounded-3xl p-6 border bg-amber-50/70 border-amber-200 text-amber-950 transition-all space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-amber-600 text-white flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black">En attente de règlement Mobile Money</h4>
+              <p className="text-xs text-amber-900 mt-1 max-w-xl">
+                Finalisez le paiement via Wave, Orange Money ou Free Money pour verrouiller les fonds sous séquestre et notifier le vendeur.
+              </p>
+            </div>
+          </div>
+          {isBuyer && onVerifyPayment && (
+            <button
+              type="button"
+              onClick={onVerifyPayment}
+              disabled={paymentActionLoading}
+              className="px-4 py-2.5 rounded-2xl bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 font-bold text-xs shrink-0 inline-flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${paymentActionLoading ? 'animate-spin' : ''}`} />
+              <span>Vérifier le paiement</span>
+            </button>
+          )}
+        </div>
+
+        {isBuyer && onRetryPayment && (
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => onRetryPayment('WAVE')}
+              disabled={paymentActionLoading}
+              className="px-4 py-2.5 rounded-2xl bg-[#00adef] hover:bg-[#009bd6] text-white font-black text-xs disabled:opacity-50 cursor-pointer"
+            >
+              Payer avec Wave
+            </button>
+            <button
+              type="button"
+              onClick={() => onRetryPayment('ORANGE_MONEY')}
+              disabled={paymentActionLoading}
+              className="px-4 py-2.5 rounded-2xl bg-[#ff7900] hover:bg-[#e06b00] text-white font-black text-xs disabled:opacity-50 cursor-pointer"
+            >
+              Payer avec Orange Money
+            </button>
+            <button
+              type="button"
+              onClick={() => onRetryPayment('FREE_MONEY')}
+              disabled={paymentActionLoading}
+              className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs disabled:opacity-50 cursor-pointer"
+            >
+              Payer avec Free Money
+            </button>
+            {onCancelOrder && (
+              <button
+                type="button"
+                onClick={onCancelOrder}
+                disabled={paymentActionLoading}
+                className="px-4 py-2.5 rounded-2xl bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 font-bold text-xs disabled:opacity-50 cursor-pointer"
+              >
+                Annuler la commande
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -62,7 +185,7 @@ export const OrderEscrowCard: React.FC<OrderEscrowCardProps> = ({
           </div>
         </div>
 
-        {isBuyer && !isCompleted && (
+        {canConfirmReceipt && (
           <button
             type="button"
             onClick={onConfirmReceipt}

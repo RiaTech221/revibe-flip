@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { CheckCircle2, Clock, Truck, Package } from 'lucide-react';
+import { CheckCircle2, Clock, Truck, Package, XCircle } from 'lucide-react';
 import { Order } from '../../types';
 
 interface OrderStatusTimelineProps {
@@ -13,7 +13,14 @@ interface OrderStatusTimelineProps {
 }
 
 export const OrderStatusTimeline: React.FC<OrderStatusTimelineProps> = ({ order }) => {
-  const isPaid = order.status !== 'PENDING_PAYMENT';
+  const isCancelled = order.status === 'CANCELLED' || order.status === 'EXPIRED';
+  const isPaid = [
+    'PAID_ESCROW_LOCKED',
+    'SHIPPED',
+    'DELIVERED',
+    'COMPLETED',
+    'DISPUTED',
+  ].includes(order.status);
   const isShipped =
     order.deliveryStatus === 'IN_TRANSIT' ||
     order.deliveryStatus === 'OUT_FOR_DELIVERY' ||
@@ -21,12 +28,32 @@ export const OrderStatusTimeline: React.FC<OrderStatusTimelineProps> = ({ order 
   const isDelivered = order.deliveryStatus === 'DELIVERED' || order.status === 'COMPLETED';
   const isCompleted = order.status === 'COMPLETED';
 
+  if (isCancelled) {
+    return (
+      <div className="bg-rose-50/70 rounded-3xl p-6 border border-rose-200 shadow-xs flex items-center gap-4">
+        <div className="w-11 h-11 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+          <XCircle className="w-6 h-6" />
+        </div>
+        <div>
+          <h3 className="text-sm font-black text-rose-950">
+            {order.status === 'EXPIRED' ? 'Réservation expirée' : 'Commande annulée'}
+          </h3>
+          <p className="text-xs text-rose-800 mt-0.5">
+            {order.payment?.status === 'FAILED'
+              ? "Le paiement n'a pas abouti. La commande a été annulée et l'article est de nouveau disponible dans le catalogue."
+              : "Cette commande a été annulée et l'article a été remis en vente."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const steps = [
     {
       title: 'Paiement Séquestre Validé',
-      subtitle: 'Fonds bloqués et sécurisés',
+      subtitle: isPaid ? 'Fonds bloqués et sécurisés' : 'En attente de confirmation PayTech',
       completed: isPaid,
-      current: order.status === 'PAID_ESCROW_LOCKED' && !isShipped,
+      current: !isPaid,
       icon: Clock,
     },
     {

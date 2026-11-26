@@ -37,6 +37,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     long countByRole(com.revibeflip.entity.enums.Role role);
 
+    Optional<User> findFirstByRole(com.revibeflip.entity.enums.Role role);
+
     long countByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     java.util.List<User> findByCreatedAtBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);

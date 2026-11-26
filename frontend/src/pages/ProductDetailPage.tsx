@@ -159,6 +159,8 @@ export const ProductDetailPage: React.FC = () => {
 
   const isOwner = user?.id === product.seller?.id;
   const isSold = product.status === 'SOLD';
+  const isReserved = product.status === 'RESERVED';
+  const isUnavailable = isSold || isReserved || product.status === 'INACTIVE';
   const validationFee = Math.round(product.price * 0.01);
   const images = product.images && product.images.length > 0 ? product.images : ['/placeholder-product.svg'];
 
@@ -201,11 +203,11 @@ export const ProductDetailPage: React.FC = () => {
               className="w-full h-full object-cover"
             />
 
-            {/* Sold overlay */}
-            {isSold && (
+            {/* Sold / Reserved overlay */}
+            {(isSold || isReserved) && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
                 <span className="bg-purple-700 text-white font-black text-xl uppercase tracking-widest px-8 py-3 rounded-2xl shadow-2xl transform -rotate-6">
-                  Article Vendu
+                  {isSold ? 'Article Vendu' : 'Article Réservé'}
                 </span>
               </div>
             )}
@@ -298,7 +300,7 @@ export const ProductDetailPage: React.FC = () => {
 
             {/* CTAs */}
             <div className="space-y-3 pt-4">
-              {!isOwner && !isSold && (
+              {!isOwner && !isUnavailable && (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
@@ -333,6 +335,14 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="p-4 bg-slate-100 rounded-2xl text-center">
                   <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">
                     Cet article a déjà été vendu
+                  </p>
+                </div>
+              )}
+
+              {isReserved && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-center">
+                  <p className="text-xs font-bold text-amber-800 uppercase tracking-wider">
+                    Article actuellement réservé (paiement en cours)
                   </p>
                 </div>
               )}

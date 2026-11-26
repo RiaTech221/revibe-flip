@@ -491,11 +491,12 @@ public class DevDataSeeder implements CommandLineRunner {
 
     private User ensureUser(String phone, String firstName, String lastName, String rawPassword, Role role, String address) {
         Country senegal = countryRepository.findByCode("SN").orElse(null);
+        String defaultEmail = role == Role.ROLE_ADMIN ? "admin@revibeflip.com" : firstName.toLowerCase() + "@revibeflip.com";
         User u = userRepository.findByPhone(phone).orElseGet(() -> User.builder()
                 .phone(phone)
                 .firstName(firstName)
                 .lastName(lastName)
-                .email(firstName.toLowerCase() + "@revibeflip.com")
+                .email(defaultEmail)
                 .role(role)
                 .country(senegal)
                 .city("Dakar")
@@ -505,8 +506,10 @@ public class DevDataSeeder implements CommandLineRunner {
         u.setIsVerified(true);
         u.setIsSuspended(false);
         u.setRole(role);
-        if (u.getEmail() == null || u.getEmail().isBlank()) {
-            u.setEmail(firstName.toLowerCase() + "@revibeflip.com");
+        if (role == Role.ROLE_ADMIN) {
+            u.setEmail("admin@revibeflip.com");
+        } else if (u.getEmail() == null || u.getEmail().isBlank()) {
+            u.setEmail(defaultEmail);
         }
         return userRepository.save(u);
     }

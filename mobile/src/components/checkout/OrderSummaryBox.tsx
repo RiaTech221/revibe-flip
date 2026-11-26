@@ -21,7 +21,7 @@ export const OrderSummaryBox: React.FC<OrderSummaryBoxProps> = ({
   deliveryFee,
 }) => {
   const itemPrice = agreedPrice || product.price;
-  const buyerFee = Math.round(itemPrice * 0.05);
+  const buyerFee = Math.round(itemPrice * 0.01);
   const total = itemPrice + buyerFee + deliveryFee;
 
   return (
@@ -36,7 +36,7 @@ export const OrderSummaryBox: React.FC<OrderSummaryBoxProps> = ({
       </View>
 
       <View style={styles.row}>
-        <Text style={styles.label}>Protection acheteur (5%)</Text>
+        <Text style={styles.label}>Frais de validation / séquestre (1%)</Text>
         <Text style={styles.value}>{formatPrice(buyerFee)}</Text>
       </View>
 

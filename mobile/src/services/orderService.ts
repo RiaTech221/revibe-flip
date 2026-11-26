@@ -10,14 +10,15 @@
  */
 
 import api from '../api';
-import { Order, PaymentMethod } from '../types';
+import { Order } from '../types';
 
 export interface CreateOrderPayload {
   productId: number;
+  deliveryMode: 'HOME_DELIVERY' | 'DIRECT_HANDOVER';
   deliveryAddress: string;
   deliveryCity: string;
-  paymentMethod: PaymentMethod;
-  agreedPrice?: number;
+  deliveryPhone?: string;
+  deliveryNotes?: string;
 }
 
 export const orderService = {
@@ -33,11 +34,30 @@ export const orderService = {
 
   getMyOrders: async (): Promise<Order[]> => {
     const res = await api.get('/orders/my-orders');
+    const data = res.data?.data;
+    if (Array.isArray(data)) {
+      return data;
+    }
+    return data?.content || [];
+  },
+
+  getBuyerOrders: async (): Promise<Order[]> => {
+    const res = await api.get('/orders/buyer');
+    return res.data?.data || [];
+  },
+
+  getSellerOrders: async (): Promise<Order[]> => {
+    const res = await api.get('/orders/seller');
     return res.data?.data || [];
   },
 
   confirmReceipt: async (orderId: number): Promise<Order> => {
     const res = await api.post(`/orders/${orderId}/confirm-receipt`);
+    return res.data?.data;
+  },
+
+  cancelOrder: async (orderId: number): Promise<Order> => {
+    const res = await api.post(`/orders/${orderId}/cancel`);
     return res.data?.data;
   },
 };

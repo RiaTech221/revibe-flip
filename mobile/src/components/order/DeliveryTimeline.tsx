@@ -27,8 +27,10 @@ export const DeliveryTimeline: React.FC<DeliveryTimelineProps> = ({ status }) =>
       case 'PENDING':
         return 0;
       case 'DISPATCHED':
+      case 'PICKED_UP':
         return 1;
       case 'IN_TRANSIT':
+      case 'OUT_FOR_DELIVERY':
         return 2;
       case 'DELIVERED':
         return 3;

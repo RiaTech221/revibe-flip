@@ -107,9 +107,10 @@ CORS_ALLOWED_ORIGINS=https://revibeflip.com,https://www.revibeflip.com
 PAYTECH_API_KEY=<VOTRE_CLE_API_PAYTECH>
 PAYTECH_API_SECRET=<VOTRE_SECRET_PAYTECH>
 PAYTECH_ENV=prod
-PAYTECH_IPN_URL=https://revibeflip.com/api/payments/paytech/ipn
-PAYTECH_SUCCESS_URL=https://revibeflip.com/payment/success
-PAYTECH_CANCEL_URL=https://revibeflip.com/payment/cancel
+PAYTECH_IPN_URL=https://revibeflip.com/api/payments/ipn
+PAYTECH_SUCCESS_URL=https://revibeflip.com/orders/payment-return?status=success
+PAYTECH_CANCEL_URL=https://revibeflip.com/orders/payment-return?status=cancel
+PAYTECH_TRANSFER_CALLBACK_URL=https://revibeflip.com/api/payments/transfer-ipn
 
 # SMS OTP & Bootstrap du 1er Administrateur
 SMS_API_URL=<URL_API_SMS>

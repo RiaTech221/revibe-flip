@@ -159,19 +159,24 @@ export interface SellerDashboard {
 }
 
 export interface SellerTransaction {
+  id?: number;
+  transactionReference?: string;
   orderId: number;
   orderNumber: string;
   productTitle: string;
-  buyerName: string;
+  productImage?: string;
+  buyerName?: string;
   itemPrice: number;
   validationFee: number;
   deliveryFee: number;
   platformCommission: number;
   sellerPayout: number;
   paymentMethod: string;
+  paymentMethodName?: string;
   paymentStatus: string;
   escrowStatus: string;
   createdAt: string;
+  releasedAt?: string;
 }
 
 export interface SellerTransactionSummary {

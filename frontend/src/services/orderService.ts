@@ -25,6 +25,8 @@ export const orderApi = {
     api.get<{ success: boolean; data: Order[] }>('/orders/seller'),
   confirmReceipt: (id: number) =>
     api.post<{ success: boolean; data: Order }>(`/orders/${id}/confirm-receipt`),
+  cancel: (id: number) =>
+    api.post<{ success: boolean; data: Order }>(`/orders/${id}/cancel`),
 };
 
 export const deliveryApi = {

@@ -329,6 +329,7 @@ export const MessagesPage: React.FC = () => {
       });
       const redirectUrl = payRes.data?.data?.redirectUrl;
       if (redirectUrl && redirectUrl.startsWith('https://')) {
+        sessionStorage.setItem('revibe_pending_payment_order_id', String(acceptedOfferToPay.orderId));
         window.location.href = redirectUrl;
         return;
       }

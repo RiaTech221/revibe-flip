@@ -5,8 +5,39 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Lock, Phone } from 'lucide-react';
+import { Lock, Phone, Sparkles } from 'lucide-react';
 import { TurnstileWidget, isTurnstileEnabled } from '../security/TurnstileWidget';
+
+const TEST_ACCOUNTS = [
+  {
+    role: 'Admin',
+    label: '🛡️ Admin',
+    identifier: '+221770000000',
+    password: 'Admin1234!',
+    color: 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100',
+  },
+  {
+    role: 'Vendeuse',
+    label: '👗 Aminata',
+    identifier: '+221771112233',
+    password: 'Passer123!',
+    color: 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100',
+  },
+  {
+    role: 'Vendeur',
+    label: '👔 Moussa',
+    identifier: '+221774445566',
+    password: 'Passer123!',
+    color: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100',
+  },
+  {
+    role: 'Acheteuse',
+    label: '🛍️ Fatou',
+    identifier: '+221778889900',
+    password: 'Passer123!',
+    color: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100',
+  },
+];
 
 interface AuthLoginFormProps {
   initialIdentifier?: string;
@@ -84,6 +115,31 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
             placeholder="••••••••"
             className="w-full h-11 pl-10 pr-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:bg-white transition-all font-medium"
           />
+        </div>
+      </div>
+
+      {/* Raccourcis de test en environnement local */}
+      <div className="pt-2 border-t border-slate-100">
+        <div className="flex items-center gap-1.5 mb-2 text-slate-500">
+          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+          <span className="text-[11px] font-bold uppercase tracking-wider">
+            Comptes de test (clic pour remplir) :
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+          {TEST_ACCOUNTS.map((acc) => (
+            <button
+              key={acc.identifier}
+              type="button"
+              onClick={() => {
+                setIdentifier(acc.identifier);
+                setPassword(acc.password);
+              }}
+              className={`px-2 py-1.5 rounded-xl border text-[11px] font-bold transition-all text-center cursor-pointer shadow-sm ${acc.color}`}
+            >
+              {acc.label}
+            </button>
+          ))}
         </div>
       </div>
 

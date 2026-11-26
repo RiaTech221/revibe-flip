@@ -50,7 +50,11 @@ export const AuthModal: React.FC = () => {
         setMode('otp');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Identifiants incorrects.');
+      if (!err.response || err.code === 'ERR_NETWORK') {
+        setError('Impossible de joindre le serveur backend (http://localhost:8080). Assurez-vous que le backend Spring Boot est bien démarré.');
+      } else {
+        setError(err.response?.data?.message || 'Identifiants incorrects.');
+      }
     } finally {
       setLoading(false);
     }

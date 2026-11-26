@@ -37,18 +37,19 @@ export const CheckoutScreen = ({ route, navigation }: any) => {
   const { product, agreedPrice } = route.params;
 
   const itemPrice = agreedPrice || product.price;
-  const deliveryFee = 1500;
-  const buyerFee = Math.round(itemPrice * 0.05);
+  const deliveryFee = 2000;
+  const buyerFee = Math.round(itemPrice * 0.01);
   const totalAmount = itemPrice + buyerFee + deliveryFee;
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('WAVE');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [pendingOrder, setPendingOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const handleProcessPayment = async () => {
     if (!phoneNumber.trim()) {
-      Alert.alert('Numéro requis', 'Veuillez renseigner votre numéro Wave ou Orange Money.');
+      Alert.alert('Numéro requis', 'Veuillez renseigner votre numéro Wave, Orange Money ou Free Money.');
       return;
     }
 
@@ -59,13 +60,17 @@ export const CheckoutScreen = ({ route, navigation }: any) => {
 
     setLoading(true);
     try {
-      const order = await orderService.createOrder({
-        productId: product.id,
-        deliveryAddress: deliveryAddress.trim(),
-        deliveryCity: 'Dakar',
-        paymentMethod,
-        agreedPrice: itemPrice,
-      });
+      let order = pendingOrder;
+      if (!order) {
+        order = await orderService.createOrder({
+          productId: product.id,
+          deliveryMode: 'HOME_DELIVERY',
+          deliveryAddress: deliveryAddress.trim(),
+          deliveryCity: 'Dakar',
+          deliveryPhone: phoneNumber.trim(),
+        });
+        setPendingOrder(order);
+      }
 
       const init = await paymentService.initializePayment({
         orderId: order.id,

@@ -36,40 +36,46 @@ import { AdminReportsSection } from '../components/admin/AdminReportsSection';
 import { AdminSettingsSection } from '../components/admin/AdminSettingsSection';
 import { AdminAuditSection } from '../components/admin/AdminAuditSection';
 import { AdminContentManager } from '../components/admin/AdminContentManager';
-import { AdminTeamSection } from '../components/admin/AdminTeamSection';
 import { AdminModals } from '../components/admin/AdminModals';
-import { ConfirmModal } from '../components/common/ConfirmModal';
+import { AdminEasyDashboard } from '../components/admin/easy/AdminEasyDashboard';
+
+const ADMIN_DEV_UNLOCK_KEY = 'revibe_admin_dev_unlocked';
 
 export const AdminPage: React.FC = () => {
-  const { user, isAdmin, isStaff, hasPermission, logout } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [isMaintainerMode, setIsMaintainerMode] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem(ADMIN_DEV_UNLOCK_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleUnlockMaintenanceMode = () => {
+    try {
+      sessionStorage.setItem(ADMIN_DEV_UNLOCK_KEY, 'true');
+    } catch {
+      // Ignore storage access errors
+    }
+    setIsMaintainerMode(true);
+  };
+
+  const handleSwitchToSimplified = () => {
+    try {
+      sessionStorage.removeItem(ADMIN_DEV_UNLOCK_KEY);
+    } catch {
+      // Ignore storage access errors
+    }
+    setIsMaintainerMode(false);
+  };
 
   const activeTab = ((searchParams.get('tab') as AdminTabType) || 'kpi') as AdminTabType;
   const setActiveTab = (tab: AdminTabType) => {
     setSearchParams({ tab });
   };
-
-  // Redirection automatique pour les collaborateurs vers leur premier onglet autorisé
-  useEffect(() => {
-    if (!isAdmin && user?.role === 'ROLE_COLLABORATOR') {
-      const perms = user.adminPermissions || [];
-      const allowed: AdminTabType[] = [];
-      if (perms.includes('DASHBOARD')) allowed.push('kpi');
-      if (perms.includes('USERS')) allowed.push('users');
-      if (perms.includes('PRODUCTS')) allowed.push('products');
-      if (perms.includes('CATEGORIES')) allowed.push('categories');
-      if (perms.includes('ORDERS_PAYMENTS')) {
-        allowed.push('orders');
-        allowed.push('payments');
-      }
-      if (perms.includes('REPORTS')) allowed.push('reports');
-
-      if (allowed.length > 0 && !allowed.includes(activeTab)) {
-        setActiveTab(allowed[0]);
-      }
-    }
-  }, [isAdmin, user, activeTab]);
 
   // State: Dashboard
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
@@ -156,15 +162,6 @@ export const AdminPage: React.FC = () => {
 
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [adminFeedback, setAdminFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{
-    title: string;
-    message: string;
-    confirmLabel?: string;
-    variant?: 'danger' | 'warning' | 'primary';
-    onConfirm: () => Promise<void> | void;
-  } | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // State: Dashboard période & auto-refresh
   const [period, setPeriod] = useState<string>('30d');
@@ -213,12 +210,12 @@ export const AdminPage: React.FC = () => {
 
   // Auto-refresh toutes les 2 minutes (désactivable)
   useEffect(() => {
-    if (!autoRefresh || !hasPermission('DASHBOARD')) return;
+    if (!autoRefresh) return;
     const timer = setInterval(() => {
       fetchDashboard(period, customFrom, customTo);
     }, 120_000);
     return () => clearInterval(timer);
-  }, [autoRefresh, period, customFrom, customTo, isStaff, user]);
+  }, [autoRefresh, period, customFrom, customTo]);
 
   const fetchUsers = async () => {
     try {
@@ -339,56 +336,53 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  // Initial load selon les permissions de l'utilisateur
+  // Initial load
   useEffect(() => {
-    if (!isStaff) return;
-    if (hasPermission('DASHBOARD')) fetchDashboard();
-    if (hasPermission('USERS')) fetchUsers();
-    if (hasPermission('PRODUCTS')) fetchProducts();
-    if (hasPermission('CATEGORIES')) fetchCategories();
-    if (hasPermission('ORDERS_PAYMENTS')) {
+    if (isAdmin) {
+      fetchDashboard();
+      fetchUsers();
+      fetchProducts();
+      fetchCategories();
       fetchOrders();
       fetchPayments();
+      fetchReports();
+      fetchSettingsAndAudit();
     }
-    if (hasPermission('REPORTS')) fetchReports();
-    if (isAdmin) fetchSettingsAndAudit();
-  }, [isStaff, isAdmin, user]);
+  }, [isAdmin]);
 
   // Tab-specific pagination & filters
   useEffect(() => {
-    if (activeTab === 'users' && hasPermission('USERS')) fetchUsers();
+    if (activeTab === 'users') fetchUsers();
   }, [userPage, userFilter, userSearch]);
 
   useEffect(() => {
-    if (activeTab === 'orders' && hasPermission('ORDERS_PAYMENTS')) fetchOrders();
+    if (activeTab === 'orders') fetchOrders();
   }, [orderPage, orderStatusFilter, orderSearch]);
 
   useEffect(() => {
-    if (activeTab === 'payments' && hasPermission('ORDERS_PAYMENTS')) fetchPayments();
+    if (activeTab === 'payments') fetchPayments();
   }, [paymentPage, paymentMethodFilter, paymentSearch]);
 
   useEffect(() => {
-    if (activeTab === 'reports' && hasPermission('REPORTS')) fetchReports();
+    if (activeTab === 'reports') fetchReports();
   }, [reportPage, reportFilter]);
 
   useEffect(() => {
-    if ((activeTab === 'audit' || activeTab === 'settings') && isAdmin) fetchSettingsAndAudit();
+    if (activeTab === 'audit' || activeTab === 'settings') fetchSettingsAndAudit();
   }, [auditPage, activeTab]);
 
   const handleRefreshAll = async () => {
     setRefreshing(true);
-    const tasks: Promise<void>[] = [];
-    if (hasPermission('DASHBOARD')) tasks.push(fetchDashboard());
-    if (hasPermission('USERS')) tasks.push(fetchUsers());
-    if (hasPermission('PRODUCTS')) tasks.push(fetchProducts());
-    if (hasPermission('CATEGORIES')) tasks.push(fetchCategories());
-    if (hasPermission('ORDERS_PAYMENTS')) {
-      tasks.push(fetchOrders());
-      tasks.push(fetchPayments());
-    }
-    if (hasPermission('REPORTS')) tasks.push(fetchReports());
-    if (isAdmin) tasks.push(fetchSettingsAndAudit());
-    await Promise.all(tasks);
+    await Promise.all([
+      fetchDashboard(),
+      fetchUsers(),
+      fetchProducts(),
+      fetchCategories(),
+      fetchOrders(),
+      fetchPayments(),
+      fetchReports(),
+      fetchSettingsAndAudit(),
+    ]);
     setRefreshing(false);
   };
 
@@ -403,27 +397,15 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleUpdateUserRole = (userId: number, currentRole: 'ROLE_USER' | 'ROLE_ADMIN') => {
+  const handleUpdateUserRole = async (userId: number, currentRole: 'ROLE_USER' | 'ROLE_ADMIN') => {
     const nextRole = currentRole === 'ROLE_ADMIN' ? 'ROLE_USER' : 'ROLE_ADMIN';
-    setConfirmDialog({
-      title: 'Modifier le rôle utilisateur',
-      message: `Voulez-vous changer le rôle de cet utilisateur en ${nextRole === 'ROLE_ADMIN' ? 'Administrateur' : 'Utilisateur'} ?`,
-      confirmLabel: 'Confirmer le changement',
-      variant: 'primary',
-      onConfirm: async () => {
-        try {
-          await adminApi.updateUserRole(userId, nextRole);
-          setAdminFeedback({ type: 'success', message: 'Rôle utilisateur mis à jour avec succès.' });
-          fetchUsers();
-          if (isAdmin) fetchSettingsAndAudit();
-        } catch (e: any) {
-          setAdminFeedback({
-            type: 'error',
-            message: e?.response?.data?.message || 'Erreur lors de la modification du rôle.',
-          });
-        }
-      },
-    });
+    if (!confirm(`Changer le rôle de cet utilisateur en ${nextRole} ?`)) return;
+    try {
+      await adminApi.updateUserRole(userId, nextRole);
+      fetchUsers();
+    } catch (e) {
+      console.error('Error updating user role', e);
+    }
   };
 
   const handleViewUserDetail = async (userId: number) => {
@@ -446,28 +428,16 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleDeleteProduct = (productId: number) => {
-    setConfirmDialog({
-      title: "Supprimer définitivement l'annonce ?",
-      message: 'Cette action est irréversible. L’annonce et ses photos seront supprimées de la plateforme et journalisées dans l’audit.',
-      confirmLabel: 'Supprimer',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await adminApi.deleteProduct(productId);
-          setAdminFeedback({ type: 'success', message: 'Annonce supprimée définitivement avec succès.' });
-          fetchProducts();
-          if (hasPermission('DASHBOARD')) fetchDashboard();
-          if (isAdmin) fetchSettingsAndAudit();
-          if (selectedProductDetail) setSelectedProductDetail(null);
-        } catch (e: any) {
-          setAdminFeedback({
-            type: 'error',
-            message: e?.response?.data?.message || "Impossible de supprimer cette annonce.",
-          });
-        }
-      },
-    });
+  const handleDeleteProduct = async (productId: number) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cet article ?')) return;
+    try {
+      await adminApi.deleteProduct(productId);
+      fetchProducts();
+      fetchDashboard();
+      if (selectedProductDetail) setSelectedProductDetail(null);
+    } catch (e) {
+      console.error('Error deleting product', e);
+    }
   };
 
   const handleOpenCategoryModal = (cat?: Category) => {
@@ -511,26 +481,14 @@ export const AdminPage: React.FC = () => {
     }
   };
 
-  const handleDeleteCategory = (catId: number) => {
-    setConfirmDialog({
-      title: 'Supprimer ce rayon / catégorie ?',
-      message: 'Cette action supprimera définitivement le rayon s’il ne contient aucune annonce associée, et sera enregistrée dans le journal d’audit.',
-      confirmLabel: 'Supprimer',
-      variant: 'danger',
-      onConfirm: async () => {
-        try {
-          await adminApi.deleteCategory(catId);
-          setAdminFeedback({ type: 'success', message: 'Rayon supprimé avec succès.' });
-          fetchCategories();
-          if (isAdmin) fetchSettingsAndAudit();
-        } catch (err: any) {
-          setAdminFeedback({
-            type: 'error',
-            message: err?.response?.data?.message || 'Impossible de supprimer ce rayon.',
-          });
-        }
-      },
-    });
+  const handleDeleteCategory = async (catId: number) => {
+    if (!confirm('Supprimer cette catégorie ?')) return;
+    try {
+      await adminApi.deleteCategory(catId);
+      fetchCategories();
+    } catch (err) {
+      console.error('Error deleting category', err);
+    }
   };
 
   const handleOpenDeliveryModal = (order: Order) => {
@@ -657,7 +615,7 @@ export const AdminPage: React.FC = () => {
     );
   };
 
-  if (!isStaff) {
+  if (!isAdmin) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-4 bg-gray-50">
         <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-150 shadow-lg text-center space-y-4">
@@ -666,7 +624,11 @@ export const AdminPage: React.FC = () => {
           </div>
           <h2 className="text-xl font-bold text-gray-900">Accès Administrateur Restreint</h2>
           <p className="text-xs text-gray-500 leading-relaxed">
-            Cette interface de gestion back-office est réservée aux administrateurs et collaborateurs autorisés.
+            Cette interface de gestion back-office est strictement réservée aux comptes{' '}
+            <code className="bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-bold">
+              ROLE_ADMIN
+            </code>
+            .
           </p>
           <button
             onClick={() => {
@@ -683,52 +645,56 @@ export const AdminPage: React.FC = () => {
     );
   }
 
+  const handleLogout = () => {
+    try {
+      sessionStorage.removeItem(ADMIN_DEV_UNLOCK_KEY);
+    } catch {
+      // Ignore storage access errors
+    }
+    logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-gray-800 flex flex-col lg:block">
-      {/* 1. SIDEBAR ADMINISTRATEUR */}
-      <AdminSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        dashboard={dashboard}
-        currentUser={user}
-        onLogout={() => {
-          logout();
-          navigate('/login', { replace: true });
-        }}
-      />
+    <>
+      {!isMaintainerMode ? (
+        <AdminEasyDashboard
+          dashboard={dashboard}
+          products={products}
+          onSetProductStatus={handleProductStatus}
+          onDeleteProduct={handleDeleteProduct}
+          orders={orders}
+          onOpenDeliveryModal={handleOpenDeliveryModal}
+          payments={payments}
+          reports={reports}
+          onOpenReportModal={handleOpenReportModal}
+          users={users}
+          onToggleSuspendUser={handleToggleSuspendUser}
+          currentUser={user}
+          isAdmin={isAdmin}
+          formatPrice={formatPrice}
+          formatDate={formatDate}
+          onUnlockMaintenanceMode={handleUnlockMaintenanceMode}
+          onRefresh={handleRefreshAll}
+          refreshing={refreshing}
+          onLogout={handleLogout}
+        />
+      ) : (
+        <div className="min-h-screen bg-[#f8fafc] text-gray-800 flex flex-col lg:block">
+          {/* 1. SIDEBAR ADMINISTRATEUR */}
+          <AdminSidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            dashboard={dashboard}
+            currentUser={user}
+            onSwitchToSimplified={handleSwitchToSimplified}
+            onLogout={handleLogout}
+          />
 
-      {/* 2. ZONE DE CONTENU PRINCIPAL */}
-      <div className="lg:pl-72 min-w-0">
-        <main className="p-3 sm:p-5 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
-        {adminFeedback && (
-          <div
-            className={`flex items-center justify-between gap-3 p-4 rounded-2xl border text-xs font-medium ${
-              adminFeedback.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}
-          >
-            <span>{adminFeedback.message}</span>
-            <button
-              type="button"
-              onClick={() => setAdminFeedback(null)}
-              className="px-2 py-1 rounded-lg hover:bg-black/5 font-bold cursor-pointer"
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        {!isAdmin && (!user?.adminPermissions || user.adminPermissions.length === 0) && (
-          <div className="bg-white rounded-3xl p-8 border border-gray-150 shadow-xs text-center space-y-3">
-            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-            <h2 className="text-lg font-black text-gray-900">Aucune permission attribuée</h2>
-            <p className="text-xs text-gray-500 max-w-md mx-auto">
-              Votre compte collaborateur est actif, mais aucun module du Back-Office ne vous a encore été autorisé. Veuillez contacter un administrateur.
-            </p>
-          </div>
-        )}
-
-        {activeTab === 'kpi' && hasPermission('DASHBOARD') && (
+          {/* 2. ZONE DE CONTENU PRINCIPAL */}
+          <div className="lg:pl-72 min-w-0">
+            <main className="p-3 sm:p-5 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+        {activeTab === 'kpi' && (
           <AdminKpiSection
             dashboard={dashboard}
             currentUser={user}
@@ -752,7 +718,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'products' && hasPermission('PRODUCTS') && (
+        {activeTab === 'products' && (
           <AdminProductsSection
             products={products}
             productSearch={productSearch}
@@ -765,7 +731,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'categories' && hasPermission('CATEGORIES') && (
+        {activeTab === 'categories' && (
           <AdminCategoriesSection
             categories={categories}
             onOpenModal={handleOpenCategoryModal}
@@ -773,7 +739,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {(activeTab === 'users' || (activeTab === 'team' && isAdmin)) && hasPermission('USERS') && (
+        {activeTab === 'users' && (
           <AdminUsersSection
             users={users}
             userSearch={userSearch}
@@ -783,11 +749,10 @@ export const AdminPage: React.FC = () => {
             onToggleSuspend={handleToggleSuspendUser}
             onUpdateRole={handleUpdateUserRole}
             onViewDetail={handleViewUserDetail}
-            initialSubTab={activeTab === 'team' ? 'collaborators' : 'marketplace'}
           />
         )}
 
-        {activeTab === 'orders' && hasPermission('ORDERS_PAYMENTS') && (
+        {activeTab === 'orders' && (
           <AdminOrdersSection
             orders={orders}
             orderStatusFilter={orderStatusFilter}
@@ -804,7 +769,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'payments' && hasPermission('ORDERS_PAYMENTS') && (
+        {activeTab === 'payments' && (
           <AdminPaymentsSection
             payments={payments}
             paymentMethodFilter={paymentMethodFilter}
@@ -821,7 +786,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'reports' && hasPermission('REPORTS') && (
+        {activeTab === 'reports' && (
           <AdminReportsSection
             reports={reports}
             reportFilter={reportFilter}
@@ -835,7 +800,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'audit' && isAdmin && (
+        {activeTab === 'audit' && (
           <AdminAuditSection
             auditLogs={auditLogs}
             auditPage={auditPage}
@@ -847,7 +812,7 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'settings' && isAdmin && (
+        {activeTab === 'settings' && (
           <AdminSettingsSection
             platformSettings={platformSettings}
             commissionRate={commissionRate}
@@ -872,9 +837,11 @@ export const AdminPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'content' && isAdmin && <AdminContentManager />}
-        </main>
-      </div>
+        {activeTab === 'content' && <AdminContentManager />}
+            </main>
+          </div>
+        </div>
+      )}
 
       {/* 3. MODALES CENTRALISÉES */}
       <AdminModals
@@ -917,28 +884,6 @@ export const AdminPage: React.FC = () => {
         }
         formatPrice={formatPrice}
       />
-
-      <ConfirmModal
-        isOpen={!!confirmDialog}
-        title={confirmDialog?.title || ''}
-        message={confirmDialog?.message || ''}
-        confirmLabel={confirmDialog?.confirmLabel}
-        variant={confirmDialog?.variant}
-        loading={confirmLoading}
-        onCancel={() => {
-          if (!confirmLoading) setConfirmDialog(null);
-        }}
-        onConfirm={async () => {
-          if (!confirmDialog) return;
-          setConfirmLoading(true);
-          try {
-            await confirmDialog.onConfirm();
-          } finally {
-            setConfirmLoading(false);
-            setConfirmDialog(null);
-          }
-        }}
-      />
-    </div>
+    </>
   );
 };

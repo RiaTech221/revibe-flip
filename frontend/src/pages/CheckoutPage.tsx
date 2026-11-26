@@ -51,6 +51,7 @@ export const CheckoutPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [processingOrder, setProcessingOrder] = useState(false);
+  const [pendingOrderId, setPendingOrderId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -134,20 +135,23 @@ export const CheckoutPage: React.FC = () => {
     setProcessingOrder(true);
 
     try {
-      const orderRes = await orderApi.create({
-        productId: product.id,
-        deliveryMode,
-        deliveryAddress: deliveryMode === 'HOME_DELIVERY' ? deliveryAddress : 'Remise en main propre convenue',
-        deliveryCity,
-        deliveryPhone,
-        deliveryNotes,
-      });
-
-      const order = orderRes.data.data;
+      let orderId = pendingOrderId;
+      if (!orderId) {
+        const orderRes = await orderApi.create({
+          productId: product.id,
+          deliveryMode,
+          deliveryAddress: deliveryMode === 'HOME_DELIVERY' ? deliveryAddress : 'Remise en main propre convenue',
+          deliveryCity,
+          deliveryPhone,
+          deliveryNotes,
+        });
+        orderId = orderRes.data.data.id;
+        setPendingOrderId(orderId);
+      }
 
       // Initialisation du paiement PayTech côté serveur
       const payRes = await paymentApi.initiate({
-        orderId: order.id,
+        orderId,
         paymentMethod: selectedPaymentMethod,
         phoneNumber: paymentPhone || deliveryPhone,
       });
@@ -162,11 +166,12 @@ export const CheckoutPage: React.FC = () => {
 
       const redirectUrl = payRes.data?.data?.redirectUrl;
       if (redirectUrl && redirectUrl.startsWith('https://')) {
+        sessionStorage.setItem('revibe_pending_payment_order_id', String(orderId));
         window.location.href = redirectUrl;
         return;
       }
 
-      navigate(`/orders/${order.id}`);
+      navigate(`/orders/${orderId}`);
     } catch (err: any) {
       setError(err.response?.data?.message || "Impossible d'initier le paiement. Veuillez réessayer.");
     } finally {

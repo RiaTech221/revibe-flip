@@ -142,11 +142,11 @@ export const OrderDetailPage: React.FC = () => {
       {/* Retour et En-tête */}
       <div className="flex items-center justify-between">
         <Link
-          to="/profile"
+          to={isBuyer ? '/profile' : '/seller?tab=finances'}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-purple-700 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Mes commandes</span>
+          <span>{isBuyer ? 'Mes commandes' : 'Espace vendeur'}</span>
         </Link>
         <div className="flex items-center gap-2 text-xs">
           <span className="font-bold text-gray-500">Commande :</span>

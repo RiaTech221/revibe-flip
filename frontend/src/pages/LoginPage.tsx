@@ -59,7 +59,11 @@ export const LoginPage: React.FC = () => {
         navigate(`/verify-otp?phone=${encodeURIComponent(identifier)}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Identifiants invalides. Veuillez réessayer.');
+      if (!err.response || err.code === 'ERR_NETWORK') {
+        setError('Impossible de joindre le serveur backend (http://localhost:8080). Assurez-vous que le backend Spring Boot est bien démarré (cd backend ; .\\mvnw.cmd spring-boot:run).');
+      } else {
+        setError(err.response?.data?.message || 'Identifiants invalides. Veuillez réessayer.');
+      }
     } finally {
       setLoading(false);
     }

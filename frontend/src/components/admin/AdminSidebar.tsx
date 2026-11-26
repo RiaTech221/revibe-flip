@@ -21,6 +21,7 @@ import {
   LogOut,
   Menu,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { AdminDashboard, User, AdminPermission } from '../../types';
 import { Logo } from '../Logo';
@@ -44,6 +45,7 @@ interface AdminSidebarProps {
   dashboard: AdminDashboard | null;
   currentUser: User | null;
   onLogout: () => void;
+  onSwitchToSimplified?: () => void;
 }
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
@@ -52,6 +54,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   dashboard,
   currentUser,
   onLogout,
+  onSwitchToSimplified,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -199,7 +202,26 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   );
 
   const renderProfileFooter = () => (
-    <div className="pt-5 border-t border-gray-150">
+    <div className="pt-4 border-t border-gray-150 space-y-3">
+      {onSwitchToSimplified && (
+        <div className="p-3 rounded-2xl bg-gradient-to-r from-purple-50 via-pink-50 to-purple-50 border border-purple-200/80 shadow-xs">
+          <div className="flex items-center gap-1.5 text-purple-900 font-bold text-xs mb-1">
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span>Mode Maintenancier actif</span>
+          </div>
+          <p className="text-[11px] text-gray-500 mb-2 leading-tight">
+            Revenir à l'interface simple et reverrouiller l'accès technique.
+          </p>
+          <button
+            type="button"
+            onClick={onSwitchToSimplified}
+            className="w-full py-2 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-black text-xs transition-all shadow-sm shadow-purple-700/20 cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <span>Revenir au Mode Simplifié ✨</span>
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-700 font-black text-sm flex items-center justify-center shrink-0 border border-purple-200">

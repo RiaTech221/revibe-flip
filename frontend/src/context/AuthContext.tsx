@@ -102,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     sessionStorage.setItem('revibe_logged_out', '1');
+    sessionStorage.removeItem('revibe_admin_dev_unlocked');
     setAccessToken(null);
     setToken(null);
     setUser(null);

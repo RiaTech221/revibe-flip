@@ -6,3 +6,5 @@
 
 export * from './UserProfileHeader';
 export * from './ProfileMenuItem';
+export * from './TransactionRowCard';
+export * from './TransactionsSection';

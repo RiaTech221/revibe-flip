@@ -7,7 +7,7 @@
  *  * - Bouton de déconnexion sécurisée
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -16,15 +16,14 @@ import {
   SafeAreaView,
   TouchableOpacity,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
-import { UserProfileHeader, ProfileMenuItem } from '../components/profile';
+import { UserProfileHeader, ProfileMenuItem, TransactionsSection } from '../components/profile';
 import { useAuth } from '../context/AuthContext';
 import {
-  Package,
   Heart,
-  ShieldCheck,
   CreditCard,
   Settings,
   HelpCircle,
@@ -34,6 +33,14 @@ import {
 
 export const ProfileScreen = ({ navigation }: any) => {
   const { user, isAuthenticated, logout } = useAuth();
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    setRefreshKey((k) => k + 1);
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   const handleLogout = () => {
     Alert.alert('Déconnexion', 'Êtes-vous sûr de vouloir vous déconnecter ?', [
@@ -77,23 +84,28 @@ export const ProfileScreen = ({ navigation }: any) => {
     <SafeAreaView style={styles.safeArea}>
       <Header title="Mon Profil" />
 
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+          />
+        }
+      >
         {/* User Profile Header Subcomponent */}
         <UserProfileHeader user={user} />
 
-        {/* Menu Section: Transactions */}
-        <Text style={styles.sectionTitle}>Mes Transactions</Text>
-        <ProfileMenuItem
-          icon={<Package size={20} color={colors.primary} />}
-          label="Mes Commandes & Achats"
-          onPress={() => navigation.navigate('Messages')}
+        {/* Section dédiée : Mes commandes / Mes transactions (Acheteur & Vendeur) */}
+        <TransactionsSection
+          navigation={navigation}
+          mode="both"
+          refreshKey={refreshKey}
         />
-        <ProfileMenuItem
-          icon={<ShieldCheck size={20} color={colors.success} />}
-          label="Paiements sous Séquestre"
-          badge="Sécurisé"
-          onPress={() => navigation.navigate('Messages')}
-        />
+
+        <Text style={styles.sectionTitle}>Favoris</Text>
         <ProfileMenuItem
           icon={<Heart size={20} color="#EC4899" />}
           label="Mes Favoris"
