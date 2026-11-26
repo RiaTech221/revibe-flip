@@ -8,7 +8,7 @@
  *  * - Validation des champs et soumission vers l'API
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -19,30 +19,35 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Category, ProductCondition } from '../types';
+import * as ImagePicker from 'expo-image-picker';
+import { Category, Product, ProductCondition } from '../types';
 import { colors } from '../theme/colors';
 import { Header } from '../components/common/Header';
+import { ImageWithFallback } from '../components/common/ImageWithFallback';
 import {
   CommissionCalculatorCard,
   ConditionSelector,
   CategoryPicker,
 } from '../components/sell';
-import { productService, sellerService, SellerEligibility } from '../services';
-import { AlertCircle, Camera, CheckCircle, MapPin, RefreshCw, Store } from 'lucide-react-native';
+import { productService, sellerService, uploadService, SellerEligibility } from '../services';
+import { AlertCircle, Camera, CheckCircle, MapPin, RefreshCw, Store, X } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
+
+type ListingImage = { uri: string; asset?: ImagePicker.ImagePickerAsset };
 
 export const SellScreen = ({ navigation, route }: any) => {
   const { isAuthenticated, user, token, login } = useAuth();
   const openedFromSellerSpace = route?.params?.skipSellerSpaceRedirect === true;
+  const editingProduct: Product | undefined = route?.params?.product || route?.params?.editProduct;
 
   const [eligibility, setEligibility] = useState<SellerEligibility | null>(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(true);
   const [eligibilityError, setEligibilityError] = useState('');
   const [eligibilityRetry, setEligibilityRetry] = useState(0);
   const [profileSaving, setProfileSaving] = useState(false);
-  const hasOpenedSellerSpace = useRef(false);
   const [firstName, setFirstName] = useState(user?.firstName || '');
   const [lastName, setLastName] = useState(user?.lastName || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -58,7 +63,8 @@ export const SellScreen = ({ navigation, route }: any) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [condition, setCondition] = useState<ProductCondition>('VERY_GOOD');
   const [categories, setCategories] = useState<Category[]>([]);
-  const [imageUrl, setImageUrl] = useState('');
+  const [selectedImages, setSelectedImages] = useState<ListingImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useFocusEffect(
@@ -72,19 +78,15 @@ export const SellScreen = ({ navigation, route }: any) => {
       setEligibilityLoading(true);
       setEligibilityError('');
       setEligibility(null);
-      if (openedFromSellerSpace) hasOpenedSellerSpace.current = true;
-
       sellerService
         .getEligibility()
         .then((result) => {
           if (!active) return;
           setEligibility(result);
-          const sellerAccess = result.eligible || result.alreadySeller;
-          navigation.setOptions({ tabBarLabel: sellerAccess ? 'Vendre' : 'Vendeur' });
-
-          if (sellerAccess && !hasOpenedSellerSpace.current) {
-            hasOpenedSellerSpace.current = true;
-            navigation.navigate('SellerSpace', { eligible: result.eligible });
+          if (!editingProduct) {
+            navigation.setOptions({
+              tabBarLabel: result.eligible ? 'Vendre' : result.alreadySeller ? 'Compléter' : 'Vendeur',
+            });
           }
         })
         .catch((err: any) => {
@@ -98,7 +100,7 @@ export const SellScreen = ({ navigation, route }: any) => {
       return () => {
         active = false;
       };
-    }, [eligibilityRetry, isAuthenticated, navigation, openedFromSellerSpace]),
+    }, [eligibilityRetry, editingProduct?.id, isAuthenticated, navigation, openedFromSellerSpace]),
   );
 
   useEffect(() => {
@@ -111,7 +113,89 @@ export const SellScreen = ({ navigation, route }: any) => {
       .catch((err) => console.warn('Error loading categories', err));
   }, []);
 
+  useEffect(() => {
+    if (editingProduct) {
+      setTitle(editingProduct.title);
+      setDescription(editingProduct.description || '');
+      setPriceStr(String(editingProduct.price));
+      setBrand(editingProduct.brand || '');
+      setSize(editingProduct.size || '');
+      setCity(editingProduct.locationCity || user?.city || 'Dakar');
+      setSelectedCategoryId(editingProduct.categoryId || editingProduct.category?.id || null);
+      setCondition(editingProduct.condition);
+      const imageUrls = editingProduct.images?.length
+        ? editingProduct.images
+        : editingProduct.primaryImage
+          ? [editingProduct.primaryImage]
+          : [];
+      setSelectedImages(imageUrls.map((uri) => ({ uri })));
+      return;
+    }
+
+    if (openedFromSellerSpace) {
+      setTitle('');
+      setDescription('');
+      setPriceStr('');
+      setBrand('');
+      setSize('');
+      setCity(user?.city || 'Dakar');
+      setCondition('VERY_GOOD');
+      setSelectedCategoryId(null);
+      setSelectedImages([]);
+    }
+  }, [editingProduct?.id, openedFromSellerSpace, route?.params?.formSessionId, user?.city]);
+
   const price = parseFloat(priceStr) || 0;
+  const maxPhotos = 5;
+
+  const handlePickImages = async () => {
+    const remainingSlots = maxPhotos - selectedImages.length;
+    if (remainingSlots <= 0) {
+      Alert.alert('Limite atteinte', `Vous pouvez ajouter jusqu’à ${maxPhotos} photos.`);
+      return;
+    }
+
+    setUploadingImages(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert(
+          'Accès aux photos refusé',
+          'Autorisez ReVibe FliP à accéder à vos photos dans les réglages pour ajouter des images à votre article.',
+          permission.canAskAgain
+            ? [{ text: 'Compris', style: 'cancel' }]
+            : [
+                { text: 'Annuler', style: 'cancel' },
+                { text: 'Réglages', onPress: () => Linking.openSettings() },
+              ],
+        );
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: true,
+        selectionLimit: remainingSlots,
+        quality: 0.8,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      });
+
+      if (!result.canceled) {
+        setSelectedImages((current) => [
+          ...current,
+          ...result.assets.map((asset) => ({ uri: asset.uri, asset })),
+        ].slice(0, maxPhotos));
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message || 'Impossible d’ouvrir votre galerie.');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleRemoveImage = (uri: string) => {
+    setSelectedImages((current) => current.filter((image) => image.uri !== uri));
+  };
 
   const handleProfileSave = async () => {
     if (firstName.trim().length < 2 || lastName.trim().length < 2 || profileCity.trim().length < 2 || address.trim().length < 5) {
@@ -149,10 +233,11 @@ export const SellScreen = ({ navigation, route }: any) => {
 
       const result = await sellerService.getEligibility();
       setEligibility(result);
-      navigation.setOptions({ tabBarLabel: result.eligible || result.alreadySeller ? 'Vendre' : 'Vendeur' });
+      navigation.setOptions({
+        tabBarLabel: result.eligible ? 'Vendre' : result.alreadySeller ? 'Compléter' : 'Vendeur',
+      });
 
       if (result.eligible) {
-        hasOpenedSellerSpace.current = true;
         navigation.navigate('SellerSpace', { eligible: result.eligible });
       } else {
         const details = [
@@ -168,9 +253,7 @@ export const SellScreen = ({ navigation, route }: any) => {
     }
   };
 
-  const showSellerOnboarding = Boolean(
-    eligibility && !eligibility.eligible && (!eligibility.alreadySeller || hasOpenedSellerSpace.current),
-  );
+  const showSellerOnboarding = Boolean(eligibility && !eligibility.eligible && !editingProduct);
 
   if (!isAuthenticated) {
     return (
@@ -297,9 +380,48 @@ export const SellScreen = ({ navigation, route }: any) => {
       Alert.alert('Champs requis', 'Veuillez renseigner un titre, un prix et une catégorie.');
       return;
     }
+    if (editingProduct && description.trim().length < 10) {
+      Alert.alert('Description trop courte', 'La description doit contenir au moins 10 caractères.');
+      return;
+    }
+    if (editingProduct && selectedImages.length === 0) {
+      Alert.alert('Photo obligatoire', 'Conservez ou ajoutez au moins une photo pour cette annonce.');
+      return;
+    }
 
     setLoading(true);
     try {
+      const imageUrls: string[] = [];
+      if (selectedImages.length > 0) {
+        setUploadingImages(true);
+        for (const image of selectedImages) {
+          imageUrls.push(image.asset ? await uploadService.uploadProductImage(image.asset) : image.uri);
+        }
+      }
+
+      if (editingProduct) {
+        await sellerService.updateProduct(editingProduct.id, {
+          title: title.trim(),
+          description: description.trim(),
+          price,
+          originalPrice: editingProduct.originalPrice,
+          categoryId: selectedCategoryId,
+          condition,
+          brand: brand.trim() || undefined,
+          size: size.trim() || undefined,
+          color: editingProduct.color,
+          defects: editingProduct.defects,
+          measurements: editingProduct.measurements,
+          locationCity: city,
+          images: imageUrls,
+          isDraft: editingProduct.status === 'DRAFT',
+        });
+        Alert.alert('Annonce modifiée', 'Les changements ont été enregistrés.', [
+          { text: 'Terminé', onPress: () => navigation.goBack() },
+        ]);
+        return;
+      }
+
       const created = await productService.createProduct({
         title: title.trim(),
         description: description.trim(),
@@ -308,42 +430,90 @@ export const SellScreen = ({ navigation, route }: any) => {
         condition,
         brand: brand.trim() || undefined,
         size: size.trim() || undefined,
-        city,
-        images: imageUrl.trim() ? [imageUrl.trim()] : undefined,
+        locationCity: city,
+        imageUrls: imageUrls.length ? imageUrls : undefined,
       });
 
       Alert.alert('Succès !', 'Votre annonce a été publiée avec succès.', [
         {
           text: 'Voir mon article',
           onPress: () => {
-            navigation.navigate('ProductDetail', { productId: created.id });
+            navigation.navigate('ProductDetail', { id: created.id });
           },
         },
       ]);
     } catch (err: any) {
-      Alert.alert('Erreur', err.response?.data?.message || 'Impossible de créer votre annonce.');
+      const responseData = err.response?.data;
+      const validationMessages = responseData?.data && typeof responseData.data === 'object'
+        ? Object.values(responseData.data).filter((message): message is string => typeof message === 'string')
+        : [];
+      const message = validationMessages.length
+        ? validationMessages.join('\n')
+        : responseData?.message || err.message || (editingProduct
+          ? 'Impossible d’enregistrer les modifications.'
+          : 'Impossible de créer votre annonce.');
+      const trackingId = responseData?.trackingId;
+      Alert.alert(
+        'Erreur',
+        trackingId ? `${message}\n\nRéférence : ${trackingId}` : message,
+      );
     } finally {
+      setUploadingImages(false);
       setLoading(false);
     }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Header title="Déposer une annonce" />
+      <Header
+        title={editingProduct ? 'Modifier l’annonce' : 'Déposer une annonce'}
+        showBack={!!editingProduct}
+        onBack={() => navigation.goBack()}
+      />
 
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* Photo Box */}
-        <TouchableOpacity
-          style={styles.photoBox}
-          onPress={() =>
-            Alert.alert('Téléversement photo', 'Sélectionnez une photo depuis votre galerie via le sélecteur de média.')
-          }
-        >
-          <Camera size={28} color={colors.primary} />
-          <Text style={styles.photoText}>
-            {imageUrl ? 'Photo ajoutée avec succès ✓' : 'Ajouter des photos du vêtement'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.photoSection}>
+          <View style={styles.photoSectionHeader}>
+            <Text style={styles.photoSectionTitle}>Photos de l’article</Text>
+            <Text style={styles.photoCount}>{selectedImages.length}/{maxPhotos}</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.photoBox, (uploadingImages || loading) && styles.btnDisabled]}
+            onPress={handlePickImages}
+            disabled={uploadingImages || loading}
+            activeOpacity={0.8}
+          >
+            {uploadingImages ? <ActivityIndicator color={colors.primary} /> : <Camera size={26} color={colors.primary} />}
+            <Text style={styles.photoText}>
+              {uploadingImages ? 'Préparation des photos…' : 'Ouvrir la galerie'}
+            </Text>
+            <Text style={styles.photoHint}>JPEG, PNG ou WebP • jusqu’à 5 photos</Text>
+          </TouchableOpacity>
+
+          {selectedImages.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.photoPreviewList}>
+              {selectedImages.map((image, index) => (
+                <View key={`${image.uri}-${index}`} style={styles.photoPreviewWrap}>
+                  <ImageWithFallback uri={image.uri} label={title} style={styles.photoPreview} />
+                  {index === 0 && (
+                    <View style={styles.primaryPhotoBadge}>
+                      <Text style={styles.primaryPhotoText}>Principale</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    style={styles.removePhotoButton}
+                    onPress={() => handleRemoveImage(image.uri)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Retirer la photo ${index + 1}`}
+                  >
+                    <X size={15} color={colors.white} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+        </View>
 
         {/* Form Fields */}
         <View style={styles.inputCard}>
@@ -425,7 +595,9 @@ export const SellScreen = ({ navigation, route }: any) => {
         >
           <CheckCircle size={20} color="#ffffff" />
           <Text style={styles.submitButtonText}>
-            {loading ? 'Publication...' : 'Mettre en vente avec Séquestre'}
+            {loading
+              ? (uploadingImages ? 'Envoi des photos…' : editingProduct ? 'Enregistrement…' : 'Publication…')
+              : editingProduct ? 'Enregistrer les modifications' : 'Mettre en vente avec Séquestre'}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -540,10 +712,46 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
+  photoSection: { marginBottom: 8 },
+  photoSectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  photoSectionTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '800' },
+  photoCount: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   photoText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
+  },
+  photoHint: { color: colors.textSecondary, fontSize: 11 },
+  photoPreviewList: { gap: 10, paddingBottom: 14, paddingTop: 2 },
+  photoPreviewWrap: { height: 88, position: 'relative', width: 88 },
+  photoPreview: { backgroundColor: colors.borderLight, borderRadius: 12, height: 88, width: 88 },
+  primaryPhotoBadge: {
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+    borderRadius: 7,
+    bottom: 5,
+    left: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    position: 'absolute',
+  },
+  primaryPhotoText: { color: colors.white, fontSize: 9, fontWeight: '700' },
+  removePhotoButton: {
+    alignItems: 'center',
+    backgroundColor: colors.danger,
+    borderColor: colors.white,
+    borderRadius: 13,
+    borderWidth: 2,
+    height: 26,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: -5,
+    top: -5,
+    width: 26,
   },
   inputCard: {
     backgroundColor: colors.surface,

@@ -329,6 +329,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setMustChangePassword(false);
         User saved = userRepository.save(user);
+        refreshTokenService.revokeAllForUser(saved);
         return UserDto.fromEntity(saved);
     }
 
@@ -404,7 +405,7 @@ public class AuthService {
                 .build();
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = {IllegalArgumentException.class, IllegalStateException.class})
     public AuthResponse refreshToken(String rawRefreshToken) {
         RefreshTokenService.RotationResult rotated = refreshTokenService.rotateRefreshToken(rawRefreshToken);
         User user = rotated.user();

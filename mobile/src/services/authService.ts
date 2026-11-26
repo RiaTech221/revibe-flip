@@ -32,6 +32,7 @@ export interface RegisterPayload {
 
 export interface AuthResponse {
   token: string;
+  refreshToken?: string;
   user: User;
 }
 
@@ -58,6 +59,10 @@ export const authService = {
 
   resendOtp: async (phone: string): Promise<void> => {
     await api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`);
+  },
+
+  logout: async (refreshToken?: string | null): Promise<void> => {
+    await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
   },
 
   getProfile: async (): Promise<User> => {

@@ -41,6 +41,7 @@ public class AdminCmsController {
     private final ContentSettingService contentSettingService;
     private final ContactService contactService;
     private final MediaAssetService mediaAssetService;
+    private final AdminService adminService;
 
     // --- 1. GESTION DES PAGES ---
 
@@ -273,8 +274,13 @@ public class AdminCmsController {
 
     @Operation(summary = "Supprimer un média")
     @DeleteMapping("/media/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteMedia(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<Void>> deleteMedia(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User admin
+    ) {
         mediaAssetService.adminDeleteMediaAsset(id);
+        adminService.logAdminAction(admin, "CMS_MEDIA_DELETE", "MEDIA_ASSET", String.valueOf(id),
+                "Suppression du média CMS #" + id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Média supprimé avec succès."));
     }
 }

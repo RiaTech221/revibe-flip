@@ -8,6 +8,14 @@
     "userInterfaceStyle": "light",
     "plugins": [
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "ReVibe FliP a besoin d’accéder à vos photos pour illustrer vos articles.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/logo.png",

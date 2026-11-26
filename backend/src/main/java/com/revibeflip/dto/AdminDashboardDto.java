@@ -16,7 +16,7 @@ import java.util.Map;
  * Agrégé selon le fuseau horaire Africa/Dakar (UTC+0).
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class AdminDashboardDto {

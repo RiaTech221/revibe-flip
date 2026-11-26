@@ -10,3 +10,4 @@ export * from './orderService';
 export * from './chatService';
 export * from './paymentService';
 export * from './sellerService';
+export * from './uploadService';

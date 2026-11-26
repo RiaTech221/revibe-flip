@@ -21,6 +21,7 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'X-Client-Type': 'mobile',
   },
   timeout: 10000,
 });
@@ -35,6 +36,8 @@ export const setAuthToken = (token: string | null) => {
 export const setRefreshToken = (token: string | null) => {
   refreshTokenValue = token;
 };
+
+export const getRefreshToken = (): string | null => refreshTokenValue;
 
 api.interceptors.request.use((config) => {
   if (authToken) {
@@ -63,9 +66,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest?._retry && refreshTokenValue) {
       originalRequest._retry = true;
       try {
-        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-          refreshToken: refreshTokenValue,
-        });
+        const res = await axios.post(
+          `${API_BASE_URL}/auth/refresh`,
+          { refreshToken: refreshTokenValue },
+          { headers: { 'Content-Type': 'application/json', 'X-Client-Type': 'mobile' } }
+        );
         const newToken = res.data?.data?.token;
         const nextRefresh = res.data?.data?.refreshToken;
         if (newToken) {

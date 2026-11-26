@@ -8,32 +8,43 @@
  *  * - Barre d'actions inférieure : bouton "Acheter maintenant" et "Négocier / Faire une offre"
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { Product } from '../types';
 import { colors, formatPrice } from '../theme/colors';
 import { Header } from '../components/common/Header';
 import { EscrowBadge } from '../components/common/EscrowBadge';
+import { ImageWithFallback } from '../components/common/ImageWithFallback';
 import { productService } from '../services';
 import { useFavorites } from '../context/FavoritesContext';
 import { Heart, MessageCircle, ShoppingBag, ShieldCheck, MapPin } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
+const CONDITION_LABELS: Record<string, string> = {
+  NEW_WITH_TAG: 'Neuf avec étiquette',
+  NEW_WITHOUT_TAG: 'Neuf sans étiquette',
+  VERY_GOOD: 'Très bon état',
+  GOOD: 'Bon état',
+  FAIR: 'État satisfaisant',
+  SATISFACTORY: 'État satisfaisant',
+};
 
 export const ProductDetailScreen = ({ route, navigation }: any) => {
   const productId = route.params.productId || route.params.id;
   const [product, setProduct] = useState<Product | null>(route.params.product || null);
   const [loading, setLoading] = useState(!route.params.product);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const galleryRef = useRef<ScrollViewInstance | null>(null);
   const { isFavorite, toggleFavorite } = useFavorites();
   const isLiked = product ? isFavorite(product.id) : false;
 
@@ -49,6 +60,10 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
     }
   }, [productId]);
 
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [product?.id]);
+
   if (loading || !product) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -60,9 +75,10 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
     );
   }
 
-  const imageUrl =
-    product.primaryImage ||
-    (product.images && product.images.length > 0 ? product.images[0] : null);
+  const productImages = [
+    ...(product.primaryImage ? [product.primaryImage] : []),
+    ...(product.images || []).filter((image) => image !== product.primaryImage),
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -82,12 +98,58 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Main Product Image */}
-        <Image
-          source={imageUrl ? { uri: imageUrl } : require('../../assets/logo.png')}
-          style={styles.image}
-          resizeMode="cover"
-        />
+        {/* Galerie produit : balayage et miniatures comme sur le web */}
+        <View style={styles.galleryContainer}>
+          <ScrollView
+            ref={galleryRef}
+            horizontal
+            pagingEnabled
+            decelerationRate="fast"
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              setActiveImageIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+            }}
+          >
+            {productImages.length > 0 ? productImages.map((image, index) => (
+              <ImageWithFallback
+                key={`${image}-${index}`}
+                uri={image}
+                label={product.title}
+                style={styles.image}
+              />
+            )) : (
+              <ImageWithFallback label={product.title} style={styles.image} />
+            )}
+          </ScrollView>
+          {productImages.length > 1 && (
+            <View style={styles.imageCountBadge}>
+              <Text style={styles.imageCountText}>{activeImageIndex + 1}/{productImages.length}</Text>
+            </View>
+          )}
+        </View>
+
+        {productImages.length > 1 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.thumbnailList}
+          >
+            {productImages.map((image, index) => (
+              <TouchableOpacity
+                key={`${image}-thumb-${index}`}
+                onPress={() => {
+                  galleryRef.current?.scrollTo({ x: index * width, animated: true });
+                  setActiveImageIndex(index);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Afficher la photo ${index + 1}`}
+                style={[styles.thumbnailButton, index === activeImageIndex && styles.thumbnailSelected]}
+              >
+                <ImageWithFallback uri={image} label={product.title} style={styles.thumbnailImage} />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         <View style={styles.content}>
           {/* Price & Escrow Badge */}
@@ -111,7 +173,9 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
               </View>
             )}
             <View style={styles.tag}>
-              <Text style={styles.tagText}>{product.condition}</Text>
+              <Text style={styles.tagText}>
+                {product.conditionLabel || CONDITION_LABELS[product.condition] || product.condition}
+              </Text>
             </View>
           </View>
 
@@ -128,7 +192,7 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
               </Text>
               <View style={styles.locationRow}>
                 <MapPin size={12} color={colors.textSecondary} />
-                <Text style={styles.sellerCity}>{product.city || 'Dakar, Sénégal'}</Text>
+                <Text style={styles.sellerCity}>{product.locationCity || product.city || 'Dakar, Sénégal'}</Text>
               </View>
             </View>
           </View>
@@ -163,16 +227,20 @@ export const ProductDetailScreen = ({ route, navigation }: any) => {
             })
           }
         >
-          <MessageCircle size={20} color={colors.primary} />
-          <Text style={styles.chatBtnText}>Discuter avec le vendeur</Text>
+          <MessageCircle size={18} color={colors.primary} style={styles.actionIcon} />
+          <Text style={styles.chatBtnText} allowFontScaling={false} numberOfLines={1}>
+            Discuter
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.buyBtn}
           onPress={() => navigation.navigate('Checkout', { product })}
         >
-          <ShoppingBag size={20} color="#ffffff" />
-          <Text style={styles.buyBtnText}>Acheter (Paiement protégé)</Text>
+          <ShoppingBag size={18} color="#ffffff" style={styles.actionIcon} />
+          <Text style={styles.buyBtnText} allowFontScaling={false} numberOfLines={1}>
+            Acheter protégé
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -197,6 +265,29 @@ const styles = StyleSheet.create({
     height: width * 0.9,
     backgroundColor: colors.surface,
   },
+  galleryContainer: { position: 'relative' },
+  imageCountBadge: {
+    position: 'absolute',
+    right: 14,
+    bottom: 14,
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderRadius: 14,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+  },
+  imageCountText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  thumbnailList: { gap: 10, paddingHorizontal: 16, paddingVertical: 12 },
+  thumbnailButton: {
+    width: 62,
+    height: 62,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    opacity: 0.72,
+  },
+  thumbnailSelected: { borderColor: colors.primary, opacity: 1 },
+  thumbnailImage: { width: '100%', height: '100%', backgroundColor: colors.surface },
   likeBtn: {
     padding: 6,
   },
@@ -321,7 +412,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    gap: 12,
+    gap: 8,
   },
   chatBtn: {
     flex: 1,
@@ -332,15 +423,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: '#EEF2FF',
-    gap: 8,
+    gap: 6,
   },
   chatBtnText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.primary,
   },
+  actionIcon: {
+    flexShrink: 0,
+  },
   buyBtn: {
-    flex: 1.5,
+    flex: 1,
     minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
@@ -348,15 +442,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: colors.primary,
-    gap: 8,
+    gap: 6,
   },
   buyBtnText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '700',
     color: '#ffffff',
-    flexShrink: 1,
-    minWidth: 0,
-    textAlign: 'center',
   },
 });
 

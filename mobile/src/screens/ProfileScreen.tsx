@@ -30,7 +30,9 @@ import {
   HelpCircle,
   LogOut,
   User,
+  Store,
 } from 'lucide-react-native';
+import { sellerService } from '../services';
 
 export const ProfileScreen = ({ navigation }: any) => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -47,6 +49,19 @@ export const ProfileScreen = ({ navigation }: any) => {
         },
       },
     ]);
+  };
+
+  const openSellerSpace = async () => {
+    try {
+      const eligibility = await sellerService.getEligibility();
+      if (eligibility.eligible || eligibility.alreadySeller) {
+        navigation.navigate('SellerSpace', { eligible: eligibility.eligible });
+      } else {
+        navigation.navigate('MainTabs', { screen: 'Vendre' });
+      }
+    } catch (err: any) {
+      Alert.alert('Erreur', err.response?.data?.message || 'Impossible d’ouvrir votre espace vendeur.');
+    }
   };
 
   if (!isAuthenticated) {
@@ -80,6 +95,13 @@ export const ProfileScreen = ({ navigation }: any) => {
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         {/* User Profile Header Subcomponent */}
         <UserProfileHeader user={user} />
+
+        <Text style={styles.sectionTitle}>Vente</Text>
+        <ProfileMenuItem
+          icon={<Store size={20} color={colors.primary} />}
+          label="Espace vendeur"
+          onPress={openSellerSpace}
+        />
 
         {/* Menu Section: Transactions */}
         <Text style={styles.sectionTitle}>Mes Transactions</Text>

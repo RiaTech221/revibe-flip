@@ -62,9 +62,10 @@ public class AdminController {
             @Parameter(description = "Date de début personnalisée au format YYYY-MM-DD (requis si period=custom)", example = "2026-10-01")
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
             @Parameter(description = "Date de fin personnalisée au format YYYY-MM-DD (requis si period=custom)", example = "2026-10-31")
-            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to,
+            @AuthenticationPrincipal User actor
     ) {
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getDashboardStats(period, from, to)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getDashboardStats(period, from, to, actor)));
     }
 
     // ==========================================
@@ -85,12 +86,13 @@ public class AdminController {
             @Parameter(description = "Numéro de page (0-indexé)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Nombre d'éléments par page") @RequestParam(defaultValue = "15") int size,
             @Parameter(description = "Champ de tri") @RequestParam(required = false) String sortBy,
-            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir
+            @Parameter(description = "Direction du tri (asc/desc)") @RequestParam(required = false) String sortDir,
+            @AuthenticationPrincipal User actor
     ) {
         Pageable pageable = PaginationValidator.validateAndCreate(
                 page, size, sortBy, sortDir, PaginationValidator.USER_SORT_FIELDS, "createdAt", Sort.Direction.DESC
         );
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchUsersPage(query, role, isSuspended, pageable)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.searchUsersPage(query, role, isSuspended, pageable, actor)));
     }
 
     @GetMapping("/users/{id}")
@@ -103,9 +105,10 @@ public class AdminController {
             @ApiResponse(responseCode = "404", description = "Utilisateur introuvable")
     })
     public ResponseEntity<com.revibeflip.dto.ApiResponse<AdminUserDetailDto>> getUserDetails(
-            @Parameter(description = "ID unique de l'utilisateur") @PathVariable Long id
+            @Parameter(description = "ID unique de l'utilisateur") @PathVariable Long id,
+            @AuthenticationPrincipal User actor
     ) {
-        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getUserDetails(id)));
+        return ResponseEntity.ok(com.revibeflip.dto.ApiResponse.ok(adminService.getUserDetails(id, actor)));
     }
 
     @PutMapping("/users/{id}/suspend")

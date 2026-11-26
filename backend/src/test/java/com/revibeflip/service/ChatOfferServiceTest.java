@@ -208,7 +208,8 @@ class ChatOfferServiceTest {
                 .status(OfferStatus.OFFER_SENT)
                 .build();
 
-        when(chatOfferRepository.findById(501L)).thenReturn(Optional.of(offer));
+        when(chatOfferRepository.findByIdForUpdate(501L)).thenReturn(Optional.of(offer));
+        when(productRepository.reserveProductIfActive(100L)).thenReturn(1);
         when(orderRepository.save(any(Order.class))).thenAnswer(i -> {
             Order o = i.getArgument(0);
             o.setId(777L);
@@ -220,7 +221,7 @@ class ChatOfferServiceTest {
 
         assertThat(result.getStatus()).isEqualTo(OfferStatus.OFFER_ACCEPTED);
         assertThat(product.getStatus()).isEqualTo(ProductStatus.RESERVED);
-        verify(productRepository).save(product);
+        verify(productRepository).reserveProductIfActive(100L);
         verify(orderRepository).save(argThat(o -> 
             o.getItemPrice().compareTo(BigDecimal.valueOf(30000)) == 0 &&
             o.getAgreedPrice().compareTo(BigDecimal.valueOf(30000)) == 0 &&
@@ -241,7 +242,7 @@ class ChatOfferServiceTest {
                 .expiresAt(LocalDateTime.now().plusHours(24))
                 .build();
 
-        when(chatOfferRepository.findById(502L)).thenReturn(Optional.of(offer));
+        when(chatOfferRepository.findByIdForUpdate(502L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> chatOfferService.acceptOffer(buyer, 502L))
                 .isInstanceOf(IllegalStateException.class)
@@ -263,7 +264,7 @@ class ChatOfferServiceTest {
                 .expiresAt(LocalDateTime.now().minusHours(1)) // Déjà expirée !
                 .build();
 
-        when(chatOfferRepository.findById(503L)).thenReturn(Optional.of(offer));
+        when(chatOfferRepository.findByIdForUpdate(503L)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> chatOfferService.acceptOffer(buyer, 503L))
                 .isInstanceOf(IllegalStateException.class)
