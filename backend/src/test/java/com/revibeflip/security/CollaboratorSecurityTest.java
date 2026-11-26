@@ -379,7 +379,7 @@ class CollaboratorSecurityTest {
         CreateCollaboratorRequest createReq = CreateCollaboratorRequest.builder()
                 .firstName("Bad")
                 .lastName("Email")
-                .phone("+22177" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177"))
                 .email("pas-un-email-valide")
                 .permissions(Set.of(AdminPermission.DASHBOARD))
                 .build();
@@ -408,7 +408,7 @@ class CollaboratorSecurityTest {
 
     private User saveUser(Role role, Set<AdminPermission> perms, String label) {
         String salt = UUID.randomUUID().toString().substring(0, 8);
-        String phone = "+22177" + (1000000 + (int) (Math.random() * 8999999));
+        String phone = com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177");
         return userRepository.save(User.builder()
                 .phone(phone)
                 .email(label.toLowerCase() + "-" + salt + "@revibeflip.sn")
