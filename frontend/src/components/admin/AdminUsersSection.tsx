@@ -207,24 +207,42 @@ export const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({
                         </td>
                         <td className="p-4 font-mono font-bold text-gray-700">{u.phone}</td>
                         <td className="p-4">
-                          <button
-                            type="button"
-                            onClick={() => onUpdateRole(u.id, u.role as any)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-black transition-all cursor-pointer ${
-                              u.role === 'ROLE_ADMIN'
-                                ? 'bg-purple-700 text-white shadow-xs'
+                          {isAdmin ? (
+                            <button
+                              type="button"
+                              onClick={() => onUpdateRole(u.id, u.role as any)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-black transition-all cursor-pointer ${
+                                u.role === 'ROLE_ADMIN'
+                                  ? 'bg-purple-700 text-white shadow-xs'
+                                  : u.role === 'ROLE_COLLABORATOR'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-gray-100 text-gray-700 hover:bg-purple-100'
+                              }`}
+                              title="Cliquer pour changer le rôle"
+                            >
+                              {u.role === 'ROLE_ADMIN'
+                                ? 'ADMINISTRATEUR'
                                 : u.role === 'ROLE_COLLABORATOR'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-gray-100 text-gray-700 hover:bg-purple-100'
-                            }`}
-                            title="Cliquer pour changer le rôle"
-                          >
-                            {u.role === 'ROLE_ADMIN'
-                              ? 'ADMINISTRATEUR'
-                              : u.role === 'ROLE_COLLABORATOR'
-                              ? 'COLLABORATEUR'
-                              : 'UTILISATEUR'}
-                          </button>
+                                ? 'COLLABORATEUR'
+                                : 'UTILISATEUR'}
+                            </button>
+                          ) : (
+                            <span
+                              className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-black ${
+                                u.role === 'ROLE_ADMIN'
+                                  ? 'bg-purple-700 text-white shadow-xs'
+                                  : u.role === 'ROLE_COLLABORATOR'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}
+                            >
+                              {u.role === 'ROLE_ADMIN'
+                                ? 'ADMINISTRATEUR'
+                                : u.role === 'ROLE_COLLABORATOR'
+                                ? 'COLLABORATEUR'
+                                : 'UTILISATEUR'}
+                            </span>
+                          )}
                         </td>
                         <td className="p-4">
                           <span
@@ -239,18 +257,20 @@ export const AdminUsersSection: React.FC<AdminUsersSectionProps> = ({
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => onToggleSuspend(u.id, u.isSuspended)}
-                              className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all cursor-pointer ${
-                                u.isSuspended
-                                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-                              }`}
-                            >
-                              {u.isSuspended ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
-                              <span>{u.isSuspended ? 'Réactiver' : 'Suspendre'}</span>
-                            </button>
+                            {(isAdmin || u.role === 'ROLE_USER') && (
+                              <button
+                                type="button"
+                                onClick={() => onToggleSuspend(u.id, u.isSuspended)}
+                                className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1 transition-all cursor-pointer ${
+                                  u.isSuspended
+                                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                    : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                                }`}
+                              >
+                                {u.isSuspended ? <CheckCircle className="w-3.5 h-3.5" /> : <Ban className="w-3.5 h-3.5" />}
+                                <span>{u.isSuspended ? 'Réactiver' : 'Suspendre'}</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => onViewDetail(u.id)}

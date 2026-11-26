@@ -164,7 +164,7 @@ public class User implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
         authorities.add(new SimpleGrantedAuthority(role.name()));
-        if (adminPermissions != null) {
+        if (role == Role.ROLE_COLLABORATOR && adminPermissions != null) {
             for (AdminPermission perm : adminPermissions) {
                 authorities.add(new SimpleGrantedAuthority("PERMISSION_" + perm.name()));
             }
