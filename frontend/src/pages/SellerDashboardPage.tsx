@@ -31,6 +31,7 @@ import { SellerReviewsTab } from '../components/seller/SellerReviewsTab';
 import { SellerProfileTab } from '../components/seller/SellerProfileTab';
 import { SellerProductModal } from '../components/seller/SellerProductModal';
 import { ConfirmModal } from '../components/common/ConfirmModal';
+import { AlertTriangle, CheckCircle, X } from 'lucide-react';
 
 export const SellerDashboardPage: React.FC = () => {
   const { user, isAuthenticated, updateUser, logout } = useAuth();
@@ -38,6 +39,11 @@ export const SellerDashboardPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [confirmDeleteProdId, setConfirmDeleteProdId] = useState<number | null>(null);
   const [deletingProduct, setDeletingProduct] = useState(false);
+  const [reportReviewId, setReportReviewId] = useState<number | null>(null);
+  const [reportReviewReason, setReportReviewReason] = useState('');
+  const [reportingReview, setReportingReview] = useState(false);
+  const [reportReviewError, setReportReviewError] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const activeTab = (searchParams.get('tab') as SellerTabType) || 'overview';
   const setActiveTab = (tab: SellerTabType) => {
@@ -328,12 +334,20 @@ export const SellerDashboardPage: React.FC = () => {
   };
 
   const handleToggleProductStatus = async (prod: Product) => {
+    setActionFeedback(null);
     try {
-      const nextStatus = prod.status === 'ACTIVE' ? 'DRAFT' : 'ACTIVE';
-      await sellerApi.updateProduct(prod.id, { status: nextStatus });
+      const nextStatus = prod.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      await sellerApi.toggleProductStatus(prod.id, nextStatus);
+      setActionFeedback({
+        type: 'success',
+        message: nextStatus === 'INACTIVE' ? 'Annonce masquée avec succès.' : 'Annonce réactivée avec succès.',
+      });
       loadAllData();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors du changement de statut.");
+      setActionFeedback({
+        type: 'error',
+        message: err.response?.data?.message || "Erreur lors du changement de statut.",
+      });
     }
   };
 
@@ -384,14 +398,34 @@ export const SellerDashboardPage: React.FC = () => {
     }
   };
 
-  const handleReportReview = async (reviewId: number) => {
-    const reason = prompt("Raison du signalement de cet avis (inapproprié, diffamatoire...) :");
-    if (!reason) return;
+  const handleReportReview = (reviewId: number) => {
+    setReportReviewId(reviewId);
+    setReportReviewReason('');
+    setReportReviewError(null);
+  };
+
+  const confirmReportReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reportReviewId === null) return;
+    const trimmedReason = reportReviewReason.trim();
+    if (trimmedReason.length < 5) {
+      setReportReviewError('Veuillez préciser la raison du signalement (au moins 5 caractères).');
+      return;
+    }
+    setReportingReview(true);
+    setReportReviewError(null);
     try {
-      await sellerApi.reportReview(reviewId, { reason: 'ABUSIVE_BEHAVIOR', details: reason });
-      alert("Avis signalé avec succès à l'administration.");
+      await sellerApi.reportReview(reportReviewId, { reason: 'ABUSIVE_BEHAVIOR', details: trimmedReason });
+      setReportReviewId(null);
+      setReportReviewReason('');
+      setActionFeedback({
+        type: 'success',
+        message: "Avis signalé avec succès à l'administration.",
+      });
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors du signalement.");
+      setReportReviewError(err.response?.data?.message || "Erreur lors du signalement.");
+    } finally {
+      setReportingReview(false);
     }
   };
 
@@ -644,6 +678,108 @@ export const SellerDashboardPage: React.FC = () => {
         }}
         onConfirm={confirmDeleteProduct}
       />
+
+      {/* Modale Signalement Avis au design ReVibe FliP */}
+      {reportReviewId !== null && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <form
+            onSubmit={confirmReportReview}
+            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 border border-gray-150 shadow-2xl space-y-5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-gray-900 leading-snug">Signaler cet avis</h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Notre équipe de modération examinera votre demande.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!reportingReview) setReportReviewId(null);
+                }}
+                disabled={reportingReview}
+                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-xl hover:bg-gray-100 cursor-pointer disabled:opacity-50"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="report-review-reason" className="block text-xs font-bold text-gray-700">
+                Raison du signalement (inapproprié, diffamatoire, hors sujet…)
+              </label>
+              <textarea
+                id="report-review-reason"
+                rows={4}
+                value={reportReviewReason}
+                onChange={(e) => {
+                  setReportReviewReason(e.target.value);
+                  if (reportReviewError) setReportReviewError(null);
+                }}
+                placeholder="Décrivez brièvement pourquoi cet avis vous semble abusif..."
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50/60 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-purple-700 focus:ring-2 focus:ring-purple-700/10 resize-none"
+                disabled={reportingReview}
+                autoFocus
+              />
+              {reportReviewError && (
+                <p className="text-xs font-semibold text-rose-600">{reportReviewError}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setReportReviewId(null)}
+                disabled={reportingReview}
+                className="px-4 py-2.5 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                disabled={reportingReview}
+                className="px-5 py-2.5 rounded-2xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-md shadow-purple-700/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                {reportingReview ? 'Envoi en cours…' : "Signaler l'avis"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Bandeau feedback non-bloquant (remplace alert() natif) */}
+      {actionFeedback && (
+        <div className="fixed bottom-5 right-5 z-50 max-w-sm animate-fadeIn">
+          <div
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold ${
+              actionFeedback.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {actionFeedback.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+            )}
+            <span className="flex-1">{actionFeedback.message}</span>
+            <button
+              type="button"
+              onClick={() => setActionFeedback(null)}
+              className="p-1 rounded-lg hover:bg-black/5 cursor-pointer"
+              aria-label="Fermer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
