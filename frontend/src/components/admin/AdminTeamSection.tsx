@@ -169,8 +169,8 @@ export const AdminTeamSection: React.FC<AdminTeamSectionProps> = ({
       return;
     }
 
-    if (createForm.password.trim() && createForm.password.trim().length < 6) {
-      setError('Le mot de passe doit comporter au moins 6 caractères (ou laissez-le vide pour génération automatique).');
+    if (createForm.password.trim() && createForm.password.trim().length < 8) {
+      setError('Le mot de passe doit comporter au moins 8 caractères (ou laissez-le vide pour génération automatique).');
       return;
     }
 
@@ -202,9 +202,9 @@ export const AdminTeamSection: React.FC<AdminTeamSectionProps> = ({
         createForm.password.trim() ||
         (newCollab as any)?.temporaryPassword ||
         (newCollab as any)?.initialPassword ||
-        'Defaut@2026';
+        '';
 
-      setCreatedPasswordNotice(generatedPwd);
+      setCreatedPasswordNotice(generatedPwd || null);
       setSuccessMessage(`Collaborateur ${payload.firstName} ${payload.lastName} créé avec succès.`);
 
       setCreateForm({
