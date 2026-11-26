@@ -61,6 +61,20 @@ export const authService = {
     await api.post(`/auth/resend-otp?phone=${encodeURIComponent(phone)}`);
   },
 
+  forgotPassword: async (phone: string): Promise<string | undefined> => {
+    const res = await api.post('/auth/forgot-password', { phone });
+    return res.data?.message;
+  },
+
+  resetPassword: async (payload: {
+    phone: string;
+    otpCode: string;
+    newPassword: string;
+  }): Promise<string | undefined> => {
+    const res = await api.post('/auth/reset-password', payload);
+    return res.data?.message;
+  },
+
   logout: async (refreshToken?: string | null): Promise<void> => {
     await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
   },

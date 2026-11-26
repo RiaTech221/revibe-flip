@@ -23,7 +23,8 @@ export type RootStackParamList = {
   Chat: { conversationId?: number; productId?: number; sellerId?: number; conversation?: Conversation };
   Checkout: { product: Product; agreedPrice?: number };
   OrderDetail: { orderId: number; order?: Order };
-  Login: { returnScreen?: keyof RootStackParamList } | undefined;
+  Login: { returnScreen?: keyof RootStackParamList; prefilledIdentifier?: string } | undefined;
+  ForgotPassword: { initialIdentifier?: string } | undefined;
   Register: undefined;
   Favorites: undefined;
   SellerSpace: { eligible?: boolean } | undefined;

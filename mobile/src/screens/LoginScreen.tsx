@@ -7,7 +7,7 @@
  *  * - Lien vers l'écran d'inscription pour les nouveaux membres
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,10 +29,16 @@ import { authService } from '../services';
 
 export const LoginScreen = ({ route, navigation }: any) => {
   const { login } = useAuth();
-  const [identifier, setIdentifier] = useState('');
+  const [identifier, setIdentifier] = useState(route?.params?.prefilledIdentifier || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (route?.params?.prefilledIdentifier) {
+      setIdentifier(route.params.prefilledIdentifier);
+    }
+  }, [route?.params?.prefilledIdentifier]);
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password) {
@@ -98,7 +104,18 @@ export const LoginScreen = ({ route, navigation }: any) => {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={styles.label}>Mot de passe</Text>
+            <View style={styles.labelRow}>
+              <Text style={styles.label}>Mot de passe</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('ForgotPassword', {
+                    initialIdentifier: identifier.trim(),
+                  })
+                }
+              >
+                <Text style={styles.forgotLink}>Mot de passe oublié ?</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.inputWrap}>
               <Lock size={18} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
@@ -179,11 +196,22 @@ const styles = StyleSheet.create({
   formGroup: {
     marginBottom: 18,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
+  },
+  forgotLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
   },
   inputWrap: {
     flexDirection: 'row',

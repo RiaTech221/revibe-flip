@@ -12,17 +12,19 @@ import { Logo } from '../Logo';
 import { AuthLoginForm } from './AuthLoginForm';
 import { AuthRegisterForm } from './AuthRegisterForm';
 import { AuthOtpForm } from './AuthOtpForm';
+import { AuthForgotPasswordForm } from './AuthForgotPasswordForm';
 
 /**
- * Modale d'authentification universelle (Connexion, Inscription, OTP).
+ * Modale d'authentification universelle (Connexion, Inscription, OTP, Mot de passe oublié).
  * Orchestrée en sous-composants spécialisés avec fermeture fluide.
  */
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, authModalMode, pendingPhone, closeAuthModal, login, openAuthModal } =
     useAuth();
 
-  const [mode, setMode] = useState<'login' | 'register' | 'otp'>(authModalMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'otp' | 'forgot-password'>(authModalMode);
   const [phoneForOtp, setPhoneForOtp] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -104,13 +106,21 @@ export const AuthModal: React.FC = () => {
             {mode === 'login' && 'Connexion'}
             {mode === 'register' && 'Créer un compte'}
             {mode === 'otp' && 'Vérification de sécurité'}
+            {mode === 'forgot-password' && 'Mot de passe oublié'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {mode === 'login' && 'Accédez à vos commandes et discussions'}
             {mode === 'register' && 'Rejoignez la communauté de seconde main'}
             {mode === 'otp' && 'Confirmez votre identité par SMS'}
+            {mode === 'forgot-password' && 'Réinitialisez votre mot de passe par OTP SMS'}
           </p>
         </div>
+
+        {successMessage && mode === 'login' && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-2xl text-xs font-bold">
+            {successMessage}
+          </div>
+        )}
 
         {/* Contenu selon le mode */}
         {mode === 'login' && (
@@ -121,7 +131,32 @@ export const AuthModal: React.FC = () => {
             onSubmit={handleLoginSubmit}
             onSwitchToRegister={() => {
               setError(null);
+              setSuccessMessage(null);
               setMode('register');
+            }}
+            onForgotPassword={(currentIdentifier) => {
+              setError(null);
+              setSuccessMessage(null);
+              if (currentIdentifier) {
+                setPhoneForOtp(currentIdentifier);
+              }
+              setMode('forgot-password');
+            }}
+          />
+        )}
+
+        {mode === 'forgot-password' && (
+          <AuthForgotPasswordForm
+            initialPhone={phoneForOtp}
+            onSuccess={(phone) => {
+              setPhoneForOtp(phone);
+              setError(null);
+              setSuccessMessage('Mot de passe réinitialisé avec succès. Connectez-vous.');
+              setMode('login');
+            }}
+            onBackToLogin={() => {
+              setError(null);
+              setMode('login');
             }}
           />
         )}

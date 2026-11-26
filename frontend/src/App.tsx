@@ -55,6 +55,7 @@ const AppLayout: React.FC = () => {
         <Routes>
           {/* Authentification Split Screen Moderne */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<LoginPage initialMode="forgot-password" />} />
           <Route path="/register" element={<RegisterPage />} />
 
           {/* 1. VITRINE CLIENT & SHOPPING */}

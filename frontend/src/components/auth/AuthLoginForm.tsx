@@ -14,6 +14,7 @@ interface AuthLoginFormProps {
   error: string | null;
   onSubmit: (identifier: string, password: string, turnstileToken?: string) => void;
   onSwitchToRegister?: () => void;
+  onForgotPassword?: (currentIdentifier: string) => void;
 }
 
 /**
@@ -25,11 +26,18 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
   error,
   onSubmit,
   onSwitchToRegister,
+  onForgotPassword,
 }) => {
   const [identifier, setIdentifier] = useState(initialIdentifier);
   const [password, setPassword] = useState('');
   const [turnstileToken, setTurnstileToken] = useState('');
   const [turnstileReset, setTurnstileReset] = useState(0);
+
+  useEffect(() => {
+    if (initialIdentifier) {
+      setIdentifier(initialIdentifier);
+    }
+  }, [initialIdentifier]);
 
   useEffect(() => {
     if (error) {
@@ -70,9 +78,15 @@ export const AuthLoginForm: React.FC<AuthLoginFormProps> = ({
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <label className="text-xs font-bold text-slate-700">Mot de passe</label>
-          <span className="text-[11px] font-bold text-purple-700 hover:text-purple-800 cursor-pointer">
-            Mot de passe oublié ?
-          </span>
+          {onForgotPassword && (
+            <button
+              type="button"
+              onClick={() => onForgotPassword(identifier.trim())}
+              className="text-[11px] font-bold text-purple-700 hover:text-purple-800 cursor-pointer"
+            >
+              Mot de passe oublié ?
+            </button>
+          )}
         </div>
         <div className="relative">
           <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />

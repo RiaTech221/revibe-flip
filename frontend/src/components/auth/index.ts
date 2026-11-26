@@ -9,4 +9,5 @@ export * from './AuthLoginForm';
 export * from './AuthRegisterForm';
 export * from './AuthOtpForm';
 export * from './AuthSetPasswordForm';
+export * from './AuthForgotPasswordForm';
 export * from './AuthModal';

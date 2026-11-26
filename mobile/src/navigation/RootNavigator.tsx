@@ -17,6 +17,7 @@ import { ChatScreen } from '../screens/ChatScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { OrderDetailScreen } from '../screens/OrderDetailScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { FavoritesScreen } from '../screens/FavoritesScreen';
 import { SellerSpaceScreen } from '../screens/SellerSpaceScreen';
@@ -40,6 +41,7 @@ export const RootNavigator = () => {
       <Stack.Screen name="Checkout" component={CheckoutScreen} />
       <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="Favorites" component={FavoritesScreen} />
       <Stack.Screen name="SellerSpace" component={SellerSpaceScreen} />
