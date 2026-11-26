@@ -90,7 +90,7 @@ class ListingAndOfferSecurityTest {
     void setUp() {
         String salt = UUID.randomUUID().toString().substring(0, 8);
         eligibleSeller = userRepository.save(User.builder()
-                .phone("+22177" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177"))
                 .email("eligible-" + salt + "@revibeflip.sn")
                 .firstName("Aminata")
                 .lastName("Diallo")
@@ -105,7 +105,7 @@ class ListingAndOfferSecurityTest {
 
         // Profil incomplet (ni ville ni adresse ni nom complet) : non éligible à vendre
         incompleteSeller = userRepository.save(User.builder()
-                .phone("+22178" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22178"))
                 .password(passwordEncoder.encode("StrongPass123!"))
                 .role(Role.ROLE_USER)
                 .status(AccountStatus.ACTIVE)
@@ -114,7 +114,7 @@ class ListingAndOfferSecurityTest {
                 .build());
 
         buyer = userRepository.save(User.builder()
-                .phone("+22176" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22176"))
                 .email("buyer-" + salt + "@revibeflip.sn")
                 .firstName("Moussa")
                 .lastName("Ndiaye")

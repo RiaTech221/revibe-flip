@@ -63,7 +63,7 @@ class PaginationAndSortingSecurityTest {
         String salt = UUID.randomUUID().toString().substring(0, 8);
 
         User standardUser = userRepository.save(User.builder()
-                .phone("+22177" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177"))
                 .firstName("User" + salt)
                 .lastName("Normal")
                 .password(passwordEncoder.encode("Secret123!"))
@@ -74,7 +74,7 @@ class PaginationAndSortingSecurityTest {
         userToken = jwtUtil.generateToken(standardUser, standardUser.getId(), standardUser.getRole().name(), standardUser.getFullName());
 
         User adminUser = userRepository.save(User.builder()
-                .phone("+22178" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22178"))
                 .firstName("Admin" + salt)
                 .lastName("Security")
                 .password(passwordEncoder.encode("AdminSecret123!"))

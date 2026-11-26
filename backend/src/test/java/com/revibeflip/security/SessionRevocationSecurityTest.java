@@ -83,7 +83,7 @@ class SessionRevocationSecurityTest {
     @BeforeEach
     void setUp() {
         String salt = UUID.randomUUID().toString().substring(0, 8);
-        String phone = "+22177" + (1000000 + (int) (Math.random() * 8999999));
+        String phone = com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177");
         testUser = userRepository.save(User.builder()
                 .phone(phone)
                 .email("sec16-" + salt + "@revibeflip.sn")

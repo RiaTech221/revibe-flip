@@ -83,7 +83,7 @@ class AdminCollaboratorSecurityIntegrationTest {
 
         // 1. Admin
         adminUser = userRepository.save(User.builder()
-                .phone("+22177" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177"))
                 .firstName("Admin" + salt)
                 .lastName("Principal")
                 .password(passwordEncoder.encode("AdminPass123!"))
@@ -95,7 +95,7 @@ class AdminCollaboratorSecurityIntegrationTest {
 
         // 2. Regular User
         regularUser = userRepository.save(User.builder()
-                .phone("+22178" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22178"))
                 .firstName("User" + salt)
                 .lastName("Normal")
                 .password(passwordEncoder.encode("UserPass123!"))
@@ -113,7 +113,7 @@ class AdminCollaboratorSecurityIntegrationTest {
     private User createCollaborator(Set<AdminPermission> permissions) {
         String salt = UUID.randomUUID().toString().substring(0, 8);
         return userRepository.save(User.builder()
-                .phone("+22176" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22176"))
                 .firstName("Collab" + salt)
                 .lastName("Modérateur")
                 .password(passwordEncoder.encode("CollabPass123!"))
@@ -134,7 +134,7 @@ class AdminCollaboratorSecurityIntegrationTest {
         @Test
         @DisplayName("Un ROLE_ADMIN peut créer un compte collaborateur avec ses permissions")
         void adminCanCreateCollaborator() throws Exception {
-            String newPhone = "+22177" + (1000000 + (int) (Math.random() * 8999999));
+            String newPhone = com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177");
             CreateCollaboratorRequest request = CreateCollaboratorRequest.builder()
                     .firstName("Moussa")
                     .lastName("Diop")
