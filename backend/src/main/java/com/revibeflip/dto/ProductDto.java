@@ -84,4 +84,15 @@ public class ProductDto {
                 .createdAt(product.getCreatedAt())
                 .build();
     }
+
+    /**
+     * Projection publique (SEC-18) : masque le motif interne de désactivation.
+     */
+    public static ProductDto fromEntityPublic(Product product) {
+        ProductDto dto = fromEntity(product);
+        if (dto != null) {
+            dto.setDeactivationReason(null);
+        }
+        return dto;
+    }
 }

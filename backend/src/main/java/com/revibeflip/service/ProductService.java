@@ -65,19 +65,24 @@ public class ProductService {
         Page<Product> productPage = productRepository.searchProducts(
                 cleanQuery, categoryId, condition, minPrice, maxPrice, cleanSize, cleanCity, cleanCountry, pageable);
 
-        return productPage.map(ProductDto::fromEntity);
+        return productPage.map(ProductDto::fromEntityPublic);
     }
 
     @Transactional
     public ProductDto getProductById(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Article non trouvé avec l'identifiant " + id));
+                .orElseThrow(() -> new java.util.NoSuchElementException("Article non trouvé avec l'identifiant " + id));
+
+        // SEC-18 : Ne jamais exposer publiquement les brouillons ni les annonces désactivées
+        if (product.getStatus() == ProductStatus.DRAFT || product.getStatus() == ProductStatus.INACTIVE) {
+            throw new java.util.NoSuchElementException("Article introuvable ou indisponible.");
+        }
 
         // Increment view count
         product.setViewCount(product.getViewCount() + 1);
         productRepository.save(product);
 
-        return ProductDto.fromEntity(product);
+        return ProductDto.fromEntityPublic(product);
     }
 
     @Transactional
@@ -129,6 +134,9 @@ public class ProductService {
 
         if (request.getStatus() != null && request.getStatus() != product.getStatus()) {
             policyService.validateStatusChange(product, user, request.getStatus());
+            if (request.getStatus() == ProductStatus.ACTIVE && user.getRole() != com.revibeflip.entity.enums.Role.ROLE_ADMIN) {
+                sellerEligibilityService.assertEligibleToSell(user);
+            }
             product.setStatus(request.getStatus());
         }
 
@@ -170,7 +178,8 @@ public class ProductService {
     public List<ProductDto> getSellerProducts(Long sellerId) {
         return productRepository.findBySellerIdOrderByCreatedAtDesc(sellerId)
                 .stream()
-                .map(ProductDto::fromEntity)
+                .filter(p -> p.getStatus() != ProductStatus.DRAFT && p.getStatus() != ProductStatus.INACTIVE)
+                .map(ProductDto::fromEntityPublic)
                 .collect(Collectors.toList());
     }
 

@@ -120,8 +120,17 @@ public class ProductModificationPolicyService {
             throw new AccessDeniedException("Vous n'êtes pas autorisé à modifier le statut de cette annonce.");
         }
 
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Le statut cible de l'annonce est obligatoire.");
+        }
+
         if (product.getStatus() == ProductStatus.SOLD || product.getStatus() == ProductStatus.RESERVED) {
             throw new IllegalStateException("Une annonce vendue ou réservée ne peut pas changer de statut.");
+        }
+
+        // SEC-18 : Un vendeur ne peut choisir que DRAFT, ACTIVE ou INACTIVE (jamais SOLD ou RESERVED)
+        if (!isAdmin && (newStatus == ProductStatus.SOLD || newStatus == ProductStatus.RESERVED)) {
+            throw new IllegalStateException("Un vendeur ne peut pas définir manuellement le statut " + newStatus + ".");
         }
 
         if (orderRepository.existsByProductIdAndStatusIn(product.getId(), ACTIVE_ORDER_STATUSES)) {

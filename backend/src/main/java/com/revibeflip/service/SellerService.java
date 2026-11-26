@@ -847,6 +847,7 @@ public class SellerService {
         if (Boolean.TRUE.equals(request.getIsDraft())) {
             product.setStatus(ProductStatus.DRAFT);
         } else if (product.getStatus() == ProductStatus.DRAFT) {
+            sellerEligibilityService.assertEligibleToSell(seller);
             product.setStatus(ProductStatus.ACTIVE);
         }
 
@@ -876,6 +877,9 @@ public class SellerService {
                 .orElseThrow(() -> new NoSuchElementException("Annonce introuvable"));
 
         policyService.validateStatusChange(product, seller, newStatus);
+        if (newStatus == ProductStatus.ACTIVE && product.getStatus() != ProductStatus.ACTIVE) {
+            sellerEligibilityService.assertEligibleToSell(seller);
+        }
 
         product.setStatus(newStatus);
         return ProductDto.fromEntity(productRepository.save(product));
@@ -940,29 +944,28 @@ public class SellerService {
                 .orElseThrow(() -> new NoSuchElementException("Commande introuvable"));
         checkOrderSellerOwnership(seller, order);
 
-        if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.DELIVERED) {
-            throw new IllegalStateException("Impossible d'annuler une commande déjà livrée ou finalisée.");
-        }
+        // SEC-18 : Valider la transition via OrderStateMachine
+        OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.CANCELLED);
 
         order.setStatus(OrderStatus.CANCELLED);
 
         // Remettre les annonces disponibles
-        if (order.getProduct() != null) {
+        if (order.getProduct() != null && order.getProduct().getStatus() != ProductStatus.ACTIVE) {
             order.getProduct().setStatus(ProductStatus.ACTIVE);
             productRepository.save(order.getProduct());
         }
         if (order.getItems() != null && !order.getItems().isEmpty()) {
             for (OrderItem orderItem : order.getItems()) {
-                if (orderItem.getProduct() != null) {
+                if (orderItem.getProduct() != null && orderItem.getProduct().getStatus() != ProductStatus.ACTIVE) {
                     orderItem.getProduct().setStatus(ProductStatus.ACTIVE);
                     productRepository.save(orderItem.getProduct());
                 }
             }
         }
 
-        // Annuler le paiement associé (Remboursement acheteur)
+        // Annuler le paiement associé uniquement si réellement encaissé
         Payment payment = paymentRepository.findByOrderId(orderId).orElse(null);
-        if (payment != null) {
+        if (payment != null && payment.getStatus() == PaymentStatus.SUCCESS) {
             payment.setStatus(PaymentStatus.REFUNDED);
             payment.setEscrowStatus(EscrowStatus.REFUNDED_TO_BUYER);
             paymentRepository.save(payment);
@@ -985,7 +988,12 @@ public class SellerService {
                 .orElseThrow(() -> new NoSuchElementException("Commande introuvable"));
         checkOrderSellerOwnership(seller, order);
 
-        // Le vendeur fait progresser : PENDING → PICKED_UP
+        // SEC-18 : Validation stricte via DeliveryStateMachine et OrderStateMachine
+        DeliveryStatus currentDelivery = order.getDeliveryStatus() != null ? order.getDeliveryStatus() : DeliveryStatus.PENDING;
+        DeliveryStateMachine.validateTransition(currentDelivery, DeliveryStatus.PICKED_UP);
+        OrderStateMachine.validateTransition(order.getStatus(), OrderStatus.SHIPPED);
+
+        // Le vendeur fait progresser : PENDING → PICKED_UP et PAID_ESCROW_LOCKED → SHIPPED
         order.setDeliveryStatus(DeliveryStatus.PICKED_UP);
         order.setStatus(OrderStatus.SHIPPED);
 
