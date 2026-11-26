@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Onglet / Vue Vendeur : SellerListingsTab
  * 
  * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerListingsTab).
@@ -37,7 +37,8 @@ export const SellerListingsTab: React.FC<SellerListingsTabProps> = ({
   const statusTabs = [
     { id: 'ALL', label: 'Toutes' },
     { id: 'ACTIVE', label: 'En vente' },
-    { id: 'DRAFT', label: 'Brouillons / Masquées' },
+    { id: 'INACTIVE', label: 'Masquées' },
+    { id: 'DRAFT', label: 'Brouillons' },
     { id: 'SOLD', label: 'Vendues' },
   ];
 
@@ -154,14 +155,16 @@ export const SellerListingsTab: React.FC<SellerListingsTabProps> = ({
                       <Edit2 className="w-3.5 h-3.5" />
                       <span>Modifier</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onToggleStatus(p)}
-                      className="px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      {p.status === 'ACTIVE' ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                      <span>{p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}</span>
-                    </button>
+                    {p.status !== 'SOLD' && p.status !== 'RESERVED' && (
+                      <button
+                        type="button"
+                        onClick={() => onToggleStatus(p)}
+                        className="px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        {p.status === 'ACTIVE' ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        <span>{p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}</span>
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onDeleteProduct(p.id)}
@@ -232,14 +235,16 @@ export const SellerListingsTab: React.FC<SellerListingsTabProps> = ({
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => onToggleStatus(p)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
-                            title={p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}
-                          >
-                            {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                          </button>
+                          {p.status !== 'SOLD' && p.status !== 'RESERVED' && (
+                            <button
+                              type="button"
+                              onClick={() => onToggleStatus(p)}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-purple-700 hover:bg-purple-50 transition-colors cursor-pointer"
+                              title={p.status === 'ACTIVE' ? 'Masquer' : 'Activer'}
+                            >
+                              {p.status === 'ACTIVE' ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => onDeleteProduct(p.id)}
