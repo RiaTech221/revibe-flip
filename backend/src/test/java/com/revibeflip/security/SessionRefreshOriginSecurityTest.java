@@ -74,7 +74,7 @@ class SessionRefreshOriginSecurityTest {
     void setUp() {
         String salt = UUID.randomUUID().toString().substring(0, 8);
         testUser = userRepository.save(User.builder()
-                .phone("+22177" + (1000000 + (int) (Math.random() * 8999999)))
+                .phone(com.revibeflip.support.TestPhoneGenerator.nextPhone("+22177"))
                 .firstName("Origin" + salt)
                 .lastName("Tester")
                 .password(passwordEncoder.encode("Secret123!"))
