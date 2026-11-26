@@ -1,12 +1,13 @@
-﻿/**
+/**
  * Onglet / Vue Vendeur : SellerOrdersTab
  * 
  * Module interactif pour la gestion des annonces, commandes, finances ou profil vendeur (SellerOrdersTab).
  */
 
 import React from 'react';
-import { Package, Truck, Phone, CheckCircle2 } from 'lucide-react';
+import { Truck, Phone } from 'lucide-react';
 import { Order } from '../../types';
+import { formatImageUrl } from '../../utils/imageUrl';
 
 interface SellerOrdersTabProps {
   orders: Order[];
@@ -46,7 +47,7 @@ export const SellerOrdersTab: React.FC<SellerOrdersTabProps> = ({
                 <div className="flex items-start gap-4 min-w-0">
                   <img
                     src={
-                      ord.productImageUrl ||
+                      formatImageUrl(ord.productImageUrl) ||
                       '/placeholder-product.svg'
                     }
                     alt=""
@@ -105,7 +106,8 @@ export const SellerOrdersTab: React.FC<SellerOrdersTabProps> = ({
                       </>
                     )}
 
-                    {ord.deliveryStatus !== 'DELIVERED' && ord.status !== 'COMPLETED' && (
+                    {ord.status === 'PAID_ESCROW_LOCKED' &&
+                      (!ord.deliveryStatus || ord.deliveryStatus === 'PENDING') && (
                       <button
                         type="button"
                         onClick={() => onMarkReadyForPickup(ord.id)}

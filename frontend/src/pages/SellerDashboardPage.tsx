@@ -408,11 +408,19 @@ export const SellerDashboardPage: React.FC = () => {
   };
 
   const handleMarkReadyForPickup = async (orderId: number) => {
+    setActionFeedback(null);
     try {
       await sellerApi.markReadyForPickup(orderId);
+      setActionFeedback({
+        type: 'success',
+        message: 'Colis marqué comme remis au livreur avec succès.',
+      });
       loadAllData();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Erreur lors de la mise à jour logistique.");
+      setActionFeedback({
+        type: 'error',
+        message: err.response?.data?.message || "Erreur lors de la mise à jour logistique.",
+      });
     }
   };
 
