@@ -16,28 +16,14 @@ export interface ImageTransformOptions {
 
 /**
  * Formate une URL d'image :
- * - Injecte automatiquement `f_auto,q_auto` (+ dimensions/recadrage optionnels) sur les URLs Cloudinary (`res.cloudinary.com`)
+ * - Conserve telles quelles les URLs HTTPS (dont Cloudinary `res.cloudinary.com`, déjà optimisées
+ *   à l'upload côté backend afin de rester compatible avec le mode Strict Transformations)
  * - Résout les chemins locaux `/api/uploads/...` ou `/uploads/...`
  */
-export function formatImageUrl(url?: string | null, options?: ImageTransformOptions): string | null {
+export function formatImageUrl(url?: string | null, _options?: ImageTransformOptions): string | null {
   if (!url) return null;
   const trimmed = url.trim();
   if (!trimmed) return null;
-
-  if (trimmed.includes('res.cloudinary.com') && trimmed.includes('/image/upload/')) {
-    const marker = '/image/upload/';
-    const idx = trimmed.indexOf(marker);
-    const afterMarker = trimmed.slice(idx + marker.length);
-    if (afterMarker.includes('f_auto') || afterMarker.includes('q_auto')) {
-      return trimmed;
-    }
-    const transforms = ['f_auto', 'q_auto'];
-    if (options?.crop) transforms.push(`c_${options.crop}`);
-    if (options?.gravity) transforms.push(`g_${options.gravity}`);
-    if (options?.width) transforms.push(`w_${options.width}`);
-    if (options?.height) transforms.push(`h_${options.height}`);
-    return `${trimmed.slice(0, idx + marker.length)}${transforms.join(',')}/${afterMarker}`;
-  }
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:') || trimmed.startsWith('blob:')) {
     return trimmed;

@@ -51,6 +51,13 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
   onLogout,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
+
+  const avatarSrc = formatImageUrl(profile?.profilePicture || currentUser?.profilePicture);
+
+  React.useEffect(() => {
+    setAvatarError(false);
+  }, [avatarSrc]);
 
   const navItems: Array<{
     id: SellerTabType;
@@ -168,15 +175,15 @@ export const SellerSidebar: React.FC<SellerSidebarProps> = ({
   );
 
   const renderProfileFooter = () => {
-    const avatarSrc = formatImageUrl(profile?.profilePicture || currentUser?.profilePicture);
     return (
     <div className="pt-5 border-t border-gray-150">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
-          {avatarSrc ? (
+          {avatarSrc && !avatarError ? (
             <img
               src={avatarSrc}
               alt={profile?.fullName || currentUser?.fullName || 'Vendeur'}
+              onError={() => setAvatarError(true)}
               className="w-10 h-10 rounded-full object-cover shrink-0 border border-purple-200 bg-white"
             />
           ) : (
