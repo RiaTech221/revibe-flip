@@ -30,6 +30,8 @@ import java.util.Map;
 public class AuthController {
 
     private static final String REFRESH_COOKIE_NAME = "revibeflip_refresh_token";
+    private static final String CLIENT_TYPE_HEADER = "X-Client-Type";
+    private static final String MOBILE_CLIENT_TYPE = "mobile";
 
     private final AuthService authService;
     private final SessionOriginValidator sessionOriginValidator;
@@ -59,6 +61,7 @@ public class AuthController {
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.verifyOtp(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        stripRefreshTokenForWeb(httpRequest, response);
         return ResponseEntity.ok(ApiResponse.ok(response, "Numéro vérifié et compte activé avec succès !"));
     }
 
@@ -79,6 +82,7 @@ public class AuthController {
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.skipOtpForDevTest(phone);
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        stripRefreshTokenForWeb(httpRequest, response);
         return ResponseEntity.ok(ApiResponse.ok(response, "Compte activé en mode test."));
     }
 
@@ -106,8 +110,11 @@ public class AuthController {
     @Operation(summary = "Définir ou modifier le mot de passe du compte connecté (après validation OTP ou depuis le profil)")
     public ResponseEntity<ApiResponse<UserDto>> setPassword(
             @AuthenticationPrincipal User user,
-            @Valid @RequestBody SetPasswordRequest request) {
+            @Valid @RequestBody SetPasswordRequest request,
+            HttpServletRequest httpRequest,
+            HttpServletResponse httpResponse) {
         UserDto updated = authService.setPassword(user, request);
+        clearRefreshCookie(httpRequest, httpResponse);
         return ResponseEntity.ok(ApiResponse.ok(updated, "Mot de passe enregistré avec succès."));
     }
 
@@ -119,6 +126,7 @@ public class AuthController {
             HttpServletResponse httpResponse) {
         AuthResponse response = authService.login(request, extractClientIp(httpRequest));
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        stripRefreshTokenForWeb(httpRequest, response);
         return ResponseEntity.ok(ApiResponse.ok(response, "Connexion réussie."));
     }
 
@@ -132,6 +140,7 @@ public class AuthController {
         String rawRefreshToken = extractRefreshToken(httpRequest, body);
         AuthResponse response = authService.refreshToken(rawRefreshToken);
         attachRefreshCookie(httpRequest, httpResponse, response.getRefreshToken());
+        stripRefreshTokenForWeb(httpRequest, response);
         return ResponseEntity.ok(ApiResponse.ok(response, "Session rafraîchie."));
     }
 
@@ -142,6 +151,7 @@ public class AuthController {
             @AuthenticationPrincipal User user,
             HttpServletRequest httpRequest,
             HttpServletResponse httpResponse) {
+        sessionOriginValidator.validateOrigin(httpRequest);
         String rawRefreshToken = extractRefreshToken(httpRequest, body);
         authService.logout(rawRefreshToken, user);
         clearRefreshCookie(httpRequest, httpResponse);
@@ -199,6 +209,16 @@ public class AuthController {
             return body.get("refreshToken");
         }
         return null;
+    }
+
+    private void stripRefreshTokenForWeb(HttpServletRequest request, AuthResponse response) {
+        if (response == null) {
+            return;
+        }
+        String clientType = request.getHeader(CLIENT_TYPE_HEADER);
+        if (!MOBILE_CLIENT_TYPE.equalsIgnoreCase(clientType != null ? clientType.trim() : null)) {
+            response.setRefreshToken(null);
+        }
     }
 
     private String extractClientIp(HttpServletRequest request) {
